@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "Russian Word Highlighter & Pronouncer",
+  "version": "1.1",
+  "description": "Highlight Russian words on any webpage. Click to pronounce them using Piper TTS ONNX.",
+  "permissions": [
+    "contextMenus",
+    "activeTab",
+    "tts"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "models/*",
+        "lib/*"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "css": ["styles.css"],
+      "js": [
+        "lib/ort.min.js",
+        "lib/piper_phonemize.min.js",
+        "contentScript.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}

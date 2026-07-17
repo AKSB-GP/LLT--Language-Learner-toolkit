@@ -1,0 +1,30 @@
+/* styles.css – Premium styling for highlighted Russian words */
+
+/* Highlighted word style */
+.ru-highlight {
+  background-color: hsla(210, 100%, 50%, 0.12); /* Soft glassmorphic blue highlight */
+  border-bottom: 2px dashed hsla(210, 100%, 45%, 0.4);
+  border-radius: 2px;
+  cursor: pointer;
+  display: inline-block;
+  padding: 0 2px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.ru-highlight:hover {
+  background-color: hsla(210, 100%, 50%, 0.25);
+  border-bottom-color: hsla(210, 100%, 45%, 0.85);
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+/* Active playback flash style */
+.highlight-active {
+  background-color: hsl(45, 100%, 85%) !important; /* Premium soft yellow highlight */
+  border-bottom-color: hsl(45, 100%, 50%) !important;
+  color: #1e293b !important;
+  transform: scale(1.06) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
