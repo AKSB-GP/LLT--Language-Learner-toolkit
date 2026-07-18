@@ -1,12 +1,123 @@
-// contentScript.js – Multi-language Word Highlighter & Local-only ONNX/Piper TTS Player (MVC Architecture)
+// contentScript.js – Multi-language Word Highlighter & Local-only ONNX/Piper TTS Player with Notifications (MVC Architecture)
 
-// Regex mapping for each supported language category
-const REGEX_MAP = {
-  russian: /\b[А-ЯЁа-яё\-]+\b/g,
-  english: /\b[A-Za-z\-]+\b/g,
-  swedish: /\b[A-Za-zåäöÅÄÖ\-]+\b/g
-};
+/** ==========================================
+ *  VIEW: NotificationView
+ *  Handles rendering and dismissals of glassmorphic
+ *  floating notifications to track TTS progress.
+ *  ========================================== */
+class NotificationView {
+  constructor() {
+    this.container = null;
+    this.activeToast = null;
+    this.createContainer();
+  }
 
+  createContainer() {
+    this.container = document.createElement('div');
+    this.container.id = 'tts-notifications-container';
+    document.body.appendChild(this.container);
+  }
+
+  show(type, message, duration = null) {
+    if (this.activeToast) {
+      this.activeToast.remove();
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `tts-toast tts-toast-${type}`;
+
+    // Icon block
+    const iconContainer = document.createElement('div');
+    iconContainer.className = 'tts-toast-icon';
+    if (type === 'loading' || type === 'synthesizing') {
+      iconContainer.appendChild(this.createSpinnerSVG());
+    } else if (type === 'playing') {
+      iconContainer.appendChild(this.createWaveSVG());
+    } else if (type === 'error') {
+      iconContainer.appendChild(this.createWarningSVG());
+    }
+    toast.appendChild(iconContainer);
+
+    // Text block
+    const textContainer = document.createElement('div');
+    textContainer.className = 'tts-toast-text';
+    textContainer.textContent = message;
+    toast.appendChild(textContainer);
+
+    this.container.appendChild(toast);
+    this.activeToast = toast;
+
+    // Trigger visual entry transition
+    requestAnimationFrame(() => {
+      toast.classList.add('tts-toast-visible');
+    });
+
+    if (duration) {
+      setTimeout(() => {
+        this.dismiss(toast);
+      }, duration);
+    }
+  }
+
+  dismiss(toast = null) {
+    const target = toast || this.activeToast;
+    if (target) {
+      target.classList.remove('tts-toast-visible');
+      target.classList.add('tts-toast-fadeout');
+      setTimeout(() => {
+        target.remove();
+        if (this.activeToast === target) {
+          this.activeToast = null;
+        }
+      }, 300);
+    }
+  }
+
+  createSpinnerSVG() {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 50 50');
+    svg.setAttribute('class', 'tts-spinner');
+
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('cx', '25');
+    circle.setAttribute('cy', '25');
+    circle.setAttribute('r', '20');
+    circle.setAttribute('fill', 'none');
+    circle.setAttribute('stroke-width', '5');
+
+    svg.appendChild(circle);
+    return svg;
+  }
+
+  createWaveSVG() {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('class', 'tts-audio-waves');
+
+    for (let i = 1; i <= 3; i++) {
+      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      rect.setAttribute('x', String(i * 5 + 1));
+      rect.setAttribute('y', '6');
+      rect.setAttribute('width', '3');
+      rect.setAttribute('height', '12');
+      rect.setAttribute('class', `tts-bar tts-bar-${i}`);
+      svg.appendChild(rect);
+    }
+    return svg;
+  }
+
+  createWarningSVG() {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('class', 'tts-alert-icon');
+
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z');
+
+    svg.appendChild(path);
+    return svg;
+  }
+}
 
 /** ==========================================
  *  MODEL: TTSModel
@@ -187,198 +298,78 @@ class TTSModel {
 }
 
 /** ==========================================
- *  VIEW: HighlighterView
- *  Manages document node tree walking and 
- *  safe wrapping (no innerHTML/regexp replacements).
- *  ========================================== */
-class HighlighterView {
-  constructor() {
-    this.languageCategory = 'russian';
-  }
-
-  setLanguageCategory(category) {
-    this.languageCategory = category;
-  }
-
-  highlightText(node) {
-    if (!node) return;
-
-    const childNodes = Array.from(node.childNodes);
-    const regex = REGEX_MAP[this.languageCategory] || REGEX_MAP.russian;
-
-    for (const child of childNodes) {
-      if (child.nodeType === Node.TEXT_NODE) {
-        const text = child.nodeValue;
-
-        // Reset regex state before test
-        regex.lastIndex = 0;
-        if (regex.test(text) && child.parentElement) {
-          const parentTag = child.parentElement.tagName.toLowerCase();
-          if (['script', 'style', 'textarea', 'pre', 'code', 'input', 'noscript'].includes(parentTag)) {
-            continue;
-          }
-
-          if (child.parentElement.classList.contains('ru-highlight')) {
-            continue;
-          }
-
-          this.safeHighlightNode(child, regex);
-        }
-      } else if (child.nodeType === Node.ELEMENT_NODE) {
-        if (child.classList.contains('ru-highlight')) {
-          continue;
-        }
-        this.highlightText(child);
-      }
-    }
-  }
-
-  // Parses the text node, wrapping matches safely with standard DOM APIs
-  safeHighlightNode(textNode, regex) {
-    const text = textNode.nodeValue;
-    regex.lastIndex = 0;
-    let match;
-    let lastIndex = 0;
-    const fragment = document.createDocumentFragment();
-
-    while ((match = regex.exec(text)) !== null) {
-      // Append preceding plain text
-      if (match.index > lastIndex) {
-        fragment.appendChild(document.createTextNode(text.substring(lastIndex, match.index)));
-      }
-
-      // Create secure span highlight element
-      const span = document.createElement('span');
-      span.className = 'ru-highlight';
-      span.dataset.word = match[0];
-      span.textContent = match[0];
-      fragment.appendChild(span);
-
-      lastIndex = regex.lastIndex;
-    }
-
-    // Append remaining plain text
-    if (lastIndex < text.length) {
-      fragment.appendChild(document.createTextNode(text.substring(lastIndex)));
-    }
-
-    textNode.replaceWith(fragment);
-  }
-
-  // Removes all active highlights safely
-  clearAllHighlights() {
-    const highlights = document.querySelectorAll('.ru-highlight');
-    highlights.forEach(span => {
-      const parent = span.parentNode;
-      if (parent) {
-        span.replaceWith(document.createTextNode(span.textContent));
-      }
-    });
-    document.body.normalize();
-  }
-}
-
-/** ==========================================
  *  CONTROLLER: TTSController
- *  Wires user actions, observers, model state,
+ *  Wires context menu triggers, model state,
  *  and maps views.
  *  ========================================== */
 class TTSController {
-  constructor(model, highlighterView) {
+  constructor(model, notificationView) {
     this.model = model;
-    this.highlighterView = highlighterView;
-    this.observer = null;
+    this.notificationView = notificationView;
   }
 
   async init() {
-    // 1. Fetch configured language category
-    const settings = await new Promise(resolve => {
-      chrome.storage.sync.get({
-        piperLanguageCategory: 'russian'
-      }, resolve);
-    });
-
-    this.highlighterView.setLanguageCategory(settings.piperLanguageCategory);
-    this.highlighterView.highlightText(document.body);
-    this.model.loadEngine();
+    // Pre-warm the model engine in background asynchronously
+    this.model.loadEngine().catch(err => console.warn("TTS Pre-warming failed:", err));
+    
     this.setupListeners();
-    this.setupObserver();
   }
 
   setupListeners() {
-    // 1. Highlight element clicks
-    document.body.addEventListener('click', async (e) => {
-      const target = e.target;
-      if (target.classList && target.classList.contains('ru-highlight')) {
-        const word = target.dataset.word;
-        if (word) {
-          target.classList.add('highlight-active');
-          setTimeout(() => target.classList.remove('highlight-active'), 600);
-          await this.speak(word);
-        }
-      }
-    });
-
-    // 2. Relay selected text from right-click context menus & settings changes
+    // Relay selected text from right-click context menus
     chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
       if (message.action === "speakSelection" && message.text) {
         this.speak(message.text);
-      } else if (message.action === "settingsChanged") {
-        // Redo highlights with new settings
-        if (this.observer) {
-          this.observer.disconnect();
-        }
-        this.highlighterView.clearAllHighlights();
-
-        const settings = await new Promise(resolve => {
-          chrome.storage.sync.get({
-            piperLanguageCategory: 'russian'
-          }, resolve);
-        });
-
-        this.highlighterView.setLanguageCategory(settings.piperLanguageCategory);
-        this.highlighterView.highlightText(document.body);
-        this.setupObserver();
       }
     });
-  }
-
-  setupObserver() {
-    let mutationTimeout;
-    this.observer = new MutationObserver(() => {
-      clearTimeout(mutationTimeout);
-      mutationTimeout = setTimeout(() => {
-        if (this.observer) {
-          this.observer.disconnect();
-        }
-        this.highlighterView.highlightText(document.body);
-        if (this.observer) {
-          this.observer.observe(document.body, { childList: true, subtree: true });
-        }
-      }, 500);
-    });
-
-    this.observer.observe(document.body, { childList: true, subtree: true });
   }
 
   async speak(text) {
     try {
+      const settings = await new Promise(resolve => {
+        chrome.storage.sync.get({ piperVoice: 'irina' }, resolve);
+      });
+      const voiceName = settings.piperVoice.charAt(0).toUpperCase() + settings.piperVoice.slice(1);
+
+      // 1. Show model loading alert if session is uninitialized
+      if (!this.model.session) {
+        this.notificationView.show('loading', `Loading voice model (${voiceName})...`);
+      } else {
+        this.notificationView.show('synthesizing', `Synthesizing "${text}"...`);
+      }
+
+      // Explicitly await the loadEngine inside the controller to manage the toast transitions
+      await this.model.loadEngine();
+
+      // 2. Transition toast to processing/synthesizing state
+      this.notificationView.show('synthesizing', `Synthesizing "${text}"...`);
+
       const wavBuffer = await this.model.synthesize(text);
+
+      // 3. Transition toast to playing state
+      this.notificationView.show('playing', `Playing speech for "${text}"...`);
+
       const blob = new Blob([wavBuffer], { type: "audio/wav" });
       const audioUrl = URL.createObjectURL(blob);
       const audio = new Audio(audioUrl);
+
+      audio.addEventListener('ended', () => {
+        this.notificationView.dismiss();
+      });
+
       await audio.play();
     } catch (error) {
       console.error("Speech synthesis failed:", error);
+      this.notificationView.show('error', `Synthesis failed: ${error.message || error}`, 3000);
     }
   }
 }
 
-// 4. Instantiation & Start
+// Instantiation & Start
 const startApplication = () => {
   const model = new TTSModel();
-  const highlighterView = new HighlighterView();
-  const controller = new TTSController(model, highlighterView);
+  const notificationView = new NotificationView();
+  const controller = new TTSController(model, notificationView);
   controller.init();
 };
 
