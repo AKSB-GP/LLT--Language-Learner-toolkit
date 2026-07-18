@@ -7,6 +7,7 @@ const REGEX_MAP = {
   swedish: /\b[A-Za-zåäöÅÄÖ\-]+\b/g
 };
 
+
 /** ==========================================
  *  MODEL: TTSModel
  *  Manages TTS configuration, ONNX runtime,

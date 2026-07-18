@@ -19,11 +19,12 @@ chrome.runtime.onInstalled.addListener(() => {
 
 // 2. Routing clicked menu items
 chrome.contextMenus.onClicked.addListener((info, tab) => {
-  if (info.menuItemId === "pronounce-russian-piper") {
+  if (info.menuItemId === "pronounce-with-piper-tts") {
     AddPiperTTS(info, tab);
-  } else if (info.menuItemId === "pronounce-russian-google-tts") {
+  } else if (info.menuItemId === "pronounce-with-google-tts") {
     AddGoogleTTS(info, tab);
   } else if (info.menuItemId === "lookUp-russian-word") {
+    AddWikiSearch(info, tab);
   }
 });
 
@@ -48,6 +49,27 @@ function AddPiperTTS(info, tab) {
       text: info.selectionText
     }).catch(err => {
       console.warn("Could not send message to tab. Content script might not be loaded yet.", err);
+    });
+  }
+}
+
+
+
+function AddWikiSearch(info) {
+  if (info.selectionText) {
+    chrome.storage.sync.get({
+      piperLanguageCategory: 'russian'
+    }, (settings) => {
+      const langCodes = {
+        russian: 'ru',
+        english: 'en',
+        swedish: 'sv'
+      };
+      const langCode = langCodes[settings.piperLanguageCategory] || 'en';
+      const word = encodeURIComponent(info.selectionText.trim());
+      chrome.tabs.create({
+        url: `https://${langCode}.wiktionary.org/wiki/${word}`
+      });
     });
   }
 }
