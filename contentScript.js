@@ -1,4 +1,11 @@
-// contentScript.js – Russian Word Highlighter & ONNX/Piper TTS Player (MVC Architecture)
+// contentScript.js – Multi-language Word Highlighter & Local-only ONNX/Piper TTS Player (MVC Architecture)
+
+// Regex mapping for each supported language category
+const REGEX_MAP = {
+  russian: /\b[А-ЯЁа-яё\-]+\b/g,
+  english: /\b[A-Za-z\-]+\b/g,
+  swedish: /\b[A-Za-zåäöÅÄÖ\-]+\b/g
+};
 
 /** ==========================================
  *  MODEL: TTSModel
@@ -10,39 +17,51 @@ class TTSModel {
     this.session = null;
     this.voiceConfig = null;
     this.engineLoading = false;
+    this.loadedVoiceFile = null;
   }
 
   async loadEngine() {
-    if (this.session && this.voiceConfig) return;
+    // 1. Fetch preferences from sync storage
+    const settings = await new Promise(resolve => {
+      chrome.storage.sync.get({
+        piperVoiceFile: 'ru_RU-irina-medium'
+      }, resolve);
+    });
+
+    const voiceFile = settings.piperVoiceFile || 'ru_RU-irina-medium';
+
+    // 2. Check if we need to load or swap the model session
+    if (this.session && this.voiceConfig && this.loadedVoiceFile === voiceFile) return;
 
     if (this.engineLoading) {
       while (this.engineLoading) {
         await new Promise(r => setTimeout(r, 100));
       }
-      return;
+      if (this.session && this.loadedVoiceFile === voiceFile) return;
     }
 
     this.engineLoading = true;
 
     try {
-      // 1. Fetch config JSON
-      const configUrl = chrome.runtime.getURL("models/ru_RU-irina-medium.onnx.json");
+      // 3. Fetch config JSON and model binary directly from local extension folder
+      const configUrl = chrome.runtime.getURL(`models/${voiceFile}.onnx.json`);
       const configResponse = await fetch(configUrl);
       this.voiceConfig = await configResponse.json();
 
-      // 2. Configure ONNX Runtime WASM paths
+      const modelUrl = chrome.runtime.getURL(`models/${voiceFile}.onnx`);
+      const modelResponse = await fetch(modelUrl);
+      const modelBuffer = await modelResponse.arrayBuffer();
+
+      // 4. Configure ONNX Runtime WASM paths
       ort.env.allowLocalModels = false;
       ort.env.wasm.numThreads = navigator.hardwareConcurrency || 4;
       ort.env.wasm.wasmPaths = chrome.runtime.getURL('lib/');
 
-      // 3. Load ONNX Session
-      const modelUrl = chrome.runtime.getURL("models/ru_RU-irina-medium.onnx");
-      const modelResponse = await fetch(modelUrl);
-      const modelBuffer = await modelResponse.arrayBuffer();
-
+      // 5. Load ONNX Session
       this.session = await ort.InferenceSession.create(modelBuffer, { executionProviders: ['wasm'] });
+      this.loadedVoiceFile = voiceFile;
     } catch (error) {
-      console.error("Failed to load Piper TTS engine:", error);
+      console.error("Failed to load Piper TTS engine from local path:", error);
       throw error;
     } finally {
       this.engineLoading = false;
@@ -51,6 +70,15 @@ class TTSModel {
 
   async synthesize(text) {
     await this.loadEngine();
+
+    // Fetch current settings for inference configurations
+    const settings = await new Promise(resolve => {
+      chrome.storage.sync.get({
+        piperSpeed: 1.0,
+        piperNoiseScale: 0.667,
+        piperNoiseW: 0.8
+      }, resolve);
+    });
 
     const voiceName = this.voiceConfig.espeak?.voice || "ru";
 
@@ -102,9 +130,10 @@ class TTSModel {
     }
 
     // ONNX Model Inference
-    const noiseScale = this.voiceConfig.inference?.noise_scale ?? 0.667;
-    const lengthScale = this.voiceConfig.inference?.length_scale ?? 1.35;
-    const noiseW = this.voiceConfig.inference?.noise_w ?? 0.8;
+    const baseLengthScale = this.voiceConfig.inference?.length_scale ?? 1.0;
+    const lengthScale = baseLengthScale / settings.piperSpeed;
+    const noiseScale = settings.piperNoiseScale;
+    const noiseW = settings.piperNoiseW;
 
     const feed = {
       input: new ort.Tensor("int64", BigInt64Array.from(phonemeIds.map(BigInt)), [1, phonemeIds.length]),
@@ -162,16 +191,27 @@ class TTSModel {
  *  safe wrapping (no innerHTML/regexp replacements).
  *  ========================================== */
 class HighlighterView {
-  highlightRussianText(node) {
+  constructor() {
+    this.languageCategory = 'russian';
+  }
+
+  setLanguageCategory(category) {
+    this.languageCategory = category;
+  }
+
+  highlightText(node) {
     if (!node) return;
 
     const childNodes = Array.from(node.childNodes);
-    const russianRegex = /\b[А-ЯЁа-яё\-]+\b/gi;
+    const regex = REGEX_MAP[this.languageCategory] || REGEX_MAP.russian;
 
     for (const child of childNodes) {
       if (child.nodeType === Node.TEXT_NODE) {
         const text = child.nodeValue;
-        if (russianRegex.test(text) && child.parentElement) {
+
+        // Reset regex state before test
+        regex.lastIndex = 0;
+        if (regex.test(text) && child.parentElement) {
           const parentTag = child.parentElement.tagName.toLowerCase();
           if (['script', 'style', 'textarea', 'pre', 'code', 'input', 'noscript'].includes(parentTag)) {
             continue;
@@ -181,21 +221,21 @@ class HighlighterView {
             continue;
           }
 
-          this.safeHighlightNode(child);
+          this.safeHighlightNode(child, regex);
         }
       } else if (child.nodeType === Node.ELEMENT_NODE) {
         if (child.classList.contains('ru-highlight')) {
           continue;
         }
-        this.highlightRussianText(child);
+        this.highlightText(child);
       }
     }
   }
 
   // Parses the text node, wrapping matches safely with standard DOM APIs
-  safeHighlightNode(textNode) {
+  safeHighlightNode(textNode, regex) {
     const text = textNode.nodeValue;
-    const regex = /\b([А-ЯЁа-яё\-]+)\b/g;
+    regex.lastIndex = 0;
     let match;
     let lastIndex = 0;
     const fragment = document.createDocumentFragment();
@@ -209,8 +249,8 @@ class HighlighterView {
       // Create secure span highlight element
       const span = document.createElement('span');
       span.className = 'ru-highlight';
-      span.dataset.word = match[1];
-      span.textContent = match[1];
+      span.dataset.word = match[0];
+      span.textContent = match[0];
       fragment.appendChild(span);
 
       lastIndex = regex.lastIndex;
@@ -223,6 +263,18 @@ class HighlighterView {
 
     textNode.replaceWith(fragment);
   }
+
+  // Removes all active highlights safely
+  clearAllHighlights() {
+    const highlights = document.querySelectorAll('.ru-highlight');
+    highlights.forEach(span => {
+      const parent = span.parentNode;
+      if (parent) {
+        span.replaceWith(document.createTextNode(span.textContent));
+      }
+    });
+    document.body.normalize();
+  }
 }
 
 /** ==========================================
@@ -234,10 +286,20 @@ class TTSController {
   constructor(model, highlighterView) {
     this.model = model;
     this.highlighterView = highlighterView;
+    this.observer = null;
   }
 
-  init() {
-    this.highlighterView.highlightRussianText(document.body);
+  async init() {
+    // 1. Fetch configured language category
+    const settings = await new Promise(resolve => {
+      chrome.storage.sync.get({
+        piperLanguageCategory: 'russian'
+      }, resolve);
+    });
+
+    this.highlighterView.setLanguageCategory(settings.piperLanguageCategory);
+    this.highlighterView.highlightText(document.body);
+    this.model.loadEngine();
     this.setupListeners();
     this.setupObserver();
   }
@@ -256,26 +318,46 @@ class TTSController {
       }
     });
 
-    // 2. Relay selected text from right-click context menus
-    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    // 2. Relay selected text from right-click context menus & settings changes
+    chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
       if (message.action === "speakSelection" && message.text) {
         this.speak(message.text);
+      } else if (message.action === "settingsChanged") {
+        // Redo highlights with new settings
+        if (this.observer) {
+          this.observer.disconnect();
+        }
+        this.highlighterView.clearAllHighlights();
+
+        const settings = await new Promise(resolve => {
+          chrome.storage.sync.get({
+            piperLanguageCategory: 'russian'
+          }, resolve);
+        });
+
+        this.highlighterView.setLanguageCategory(settings.piperLanguageCategory);
+        this.highlighterView.highlightText(document.body);
+        this.setupObserver();
       }
     });
   }
 
   setupObserver() {
     let mutationTimeout;
-    const observer = new MutationObserver(() => {
+    this.observer = new MutationObserver(() => {
       clearTimeout(mutationTimeout);
       mutationTimeout = setTimeout(() => {
-        observer.disconnect();
-        this.highlighterView.highlightRussianText(document.body);
-        observer.observe(document.body, { childList: true, subtree: true });
+        if (this.observer) {
+          this.observer.disconnect();
+        }
+        this.highlighterView.highlightText(document.body);
+        if (this.observer) {
+          this.observer.observe(document.body, { childList: true, subtree: true });
+        }
       }, 500);
     });
 
-    observer.observe(document.body, { childList: true, subtree: true });
+    this.observer.observe(document.body, { childList: true, subtree: true });
   }
 
   async speak(text) {

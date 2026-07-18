@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Settings</title>
+</head>
+
+<body>
+
+    <!-- Sleek Header -->
+    <div class="header">
+        <svg viewBox="0 0 24 24">
+            <path
+                d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+        </svg>
+        <h2>TTS Settings Panel</h2>
+    </div>
+
+    <!-- Piper TTS Settings -->
+    <div class="card">
+        <h3>Offline Piper TTS</h3>
+
+        <!-- Language selection -->
+        <div class="form-group">
+            <label for="language-category">Language Category</label>
+            <select id="language-category">
+                <option value="russian">Russian (ru-RU)</option>
+                <option value="english">English (en-US / en-GB)</option>
+                <option value="swedish">Swedish (sv-SE)</option>
+            </select>
+        </div>
+
+        <!-- Voice choice selection -->
+        <div class="form-group">
+            <label for="piper-voice">Voice Model</label>
+            <select id="piper-voice">
+                <!-- populated dynamically by popup.js -->
+            </select>
+        </div>
+
+        <!-- Speed slider -->
+        <div class="form-group">
+            <label for="piper-speed">
+                <span title="This is a hover text example">Speech Speed</span>
+                <span id="piper-speed-val" class="val-display">1.0x</span>
+            </label>
+            <input type="range" id="piper-speed" min="0.5" max="2.0" step="0.1" value="1.0">
+        </div>
+
+        <!-- Variation (noise scale) slider -->
+        <div class="form-group">
+            <label for="piper-noise-scale">
+                <span title="This is a hover text example">Voice Variation </span>
+                <span id="piper-noise-scale-val" class="val-display">0.67</span>
+            </label>
+            <input type="range" id="piper-noise-scale" min="0.1" max="1.5" step="0.05" value="0.67">
+        </div>
+
+        <!-- Emotion / rhythm (noise w) slider -->
+        <div class="form-group">
+            <label for="piper-noise-w">
+                <span title="This is a hover text example">Rhythm & Emotion</span>
+                <span id="piper-noise-w-val" class="val-display">0.80</span>
+            </label>
+            <input type="range" id="piper-noise-w" min="0.1" max="1.5" step="0.05" value="0.80">
+        </div>
+    </div>
+
+    <!-- Google TTS Settings -->
+    <div class="card google">
+        <h3>Google TTS</h3>
+
+        <!-- Language choice selection -->
+        <div class="form-group">
+            <label for="google-language">Language</label>
+            <select id="google-language">
+                <option value="ru-RU">Russian (ru-RU)</option>
+                <option value="en-US">English (en-US)</option>
+                <option value="sv-SE">Swedish (sv-SE)</option>
+            </select>
+        </div>
+
+        <!-- Speed slider -->
+        <div class="form-group">
+            <label for="google-rate">
+                <span>Speech Speed</span>
+                <span id="google-rate-val" class="val-display">1.0x</span>
+            </label>
+            <input type="range" id="google-rate" min="0.5" max="2.5" step="0.1" value="1.0">
+        </div>
+    </div>
+
+    <!-- Auto-save notification -->
+    <div id="status" class="status-toast">Settings saved automatically.</div>
+
+    <!-- Scripts -->
+    <script src="popup.js"></script>
+</body>
+
+</html>
