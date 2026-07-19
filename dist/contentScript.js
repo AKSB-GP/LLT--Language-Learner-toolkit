@@ -1,5 +1,17 @@
 "use strict";
 (() => {
+  // src/constants.ts
+  var DEFAULT_SETTINGS = {
+    piperLanguageCategory: "russian",
+    piperVoice: "irina",
+    piperVoiceFile: "ru_RU-irina-medium",
+    piperSpeed: 1,
+    piperNoiseScale: 0.667,
+    piperNoiseW: 0.8,
+    googleLanguage: "ru-RU",
+    googleRate: 1
+  };
+
   // src/model/TTSModel.ts
   var TTSModel = class {
     session = null;
@@ -11,12 +23,12 @@
     async loadEngine() {
       const settings = await new Promise((resolve) => {
         chrome.storage.sync.get({
-          piperVoiceFile: "ru_RU-irina-medium"
+          piperVoiceFile: DEFAULT_SETTINGS.piperVoiceFile
         }, (items) => {
           resolve(items);
         });
       });
-      const voiceFile = settings.piperVoiceFile || "ru_RU-irina-medium";
+      const voiceFile = settings.piperVoiceFile || DEFAULT_SETTINGS.piperVoiceFile;
       if (this.session && this.voiceConfig && this.loadedVoiceFile === voiceFile)
         return;
       if (this.engineLoading) {
@@ -50,9 +62,9 @@
       await this.loadEngine();
       const settings = await new Promise((resolve) => {
         chrome.storage.sync.get({
-          piperSpeed: 1,
-          piperNoiseScale: 0.667,
-          piperNoiseW: 0.8
+          piperSpeed: DEFAULT_SETTINGS.piperSpeed,
+          piperNoiseScale: DEFAULT_SETTINGS.piperNoiseScale,
+          piperNoiseW: DEFAULT_SETTINGS.piperNoiseW
         }, (items) => {
           resolve(items);
         });
@@ -105,10 +117,10 @@
         throw new Error("Could not extract phonemes from text.");
       }
       const baseLengthScale = this.voiceConfig.inference?.length_scale ?? 1;
-      const speed = settings.piperSpeed ?? 1;
+      const speed = settings.piperSpeed ?? DEFAULT_SETTINGS.piperSpeed;
       const lengthScale = baseLengthScale / speed;
-      const noiseScale = settings.piperNoiseScale ?? 0.667;
-      const noiseW = settings.piperNoiseW ?? 0.8;
+      const noiseScale = settings.piperNoiseScale ?? DEFAULT_SETTINGS.piperNoiseScale;
+      const noiseW = settings.piperNoiseW ?? DEFAULT_SETTINGS.piperNoiseW;
       const feed = {
         input: new ort.Tensor("int64", BigInt64Array.from(phonemeIds.map(BigInt)), [1, phonemeIds.length]),
         input_lengths: new ort.Tensor("int64", BigInt64Array.from([BigInt(phonemeIds.length)])),
@@ -270,11 +282,11 @@
     async speak(text) {
       try {
         const settings = await new Promise((resolve) => {
-          chrome.storage.sync.get({ piperVoice: "irina" }, (items) => {
+          chrome.storage.sync.get({ piperVoice: DEFAULT_SETTINGS.piperVoice }, (items) => {
             resolve(items);
           });
         });
-        const voice = settings.piperVoice || "irina";
+        const voice = settings.piperVoice || DEFAULT_SETTINGS.piperVoice;
         const voiceName = voice.charAt(0).toUpperCase() + voice.slice(1);
         if (!this.model.session) {
           this.notificationView.show("loading", `Loading voice model (${voiceName})...`);

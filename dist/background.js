@@ -1,11 +1,28 @@
 "use strict";
 (() => {
-  // src/background.ts
+  // src/constants.ts
   var listOfContextMenus = [
     { id: "pronounce-with-piper-tts", title: "Pronounce in Russian (Piper)", contexts: ["selection"] },
     { id: "pronounce-with-google-tts", title: "Pronounce in Russian (Google TTS)", contexts: ["selection"] },
     { id: "lookUp-russian-word", title: "Look up meaning", contexts: ["selection"] }
   ];
+  var LANGUAGE_CODES = {
+    russian: "ru",
+    english: "en",
+    swedish: "sv"
+  };
+  var DEFAULT_SETTINGS = {
+    piperLanguageCategory: "russian",
+    piperVoice: "irina",
+    piperVoiceFile: "ru_RU-irina-medium",
+    piperSpeed: 1,
+    piperNoiseScale: 0.667,
+    piperNoiseW: 0.8,
+    googleLanguage: "ru-RU",
+    googleRate: 1
+  };
+
+  // src/background.ts
   function CreateContextMenus() {
     for (let i = 0; i < listOfContextMenus.length; i++) {
       chrome.contextMenus.create(listOfContextMenus[i]);
@@ -18,16 +35,16 @@
     if (info.menuItemId === "pronounce-with-piper-tts") {
       AddPiperTTS(info, tab);
     } else if (info.menuItemId === "pronounce-with-google-tts") {
-      AddGoogleTTS(info, tab);
+      AddGoogleTTS(info);
     } else if (info.menuItemId === "lookUp-russian-word") {
       AddWikiSearch(info, tab);
     }
   });
-  function AddGoogleTTS(info, tab) {
+  function AddGoogleTTS(info) {
     if (info.selectionText) {
       chrome.storage.sync.get({
-        googleLanguage: "ru-RU",
-        googleRate: 1
+        googleLanguage: DEFAULT_SETTINGS.googleLanguage,
+        googleRate: DEFAULT_SETTINGS.googleRate
       }, (settings) => {
         chrome.tts.speak(info.selectionText, {
           lang: settings.googleLanguage,
@@ -49,15 +66,10 @@
   function AddWikiSearch(info, tab) {
     if (info.selectionText) {
       chrome.storage.sync.get({
-        piperLanguageCategory: "russian"
+        piperLanguageCategory: DEFAULT_SETTINGS.piperLanguageCategory
       }, (settings) => {
-        const langCodes = {
-          russian: "ru",
-          english: "en",
-          swedish: "sv"
-        };
-        const category = settings.piperLanguageCategory || "russian";
-        const langCode = langCodes[category] || "en";
+        const category = settings.piperLanguageCategory || DEFAULT_SETTINGS.piperLanguageCategory;
+        const langCode = LANGUAGE_CODES[category] || "en";
         const word = encodeURIComponent(info.selectionText.trim().toLowerCase());
         chrome.tabs.create({
           url: `https://${langCode}.wiktionary.org/wiki/${word}`

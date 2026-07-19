@@ -1,5 +1,6 @@
 import { TTSModel } from '../model/TTSModel';
 import { NotificationView } from '../view/NotificationView';
+import { DEFAULT_SETTINGS } from '../constants';
 
 export class TTSController {
   private model: TTSModel;
@@ -29,11 +30,11 @@ export class TTSController {
   async speak(text: string): Promise<void> {
     try {
       const settings = await new Promise<{ piperVoice?: string }>(resolve => {
-        chrome.storage.sync.get({ piperVoice: 'irina' }, (items) => {
+        chrome.storage.sync.get({ piperVoice: DEFAULT_SETTINGS.piperVoice }, (items) => {
           resolve(items as { piperVoice?: string });
         });
       });
-      const voice = settings.piperVoice || 'irina';
+      const voice = settings.piperVoice || DEFAULT_SETTINGS.piperVoice;
       const voiceName = voice.charAt(0).toUpperCase() + voice.slice(1);
 
       // 1. Show model loading alert if session is uninitialized

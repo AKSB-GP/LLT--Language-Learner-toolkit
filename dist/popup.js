@@ -1,6 +1,6 @@
 "use strict";
 (() => {
-  // src/popup.ts
+  // src/constants.ts
   var VOICES_MAP = {
     russian: [
       { id: "irina", name: "Irina (Medium, Smooth)", file: "ru_RU-irina-medium" },
@@ -21,6 +21,18 @@
       { id: "nst", name: "NST (Medium, Standard)", file: "sv_SE-nst-medium" }
     ]
   };
+  var DEFAULT_SETTINGS = {
+    piperLanguageCategory: "russian",
+    piperVoice: "irina",
+    piperVoiceFile: "ru_RU-irina-medium",
+    piperSpeed: 1,
+    piperNoiseScale: 0.667,
+    piperNoiseW: 0.8,
+    googleLanguage: "ru-RU",
+    googleRate: 1
+  };
+
+  // src/popup.ts
   document.addEventListener("DOMContentLoaded", () => {
     const languageCategory = document.getElementById("language-category");
     const piperVoice = document.getElementById("piper-voice");
@@ -82,13 +94,13 @@
       }
     };
     chrome.storage.sync.get({
-      piperLanguageCategory: "russian",
-      piperVoice: "irina",
-      piperSpeed: 1,
-      piperNoiseScale: 0.667,
-      piperNoiseW: 0.8,
-      googleLanguage: "ru-RU",
-      googleRate: 1
+      piperLanguageCategory: DEFAULT_SETTINGS.piperLanguageCategory,
+      piperVoice: DEFAULT_SETTINGS.piperVoice,
+      piperSpeed: DEFAULT_SETTINGS.piperSpeed,
+      piperNoiseScale: DEFAULT_SETTINGS.piperNoiseScale,
+      piperNoiseW: DEFAULT_SETTINGS.piperNoiseW,
+      googleLanguage: DEFAULT_SETTINGS.googleLanguage,
+      googleRate: DEFAULT_SETTINGS.googleRate
     }, (items) => {
       languageCategory.value = items.piperLanguageCategory;
       populateVoices(items.piperLanguageCategory, items.piperVoice);

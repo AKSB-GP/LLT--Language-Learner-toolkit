@@ -1,14 +1,5 @@
-interface ContextMenu {
-  id: string;
-  title: string;
-  contexts: chrome.contextMenus.ContextType[];
-}
-
-const listOfContextMenus: ContextMenu[] = [
-  { id: "pronounce-with-piper-tts", title: "Pronounce in Russian (Piper)", contexts: ["selection"] },
-  { id: "pronounce-with-google-tts", title: "Pronounce in Russian (Google TTS)", contexts: ["selection"] },
-  { id: "lookUp-russian-word", title: "Look up meaning", contexts: ["selection"] },
-];
+import { ContextMenu } from './types';
+import { listOfContextMenus, LANGUAGE_CODES, DEFAULT_SETTINGS } from './constants';
 
 function CreateContextMenus(): void {
   for (let i = 0; i < listOfContextMenus.length; i++) {
@@ -26,17 +17,17 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === "pronounce-with-piper-tts") {
     AddPiperTTS(info, tab);
   } else if (info.menuItemId === "pronounce-with-google-tts") {
-    AddGoogleTTS(info, tab);
+    AddGoogleTTS(info);
   } else if (info.menuItemId === "lookUp-russian-word") {
     AddWikiSearch(info, tab);
   }
 });
 
-function AddGoogleTTS(info: chrome.contextMenus.OnClickData, tab?: chrome.tabs.Tab): void {
+function AddGoogleTTS(info: chrome.contextMenus.OnClickData): void {
   if (info.selectionText) {
     chrome.storage.sync.get({
-      googleLanguage: 'ru-RU',
-      googleRate: 1.0
+      googleLanguage: DEFAULT_SETTINGS.googleLanguage,
+      googleRate: DEFAULT_SETTINGS.googleRate
     }, (settings) => {
       chrome.tts.speak(info.selectionText!, {
         lang: settings.googleLanguage,
@@ -57,18 +48,17 @@ function AddPiperTTS(info: chrome.contextMenus.OnClickData, tab?: chrome.tabs.Ta
   }
 }
 
+function AddIdentifiyLanguage(word: string): string {
+  return "languages";
+}
+
 function AddWikiSearch(info: chrome.contextMenus.OnClickData, tab?: chrome.tabs.Tab): void {
   if (info.selectionText) {
     chrome.storage.sync.get({
-      piperLanguageCategory: 'russian'
+      piperLanguageCategory: DEFAULT_SETTINGS.piperLanguageCategory
     }, (settings) => {
-      const langCodes: Record<string, string> = {
-        russian: 'ru',
-        english: 'en',
-        swedish: 'sv'
-      };
-      const category = (settings.piperLanguageCategory as string) || 'russian';
-      const langCode = langCodes[category] || 'en';
+      const category = (settings.piperLanguageCategory as string) || DEFAULT_SETTINGS.piperLanguageCategory;
+      const langCode = LANGUAGE_CODES[category] || 'en';
       const word = encodeURIComponent(info.selectionText!.trim().toLowerCase());
       chrome.tabs.create({
         url: `https://${langCode}.wiktionary.org/wiki/${word}`

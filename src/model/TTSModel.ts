@@ -1,3 +1,6 @@
+import { DEFAULT_SETTINGS } from '../constants';
+import { PiperSettings } from '../types';
+
 declare const ort: any;
 declare const createPiperPhonemize: any;
 
@@ -13,13 +16,13 @@ export class TTSModel {
     // 1. Fetch preferences from sync storage
     const settings = await new Promise<{ piperVoiceFile?: string }>(resolve => {
       chrome.storage.sync.get({
-        piperVoiceFile: 'ru_RU-irina-medium'
+        piperVoiceFile: DEFAULT_SETTINGS.piperVoiceFile
       }, (items) => {
         resolve(items as { piperVoiceFile?: string });
       });
     });
 
-    const voiceFile = settings.piperVoiceFile || 'ru_RU-irina-medium';
+    const voiceFile = settings.piperVoiceFile || DEFAULT_SETTINGS.piperVoiceFile;
 
     // 2. Check if we need to load or swap the model session
     if (this.session && this.voiceConfig && this.loadedVoiceFile === voiceFile) return;
@@ -63,17 +66,13 @@ export class TTSModel {
     await this.loadEngine();
 
     // Fetch current settings for inference configurations
-    const settings = await new Promise<{
-      piperSpeed?: number;
-      piperNoiseScale?: number;
-      piperNoiseW?: number;
-    }>(resolve => {
+    const settings = await new Promise<Partial<PiperSettings>>(resolve => {
       chrome.storage.sync.get({
-        piperSpeed: 1.0,
-        piperNoiseScale: 0.667,
-        piperNoiseW: 0.8
+        piperSpeed: DEFAULT_SETTINGS.piperSpeed,
+        piperNoiseScale: DEFAULT_SETTINGS.piperNoiseScale,
+        piperNoiseW: DEFAULT_SETTINGS.piperNoiseW
       }, (items) => {
-        resolve(items as { piperSpeed?: number; piperNoiseScale?: number; piperNoiseW?: number });
+        resolve(items as Partial<PiperSettings>);
       });
     });
 
@@ -128,10 +127,10 @@ export class TTSModel {
 
     // ONNX Model Inference
     const baseLengthScale = this.voiceConfig.inference?.length_scale ?? 1.0;
-    const speed = settings.piperSpeed ?? 1.0;
+    const speed = settings.piperSpeed ?? DEFAULT_SETTINGS.piperSpeed;
     const lengthScale = baseLengthScale / speed;
-    const noiseScale = settings.piperNoiseScale ?? 0.667;
-    const noiseW = settings.piperNoiseW ?? 0.8;
+    const noiseScale = settings.piperNoiseScale ?? DEFAULT_SETTINGS.piperNoiseScale;
+    const noiseW = settings.piperNoiseW ?? DEFAULT_SETTINGS.piperNoiseW;
 
     const feed: Record<string, any> = {
       input: new ort.Tensor("int64", BigInt64Array.from(phonemeIds.map(BigInt)), [1, phonemeIds.length]),

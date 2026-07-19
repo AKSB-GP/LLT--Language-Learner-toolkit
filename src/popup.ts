@@ -1,29 +1,4 @@
-interface VoiceOption {
-  id: string;
-  name: string;
-  file: string;
-}
-
-const VOICES_MAP: Record<string, VoiceOption[]> = {
-  russian: [
-    { id: 'irina', name: 'Irina (Medium, Smooth)', file: 'ru_RU-irina-medium' },
-    { id: 'denis', name: 'Denis (Medium, Energetic)', file: 'ru_RU-denis-medium' },
-    { id: 'dmitri', name: 'Dmitri (Medium, Natural)', file: 'ru_RU-dmitri-medium' },
-    { id: 'ruslan', name: 'Ruslan (Medium, Warm)', file: 'ru_RU-ruslan-medium' }
-  ],
-  english: [
-    { id: 'alan', name: 'Alan (Medium, GB)', file: 'en_GB-alan-medium' },
-    { id: 'alba', name: 'Alba (Medium, GB)', file: 'en_GB-alba-medium' },
-    { id: 'bryce', name: 'Bryce (Medium, US)', file: 'en_US-bryce-medium' },
-    { id: 'hfc_female', name: 'HFC Female (Medium, US)', file: 'en_US-hfc_female-medium' },
-    { id: 'hfc_male', name: 'HFC Male (Medium, US)', file: 'en_US-hfc_male-medium' }
-  ],
-  swedish: [
-    { id: 'alma', name: 'Alma (Medium, Soft)', file: 'sv_SE-alma-medium' },
-    { id: 'lisa', name: 'Lisa (Medium, Standard)', file: 'sv_SE-lisa-medium' },
-    { id: 'nst', name: 'NST (Medium, Standard)', file: 'sv_SE-nst-medium' }
-  ]
-};
+import { VOICES_MAP, DEFAULT_SETTINGS } from './constants';
 
 document.addEventListener('DOMContentLoaded', () => {
   // Elements
@@ -102,13 +77,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Load preferences from storage
   chrome.storage.sync.get({
-    piperLanguageCategory: 'russian',
-    piperVoice: 'irina',
-    piperSpeed: 1.0,
-    piperNoiseScale: 0.667,
-    piperNoiseW: 0.8,
-    googleLanguage: 'ru-RU',
-    googleRate: 1.0
+    piperLanguageCategory: DEFAULT_SETTINGS.piperLanguageCategory,
+    piperVoice: DEFAULT_SETTINGS.piperVoice,
+    piperSpeed: DEFAULT_SETTINGS.piperSpeed,
+    piperNoiseScale: DEFAULT_SETTINGS.piperNoiseScale,
+    piperNoiseW: DEFAULT_SETTINGS.piperNoiseW,
+    googleLanguage: DEFAULT_SETTINGS.googleLanguage,
+    googleRate: DEFAULT_SETTINGS.googleRate
   }, (items) => {
     languageCategory.value = items.piperLanguageCategory;
     populateVoices(items.piperLanguageCategory, items.piperVoice);
