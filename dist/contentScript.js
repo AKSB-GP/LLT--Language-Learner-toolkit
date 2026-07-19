@@ -1,6 +1,6 @@
 "use strict";
 (() => {
-  // src/constants.ts
+  // src/config/const.ts
   var DEFAULT_SETTINGS = {
     piperLanguageCategory: "russian",
     piperVoice: "irina",

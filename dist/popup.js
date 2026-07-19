@@ -1,6 +1,6 @@
 "use strict";
 (() => {
-  // src/constants.ts
+  // src/config/const.ts
   var VOICES_MAP = {
     russian: [
       { id: "irina", name: "Irina (Medium, Smooth)", file: "ru_RU-irina-medium" },

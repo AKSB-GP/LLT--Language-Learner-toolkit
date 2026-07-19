@@ -1,6 +1,6 @@
 import { TTSModel } from '../model/TTSModel';
 import { NotificationView } from '../view/NotificationView';
-import { DEFAULT_SETTINGS } from '../constants';
+import { DEFAULT_SETTINGS } from '../config/const';
 
 export class TTSController {
   private model: TTSModel;

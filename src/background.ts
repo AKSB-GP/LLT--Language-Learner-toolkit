@@ -1,5 +1,5 @@
-import { ContextMenu } from './types';
-import { listOfContextMenus, LANGUAGE_CODES, DEFAULT_SETTINGS } from './constants';
+import { ContextMenu } from './config/interfaces';
+import { listOfContextMenus, LANGUAGE_CODES, DEFAULT_SETTINGS } from './config/const';
 
 function CreateContextMenus(): void {
   for (let i = 0; i < listOfContextMenus.length; i++) {

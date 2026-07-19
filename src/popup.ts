@@ -1,4 +1,4 @@
-import { VOICES_MAP, DEFAULT_SETTINGS } from './constants';
+import { VOICES_MAP, DEFAULT_SETTINGS } from './config/const';
 
 document.addEventListener('DOMContentLoaded', () => {
   // Elements

@@ -1,6 +1,6 @@
 "use strict";
 (() => {
-  // src/constants.ts
+  // src/config/const.ts
   var listOfContextMenus = [
     { id: "pronounce-with-piper-tts", title: "Pronounce in Russian (Piper)", contexts: ["selection"] },
     { id: "pronounce-with-google-tts", title: "Pronounce in Russian (Google TTS)", contexts: ["selection"] },
