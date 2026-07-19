@@ -66,7 +66,7 @@ function AddWikiSearch(info) {
         swedish: 'sv'
       };
       const langCode = langCodes[settings.piperLanguageCategory] || 'en';
-      const word = encodeURIComponent(info.selectionText.trim());
+      const word = encodeURIComponent(info.selectionText.trim().toLowerCase());
       chrome.tabs.create({
         url: `https://${langCode}.wiktionary.org/wiki/${word}`
       });

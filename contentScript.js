@@ -2,7 +2,7 @@
 
 /** ==========================================
  *  VIEW: NotificationView
- *  Handles rendering and dismissals of glassmorphic
+ *  Handles rendering and dismissals 
  *  floating notifications to track TTS progress.
  *  ========================================== */
 class NotificationView {
@@ -71,51 +71,6 @@ class NotificationView {
         }
       }, 300);
     }
-  }
-
-  createSpinnerSVG() {
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('viewBox', '0 0 50 50');
-    svg.setAttribute('class', 'tts-spinner');
-
-    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    circle.setAttribute('cx', '25');
-    circle.setAttribute('cy', '25');
-    circle.setAttribute('r', '20');
-    circle.setAttribute('fill', 'none');
-    circle.setAttribute('stroke-width', '5');
-
-    svg.appendChild(circle);
-    return svg;
-  }
-
-  createWaveSVG() {
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('viewBox', '0 0 24 24');
-    svg.setAttribute('class', 'tts-audio-waves');
-
-    for (let i = 1; i <= 3; i++) {
-      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-      rect.setAttribute('x', String(i * 5 + 1));
-      rect.setAttribute('y', '6');
-      rect.setAttribute('width', '3');
-      rect.setAttribute('height', '12');
-      rect.setAttribute('class', `tts-bar tts-bar-${i}`);
-      svg.appendChild(rect);
-    }
-    return svg;
-  }
-
-  createWarningSVG() {
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('viewBox', '0 0 24 24');
-    svg.setAttribute('class', 'tts-alert-icon');
-
-    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    path.setAttribute('d', 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z');
-
-    svg.appendChild(path);
-    return svg;
   }
 }
 
@@ -311,7 +266,7 @@ class TTSController {
   async init() {
     // Pre-warm the model engine in background asynchronously
     this.model.loadEngine().catch(err => console.warn("TTS Pre-warming failed:", err));
-    
+
     this.setupListeners();
   }
 
