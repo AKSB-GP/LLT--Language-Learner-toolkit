@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const googleLanguage = document.getElementById('google-language') as HTMLSelectElement;
   const googleRate = document.getElementById('google-rate') as HTMLInputElement;
+  const lookupMethod = document.getElementById('lookup-method') as HTMLSelectElement;
 
   const toastStatus = document.getElementById('status') as HTMLDivElement;
 
@@ -83,10 +84,12 @@ document.addEventListener('DOMContentLoaded', () => {
     piperNoiseScale: DEFAULT_SETTINGS.piperNoiseScale,
     piperNoiseW: DEFAULT_SETTINGS.piperNoiseW,
     googleLanguage: DEFAULT_SETTINGS.googleLanguage,
-    googleRate: DEFAULT_SETTINGS.googleRate
+    googleRate: DEFAULT_SETTINGS.googleRate,
+    lookupMethod: DEFAULT_SETTINGS.lookupMethod
   }, (items) => {
     languageCategory.value = items.piperLanguageCategory;
     populateVoices(items.piperLanguageCategory, items.piperVoice);
+    lookupMethod.value = items.lookupMethod || DEFAULT_SETTINGS.lookupMethod;
 
     piperSpeed.value = items.piperSpeed.toString();
     piperNoiseScale.value = items.piperNoiseScale.toString();
@@ -141,5 +144,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const val = parseFloat(target.value);
     googleRateVal.textContent = `${val.toFixed(1)}x`;
     chrome.storage.sync.set({ googleRate: val }, triggerSaveToast);
+  });
+
+  lookupMethod.addEventListener('change', () => {
+    chrome.storage.sync.set({ lookupMethod: lookupMethod.value }, () => {
+      triggerSaveToast();
+      notifyContentScript();
+    });
   });
 });

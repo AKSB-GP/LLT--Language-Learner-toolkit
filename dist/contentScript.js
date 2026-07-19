@@ -9,7 +9,8 @@
     piperNoiseScale: 0.667,
     piperNoiseW: 0.8,
     googleLanguage: "ru-RU",
-    googleRate: 1
+    googleRate: 1,
+    lookupMethod: "manual"
   };
 
   // src/model/TTSModel.ts

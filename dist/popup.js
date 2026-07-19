@@ -29,7 +29,8 @@
     piperNoiseScale: 0.667,
     piperNoiseW: 0.8,
     googleLanguage: "ru-RU",
-    googleRate: 1
+    googleRate: 1,
+    lookupMethod: "manual"
   };
 
   // src/popup.ts
@@ -41,6 +42,7 @@
     const piperNoiseW = document.getElementById("piper-noise-w");
     const googleLanguage = document.getElementById("google-language");
     const googleRate = document.getElementById("google-rate");
+    const lookupMethod = document.getElementById("lookup-method");
     const toastStatus = document.getElementById("status");
     const piperSpeedVal = document.getElementById("piper-speed-val");
     const piperNoiseScaleVal = document.getElementById("piper-noise-scale-val");
@@ -100,10 +102,12 @@
       piperNoiseScale: DEFAULT_SETTINGS.piperNoiseScale,
       piperNoiseW: DEFAULT_SETTINGS.piperNoiseW,
       googleLanguage: DEFAULT_SETTINGS.googleLanguage,
-      googleRate: DEFAULT_SETTINGS.googleRate
+      googleRate: DEFAULT_SETTINGS.googleRate,
+      lookupMethod: DEFAULT_SETTINGS.lookupMethod
     }, (items) => {
       languageCategory.value = items.piperLanguageCategory;
       populateVoices(items.piperLanguageCategory, items.piperVoice);
+      lookupMethod.value = items.lookupMethod || DEFAULT_SETTINGS.lookupMethod;
       piperSpeed.value = items.piperSpeed.toString();
       piperNoiseScale.value = items.piperNoiseScale.toString();
       piperNoiseW.value = items.piperNoiseW.toString();
@@ -147,6 +151,12 @@
       const val = parseFloat(target.value);
       googleRateVal.textContent = `${val.toFixed(1)}x`;
       chrome.storage.sync.set({ googleRate: val }, triggerSaveToast);
+    });
+    lookupMethod.addEventListener("change", () => {
+      chrome.storage.sync.set({ lookupMethod: lookupMethod.value }, () => {
+        triggerSaveToast();
+        notifyContentScript();
+      });
     });
   });
 })();

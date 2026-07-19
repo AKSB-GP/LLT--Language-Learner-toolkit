@@ -41,5 +41,6 @@ export const DEFAULT_SETTINGS: ExtensionSettings = {
   piperNoiseScale: 0.667,
   piperNoiseW: 0.8,
   googleLanguage: 'ru-RU',
-  googleRate: 1.0
+  googleRate: 1.0,
+  lookupMethod: 'manual'
 };

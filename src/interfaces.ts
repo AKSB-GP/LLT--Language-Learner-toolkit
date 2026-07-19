@@ -24,4 +24,8 @@ export interface GoogleSettings {
   googleRate: number;
 }
 
-export type ExtensionSettings = PiperSettings & GoogleSettings;
+export interface GeneralSettings {
+  lookupMethod: 'manual' | 'classifier';
+}
+
+export type ExtensionSettings = PiperSettings & GoogleSettings & GeneralSettings;
