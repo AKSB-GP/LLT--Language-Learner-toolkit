@@ -260,55 +260,82 @@
     }
     promptLanguage(word) {
       return new Promise((resolve) => {
-        const overlay = document.createElement("div");
-        overlay.className = "tts-modal-overlay";
-        const modal = document.createElement("div");
-        modal.className = "tts-modal-content";
-        const title = document.createElement("h3");
-        title.className = "tts-modal-title";
-        title.textContent = "Identify Language";
-        modal.appendChild(title);
-        const message = document.createElement("p");
-        message.className = "tts-modal-message";
-        message.innerHTML = `Is the word <strong class="tts-highlight-word">"${word}"</strong> Swedish or English?`;
-        modal.appendChild(message);
-        const btnContainer = document.createElement("div");
-        btnContainer.className = "tts-modal-buttons";
+        const selection = window.getSelection();
+        let top = 100;
+        let left = 100;
+        let height = 0;
+        let width = 0;
+        if (selection && selection.rangeCount > 0) {
+          const range = selection.getRangeAt(0);
+          const rect = range.getBoundingClientRect();
+          if (rect.width > 0 && rect.height > 0) {
+            top = rect.top + window.scrollY;
+            left = rect.left + window.scrollX;
+            width = rect.width;
+            height = rect.height;
+          }
+        }
+        const toast = document.createElement("div");
+        toast.className = "tts-selection-toast";
+        toast.style.position = "absolute";
+        const content = document.createElement("div");
+        content.className = "tts-sel-toast-content";
+        const label = document.createElement("span");
+        label.className = "tts-sel-toast-label";
+        label.textContent = "Lang:";
+        content.appendChild(label);
         const btnSwedish = document.createElement("button");
-        btnSwedish.className = "tts-modal-btn tts-btn-swedish";
+        btnSwedish.className = "tts-sel-toast-btn tts-btn-sv";
         btnSwedish.textContent = "Swedish";
-        btnSwedish.addEventListener("click", () => {
+        btnSwedish.addEventListener("click", (e) => {
+          e.stopPropagation();
           cleanup("swedish");
         });
+        content.appendChild(btnSwedish);
         const btnEnglish = document.createElement("button");
-        btnEnglish.className = "tts-modal-btn tts-btn-english";
+        btnEnglish.className = "tts-sel-toast-btn tts-btn-en";
         btnEnglish.textContent = "English";
-        btnEnglish.addEventListener("click", () => {
+        btnEnglish.addEventListener("click", (e) => {
+          e.stopPropagation();
           cleanup("english");
         });
-        const btnCancel = document.createElement("button");
-        btnCancel.className = "tts-modal-btn tts-btn-cancel";
-        btnCancel.textContent = "Cancel";
-        btnCancel.addEventListener("click", () => {
+        content.appendChild(btnEnglish);
+        const btnClose = document.createElement("button");
+        btnClose.className = "tts-sel-toast-close";
+        btnClose.innerHTML = "&times;";
+        btnClose.addEventListener("click", (e) => {
+          e.stopPropagation();
           cleanup(null);
         });
-        btnContainer.appendChild(btnSwedish);
-        btnContainer.appendChild(btnEnglish);
-        btnContainer.appendChild(btnCancel);
-        modal.appendChild(btnContainer);
-        overlay.appendChild(modal);
-        document.body.appendChild(overlay);
+        content.appendChild(btnClose);
+        toast.appendChild(content);
+        document.body.appendChild(toast);
+        const toastWidth = toast.offsetWidth || 205;
+        const toastHeight = toast.offsetHeight || 31;
+        toast.style.top = `${top - toastHeight - 8}px`;
+        toast.style.left = `${left + width / 2 - toastWidth / 2}px`;
+        if (parseFloat(toast.style.top) < 0) {
+          toast.style.top = `${top + height + 8}px`;
+        }
+        if (parseFloat(toast.style.left) < 0) {
+          toast.style.left = "8px";
+        }
         requestAnimationFrame(() => {
-          overlay.classList.add("tts-modal-visible");
-          modal.classList.add("tts-modal-visible");
+          toast.classList.add("tts-sel-toast-visible");
         });
+        const clickOutsideHandler = (e) => {
+          if (!toast.contains(e.target)) {
+            cleanup(null);
+          }
+        };
+        document.addEventListener("mousedown", clickOutsideHandler);
         const cleanup = (choice) => {
-          overlay.classList.remove("tts-modal-visible");
-          modal.classList.remove("tts-modal-visible");
+          document.removeEventListener("mousedown", clickOutsideHandler);
+          toast.classList.remove("tts-sel-toast-visible");
           setTimeout(() => {
-            overlay.remove();
+            toast.remove();
             resolve(choice);
-          }, 300);
+          }, 150);
         };
       });
     }
