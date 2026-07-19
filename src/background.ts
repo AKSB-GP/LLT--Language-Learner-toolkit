@@ -80,8 +80,8 @@ async function AddIdentifiyLanguage(word: string, tab?: chrome.tabs.Tab): Promis
     // Auto decide using ELD classifier
     return classifyLanguageELD(cleanWord);
   } else {
-    // Manual selection popup (Ask me)
-    // Does the word have Swedish letters (åäöÅÄÖ)? If yes, it's Swedish.
+    // Manual selection popup 
+    // Swedish letters? If yes --> it's Swedish.
     const isSwedish = /[åäöÅÄÖ]/.test(cleanWord);
     if (isSwedish) {
       return 'swedish';
