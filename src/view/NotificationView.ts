@@ -1,15 +1,37 @@
 export class NotificationView {
   private container: HTMLDivElement | null = null;
   private activeToast: HTMLDivElement | null = null;
+  private lastSelectionRect: { top: number; left: number; width: number; height: number; scrollY: number; scrollX: number } | null = null;
 
   constructor() {
     this.createContainer();
+    this.setupSelectionTracker();
   }
 
   private createContainer(): void {
     this.container = document.createElement('div');
     this.container.id = 'tts-notifications-container';
     document.body.appendChild(this.container);
+  }
+
+  private setupSelectionTracker(): void {
+    document.addEventListener('selectionchange', () => {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) {
+          this.lastSelectionRect = {
+            top: rect.top,
+            left: rect.left,
+            width: rect.width,
+            height: rect.height,
+            scrollY: window.scrollY,
+            scrollX: window.scrollX
+          };
+        }
+      }
+    });
   }
 
   public show(type: 'loading' | 'synthesizing' | 'playing' | 'error', message: string, duration: number | null = null): void {
@@ -116,21 +138,34 @@ export class NotificationView {
 
   public promptLanguage(word: string): Promise<'english' | 'swedish' | null> {
     return new Promise((resolve) => {
-      const selection = window.getSelection();
       let top = 100;
       let left = 100;
       let height = 0;
       let width = 0;
 
+      let rect = this.lastSelectionRect;
+
+      const selection = window.getSelection();
       if (selection && selection.rangeCount > 0) {
         const range = selection.getRangeAt(0);
-        const rect = range.getBoundingClientRect();
-        if (rect.width > 0 && rect.height > 0) {
-          top = rect.top + window.scrollY;
-          left = rect.left + window.scrollX;
-          width = rect.width;
-          height = rect.height;
+        const liveRect = range.getBoundingClientRect();
+        if (liveRect.width > 0 && liveRect.height > 0) {
+          rect = {
+            top: liveRect.top,
+            left: liveRect.left,
+            width: liveRect.width,
+            height: liveRect.height,
+            scrollY: window.scrollY,
+            scrollX: window.scrollX
+          };
         }
+      }
+
+      if (rect) {
+        top = rect.top + rect.scrollY;
+        left = rect.left + rect.scrollX;
+        width = rect.width;
+        height = rect.height;
       }
 
       const toast = document.createElement('div');
