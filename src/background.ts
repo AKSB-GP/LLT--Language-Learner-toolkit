@@ -1,5 +1,5 @@
-import { ContextMenu } from './config/interfaces';
-import { listOfContextMenus, LANGUAGE_CODES, DEFAULT_SETTINGS } from './config/const';
+import { ContextMenu } from './interfaces';
+import { listOfContextMenus, LANGUAGE_CODES, DEFAULT_SETTINGS } from './const';
 
 function CreateContextMenus(): void {
   for (let i = 0; i < listOfContextMenus.length; i++) {
@@ -48,21 +48,48 @@ function AddPiperTTS(info: chrome.contextMenus.OnClickData, tab?: chrome.tabs.Ta
   }
 }
 
-function AddIdentifiyLanguage(word: string): string {
-  return "languages";
+async function AddIdentifiyLanguage(word: string, tab?: chrome.tabs.Tab): Promise<string | null> {
+  const cleanWord = word.trim();
+
+  // 1. Does the word have Cyrillic letters? If yes, it's Russian.
+  const isCyrillic = /[а-яёА-ЯЁ]/.test(cleanWord);
+  if (isCyrillic) {
+    return 'russian';
+  }
+
+  // 2. Does the word have Swedish letters (åäöÅÄÖ)? If yes, it's Swedish.
+  const isSwedish = /[åäöÅÄÖ]/.test(cleanWord);
+  if (isSwedish) {
+    return 'swedish';
+  }
+
+  // 3. Otherwise, prompt the user with UI in the active tab to choose.
+  if (tab?.id) {
+    try {
+      const response = await chrome.tabs.sendMessage(tab.id, {
+        action: "promptLanguageSelection",
+        word: cleanWord
+      });
+      return response?.language || null;
+    } catch (err) {
+      console.warn("Could not message active tab content script to display prompt dialog:", err);
+      return null;
+    }
+  }
+
+  return null;
 }
 
-function AddWikiSearch(info: chrome.contextMenus.OnClickData, tab?: chrome.tabs.Tab): void {
+async function AddWikiSearch(info: chrome.contextMenus.OnClickData, tab?: chrome.tabs.Tab): Promise<void> {
   if (info.selectionText) {
-    chrome.storage.sync.get({
-      piperLanguageCategory: DEFAULT_SETTINGS.piperLanguageCategory
-    }, (settings) => {
-      const category = (settings.piperLanguageCategory as string) || DEFAULT_SETTINGS.piperLanguageCategory;
-      const langCode = LANGUAGE_CODES[category] || 'en';
-      const word = encodeURIComponent(info.selectionText!.trim().toLowerCase());
-      chrome.tabs.create({
-        url: `https://${langCode}.wiktionary.org/wiki/${word}`
-      });
+    const determinedCategory = await AddIdentifiyLanguage(info.selectionText, tab);
+    if (!determinedCategory) {
+      return;
+    }
+    const langCode = LANGUAGE_CODES[determinedCategory] || 'en';
+    const word = encodeURIComponent(info.selectionText.trim().toLowerCase());
+    chrome.tabs.create({
+      url: `https://${langCode}.wiktionary.org/wiki/${word}`
     });
   }
 }

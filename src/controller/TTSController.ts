@@ -1,6 +1,6 @@
 import { TTSModel } from '../model/TTSModel';
 import { NotificationView } from '../view/NotificationView';
-import { DEFAULT_SETTINGS } from '../config/const';
+import { DEFAULT_SETTINGS } from '../const';
 
 export class TTSController {
   private model: TTSModel;
@@ -23,6 +23,11 @@ export class TTSController {
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       if (message.action === "speakSelection" && message.text) {
         this.speak(message.text);
+      } else if (message.action === "promptLanguageSelection" && message.word) {
+        this.notificationView.promptLanguage(message.word).then((choice) => {
+          sendResponse({ language: choice });
+        });
+        return true; // Keep message channel open for async response
       }
     });
   }

@@ -1,5 +1,5 @@
-import { DEFAULT_SETTINGS } from '../config/const';
-import { PiperSettings } from '../config/interfaces';
+import { DEFAULT_SETTINGS } from '../const';
+import { PiperSettings } from '../interfaces';
 
 declare const ort: any;
 declare const createPiperPhonemize: any;

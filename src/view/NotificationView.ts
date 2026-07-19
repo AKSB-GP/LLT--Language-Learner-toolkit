@@ -113,4 +113,70 @@ export class NotificationView {
     svg.appendChild(path);
     return svg;
   }
+
+  public promptLanguage(word: string): Promise<'english' | 'swedish' | null> {
+    return new Promise((resolve) => {
+      const overlay = document.createElement('div');
+      overlay.className = 'tts-modal-overlay';
+
+      const modal = document.createElement('div');
+      modal.className = 'tts-modal-content';
+
+      const title = document.createElement('h3');
+      title.className = 'tts-modal-title';
+      title.textContent = 'Identify Language';
+      modal.appendChild(title);
+
+      const message = document.createElement('p');
+      message.className = 'tts-modal-message';
+      message.innerHTML = `Is the word <strong class="tts-highlight-word">"${word}"</strong> Swedish or English?`;
+      modal.appendChild(message);
+
+      const btnContainer = document.createElement('div');
+      btnContainer.className = 'tts-modal-buttons';
+
+      const btnSwedish = document.createElement('button');
+      btnSwedish.className = 'tts-modal-btn tts-btn-swedish';
+      btnSwedish.textContent = 'Swedish';
+      btnSwedish.addEventListener('click', () => {
+        cleanup('swedish');
+      });
+
+      const btnEnglish = document.createElement('button');
+      btnEnglish.className = 'tts-modal-btn tts-btn-english';
+      btnEnglish.textContent = 'English';
+      btnEnglish.addEventListener('click', () => {
+        cleanup('english');
+      });
+
+      const btnCancel = document.createElement('button');
+      btnCancel.className = 'tts-modal-btn tts-btn-cancel';
+      btnCancel.textContent = 'Cancel';
+      btnCancel.addEventListener('click', () => {
+        cleanup(null);
+      });
+
+      btnContainer.appendChild(btnSwedish);
+      btnContainer.appendChild(btnEnglish);
+      btnContainer.appendChild(btnCancel);
+      modal.appendChild(btnContainer);
+
+      overlay.appendChild(modal);
+      document.body.appendChild(overlay);
+
+      requestAnimationFrame(() => {
+        overlay.classList.add('tts-modal-visible');
+        modal.classList.add('tts-modal-visible');
+      });
+
+      const cleanup = (choice: 'english' | 'swedish' | null) => {
+        overlay.classList.remove('tts-modal-visible');
+        modal.classList.remove('tts-modal-visible');
+        setTimeout(() => {
+          overlay.remove();
+          resolve(choice);
+        }, 300);
+      };
+    });
+  }
 }

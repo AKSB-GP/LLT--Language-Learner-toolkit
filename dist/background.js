@@ -1,6 +1,6 @@
 "use strict";
 (() => {
-  // src/config/const.ts
+  // src/const.ts
   var listOfContextMenus = [
     { id: "pronounce-with-piper-tts", title: "Pronounce in Russian (Piper)", contexts: ["selection"] },
     { id: "pronounce-with-google-tts", title: "Pronounce in Russian (Google TTS)", contexts: ["selection"] },
@@ -63,17 +63,40 @@
       });
     }
   }
-  function AddWikiSearch(info, tab) {
-    if (info.selectionText) {
-      chrome.storage.sync.get({
-        piperLanguageCategory: DEFAULT_SETTINGS.piperLanguageCategory
-      }, (settings) => {
-        const category = settings.piperLanguageCategory || DEFAULT_SETTINGS.piperLanguageCategory;
-        const langCode = LANGUAGE_CODES[category] || "en";
-        const word = encodeURIComponent(info.selectionText.trim().toLowerCase());
-        chrome.tabs.create({
-          url: `https://${langCode}.wiktionary.org/wiki/${word}`
+  async function AddIdentifiyLanguage(word, tab) {
+    const cleanWord = word.trim();
+    const isCyrillic = /[а-яёА-ЯЁ]/.test(cleanWord);
+    if (isCyrillic) {
+      return "russian";
+    }
+    const isSwedish = /[åäöÅÄÖ]/.test(cleanWord);
+    if (isSwedish) {
+      return "swedish";
+    }
+    if (tab?.id) {
+      try {
+        const response = await chrome.tabs.sendMessage(tab.id, {
+          action: "promptLanguageSelection",
+          word: cleanWord
         });
+        return response?.language || null;
+      } catch (err) {
+        console.warn("Could not message active tab content script to display prompt dialog:", err);
+        return null;
+      }
+    }
+    return null;
+  }
+  async function AddWikiSearch(info, tab) {
+    if (info.selectionText) {
+      const determinedCategory = await AddIdentifiyLanguage(info.selectionText, tab);
+      if (!determinedCategory) {
+        return;
+      }
+      const langCode = LANGUAGE_CODES[determinedCategory] || "en";
+      const word = encodeURIComponent(info.selectionText.trim().toLowerCase());
+      chrome.tabs.create({
+        url: `https://${langCode}.wiktionary.org/wiki/${word}`
       });
     }
   }
