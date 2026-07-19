@@ -1,5 +1,8 @@
 import { ContextMenu } from './interfaces';
 import { listOfContextMenus, LANGUAGE_CODES, DEFAULT_SETTINGS } from './const';
+import { eld } from 'eld/extrasmall';
+
+eld.setLanguageSubset(['en', 'sv']);
 
 function CreateContextMenus(): void {
   for (let i = 0; i < listOfContextMenus.length; i++) {
@@ -48,41 +51,9 @@ function AddPiperTTS(info: chrome.contextMenus.OnClickData, tab?: chrome.tabs.Ta
   }
 }
 
-let langModel: any = null;
-
-async function loadLangModel(): Promise<any> {
-  if (langModel) return langModel;
-  try {
-    const url = chrome.runtime.getURL('models/lang_model.json');
-    const response = await fetch(url);
-    langModel = await response.json();
-    return langModel;
-  } catch (err) {
-    console.error("Failed to load language classification model:", err);
-    return null;
-  }
-}
-
-async function classifyLanguageNaiveBayes(word: string): Promise<'english' | 'swedish' | null> {
-  const model = await loadLangModel();
-  if (!model) return null;
-
-  const cleanWord = word.trim().toLowerCase().replace(/\s+/g, '_');
-  const padded = `_${cleanWord}_`;
-
-  let scoreEn = 0;
-  let scoreSv = 0;
-
-  const unseenEn = model.en._UNKNOWN_ || -12.2642;
-  const unseenSv = model.sv._UNKNOWN_ || -12.3133;
-
-  for (let i = 0; i < padded.length - 2; i++) {
-    const trigram = padded.substring(i, i + 3);
-    scoreEn += (trigram in model.en) ? model.en[trigram] : unseenEn;
-    scoreSv += (trigram in model.sv) ? model.sv[trigram] : unseenSv;
-  }
-
-  return scoreEn >= scoreSv ? 'english' : 'swedish';
+function classifyLanguageELD(word: string): 'english' | 'swedish' {
+  const result = eld.detect(word);
+  return result.language === 'sv' ? 'swedish' : 'english';
 }
 
 async function AddIdentifiyLanguage(word: string, tab?: chrome.tabs.Tab): Promise<string | null> {
@@ -106,8 +77,8 @@ async function AddIdentifiyLanguage(word: string, tab?: chrome.tabs.Tab): Promis
   const mode = settings.lookupMethod || DEFAULT_SETTINGS.lookupMethod;
 
   if (mode === 'classifier') {
-    // Auto decide using Naive Bayes classifier
-    return await classifyLanguageNaiveBayes(cleanWord);
+    // Auto decide using ELD classifier
+    return classifyLanguageELD(cleanWord);
   } else {
     // Manual selection popup (Ask me)
     // Does the word have Swedish letters (åäöÅÄÖ)? If yes, it's Swedish.
