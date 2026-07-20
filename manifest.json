@@ -37,7 +37,7 @@
         "styles.css"
       ],
       "js": [
-        "lib/ort.min.js",
+        "lib/ort.wasm.min.js",
         "lib/piper_phonemize.min.js",
         "dist/contentScript.js"
       ],

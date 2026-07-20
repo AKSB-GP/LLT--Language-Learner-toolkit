@@ -48,8 +48,13 @@
         const modelResponse = await fetch(modelUrl);
         const modelBuffer = await modelResponse.arrayBuffer();
         ort.env.allowLocalModels = false;
-        ort.env.wasm.numThreads = navigator.hardwareConcurrency || 4;
-        ort.env.wasm.wasmPaths = chrome.runtime.getURL("lib/");
+        ort.env.wasm.numThreads = 1;
+        ort.env.wasm.wasmPaths = {
+          "ort-wasm.wasm": chrome.runtime.getURL("lib/ort-wasm.wasm"),
+          "ort-wasm-simd.wasm": chrome.runtime.getURL("lib/ort-wasm-simd.wasm"),
+          "ort-wasm-threaded.wasm": chrome.runtime.getURL("lib/ort-wasm.wasm"),
+          "ort-wasm-simd-threaded.wasm": chrome.runtime.getURL("lib/ort-wasm.wasm")
+        };
         this.session = await ort.InferenceSession.create(modelBuffer, { executionProviders: ["wasm"] });
         this.loadedVoiceFile = voiceFile;
       } catch (error) {

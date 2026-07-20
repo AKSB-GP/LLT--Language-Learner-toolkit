@@ -45,3 +45,8 @@ export const DEFAULT_SETTINGS: ExtensionSettings = {
   googleRate: 1.0,
   lookupMethod: 'manual'
 };
+
+export const RUSSIAN_GENDER_LIST = ['masculine', 'feminine', 'neuter'] as const;
+export const RUSSIAN_ANIMACY_LIST = ['animate', 'inanimate'] as const;
+export const RUSSIAN_CASE_LIST = ['nominative', 'genitive', 'dative', 'accusative', 'instrumental', 'prepositional', 'locative'] as const;
+export const RUSSIAN_NUMBER_LIST = ['singular', 'plural'] as const;

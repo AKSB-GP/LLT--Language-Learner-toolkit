@@ -23,7 +23,43 @@ export interface WikiSummaryPayload {
   word: string;
   definition: string;
   pageUrl: string;
-  language:"russian" |'english' | 'swedish';
+  language: "russian" | "english" | "swedish";
+}
+
+export interface DefinitionPayload {
+  word: string;
+  definition: string | string[];
+  pageUrl?: string;
+  language?: string;
+}
+
+export interface RussianWordAPIResponse {
+  url: string;
+  definition: string;
+  wordtype: string;
+  gender: string;
+  animate: string;
+  case?: string;
+}
+
+export interface WordAPIResponse {
+  url: string;
+  definition: string;
+  wordtype: string;
+}
+
+export interface WordAPIResponseFailed {
+  url?: string;
+  definition: string;
+  wordtype: string;
+  error?: string;
+}
+
+export interface FreeDictionaryResult {
+  definitionText: string[];
+  pageUrl: string;
+  gender?: string | null;
+  case?: string | null;
 }
 
 export interface GoogleSettings {

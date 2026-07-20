@@ -10,7 +10,7 @@ export class TTSModel {
   public engineLoading: boolean = false;
   public loadedVoiceFile: string | null = null;
 
-  constructor() {}
+  constructor() { }
 
   async loadEngine(): Promise<void> {
     // 1. Fetch preferences from sync storage
@@ -47,9 +47,17 @@ export class TTSModel {
       const modelBuffer = await modelResponse.arrayBuffer();
 
       // 4. Configure ONNX Runtime WASM paths
+      // ort.wasm.min.js v1.14.0 uses locateFile() (no .mjs dynamic imports).
+      // numThreads=1 forces the non-threaded ort-wasm.wasm binary which does
+      // NOT require SharedArrayBuffer or crossOriginIsolated headers.
       ort.env.allowLocalModels = false;
-      ort.env.wasm.numThreads = navigator.hardwareConcurrency || 4;
-      ort.env.wasm.wasmPaths = chrome.runtime.getURL('lib/');
+      ort.env.wasm.numThreads = 1;
+      ort.env.wasm.wasmPaths = {
+        'ort-wasm.wasm':              chrome.runtime.getURL('lib/ort-wasm.wasm'),
+        'ort-wasm-simd.wasm':         chrome.runtime.getURL('lib/ort-wasm-simd.wasm'),
+        'ort-wasm-threaded.wasm':     chrome.runtime.getURL('lib/ort-wasm.wasm'),
+        'ort-wasm-simd-threaded.wasm': chrome.runtime.getURL('lib/ort-wasm.wasm'),
+      };
 
       // 5. Load ONNX Session
       this.session = await ort.InferenceSession.create(modelBuffer, { executionProviders: ['wasm'] });

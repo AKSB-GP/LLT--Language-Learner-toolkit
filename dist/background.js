@@ -23,6 +23,10 @@
     googleRate: 1,
     lookupMethod: "manual"
   };
+  var RUSSIAN_GENDER_LIST = ["masculine", "feminine", "neuter"];
+  var RUSSIAN_ANIMACY_LIST = ["animate", "inanimate"];
+  var RUSSIAN_CASE_LIST = ["nominative", "genitive", "dative", "accusative", "instrumental", "prepositional", "locative"];
+  var RUSSIAN_NUMBER_LIST = ["singular", "plural"];
 
   // node_modules/eld/src/avgScore.js
   var avgScore = {
@@ -820,33 +824,29 @@
       if (response.ok) {
         const responseData = await response.json();
         const entry = responseData.entries?.[0];
-        const pageUrl = responseData.source?.url || `https://${langCode}.wikipedia.org/wiki/${word}`;
+        const pageUrl = responseData.source?.url || `https://${langCode}.wiktionary.org/wiki/${word}`;
         const definition = entry?.senses?.[0]?.definition || "Not found";
         const wordcategory = entry?.partOfSpeech || "not found";
         let gender = "not found";
         let animacy = "not found";
         let caseName = "";
-        const genderList = ["masculine", "feminine", "neuter"];
-        const animacyList = ["animate", "inanimate"];
-        const caseList = ["nominative", "genitive", "dative", "accusative", "instrumental", "prepositional", "locative"];
-        const numberList = ["singular", "plural"];
         const cleanInput = cleanWord.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         for (const form of entry?.forms || []) {
           const tags = (form.tags || []).map((t) => t.toLowerCase());
           if (gender === "not found") {
-            const foundG = tags.find((t) => genderList.includes(t));
+            const foundG = tags.find((t) => RUSSIAN_GENDER_LIST.includes(t));
             if (foundG)
               gender = foundG;
           }
           if (animacy === "not found") {
-            const foundA = tags.find((t) => animacyList.includes(t));
+            const foundA = tags.find((t) => RUSSIAN_ANIMACY_LIST.includes(t));
             if (foundA)
               animacy = foundA;
           }
           const cleanFormWord = (form.word || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
           if (cleanFormWord === cleanInput && !caseName) {
-            const foundCase = tags.filter((t) => caseList.includes(t)).join("/");
-            const foundNum = tags.filter((t) => numberList.includes(t)).join("/");
+            const foundCase = tags.filter((t) => RUSSIAN_CASE_LIST.includes(t)).join("/");
+            const foundNum = tags.filter((t) => RUSSIAN_NUMBER_LIST.includes(t)).join("/");
             if (foundCase) {
               caseName = foundNum ? `${foundCase} ${foundNum}` : foundCase;
             }

@@ -1,5 +1,13 @@
-import { ContextMenu } from './interfaces';
-import { listOfContextMenus, LANGUAGE_CODES, DEFAULT_SETTINGS } from './const';
+import { ContextMenu, RussianWordAPIResponse, WordAPIResponse, WordAPIResponseFailed } from './interfaces';
+import {
+  listOfContextMenus,
+  LANGUAGE_CODES,
+  DEFAULT_SETTINGS,
+  RUSSIAN_GENDER_LIST,
+  RUSSIAN_ANIMACY_LIST,
+  RUSSIAN_CASE_LIST,
+  RUSSIAN_NUMBER_LIST
+} from './const';
 import { eld } from 'eld/extrasmall';
 
 eld.setLanguageSubset(['en', 'sv']);
@@ -113,36 +121,6 @@ async function IdentifiyLanguage(word: string, tab?: chrome.tabs.Tab): Promise<s
   return null;
 }
 
-function splitDefinition(definition: string): string[] {
-  //str.split(" ", 3);
-  //console.log(definition.split(".", 0));
-  return definition.split(".", 1);
-}
-/*
-russian words have gender, animate/inanimate and case declension 
-*/
-
-type RussianWordAPIResponse = {
-  url: string;
-  definition: string;
-  wordtype: string;
-  gender: string;
-  animate: string;
-  case?: string;
-}
-
-type WordAPIResponse = {
-  url: string;
-  definition: string;
-  wordtype: string;
-}
-
-type WordAPIResponseFailed = {
-  url?: string;
-  definition: string;
-  wordtype: string;
-  error?: string;
-}
 
 function getWordOnWikipedia(langCode: string, word: string): string {
   return `https://${langCode}.wikipedia.org/wiki/${word}`;
@@ -181,7 +159,9 @@ async function getWordFromFreeDictAPI(langCode: string, word: string): Promise<W
     };
   }
 }
-
+/*
+russian words have gender, animate/inanimate and case declension 
+*/
 async function getRussianWordFromFreeDictAPI(langCode: string, word: string): Promise<RussianWordAPIResponse | WordAPIResponseFailed> {
   const cleanWord = decodeURIComponent(word).trim();
   try {
@@ -189,7 +169,8 @@ async function getRussianWordFromFreeDictAPI(langCode: string, word: string): Pr
     if (response.ok) {
       const responseData = await response.json();
       const entry = responseData.entries?.[0];
-      const pageUrl = responseData.source?.url || `https://${langCode}.wikipedia.org/wiki/${word}`;
+      //fallback to wikipedia 
+      const pageUrl = responseData.source?.url || `https://${langCode}.wiktionary.org/wiki/${word}`;
       const definition = entry?.senses?.[0]?.definition || "Not found";
       const wordcategory = entry?.partOfSpeech || "not found";
 
@@ -197,27 +178,24 @@ async function getRussianWordFromFreeDictAPI(langCode: string, word: string): Pr
       let animacy = "not found";
       let caseName = "";
 
-      const genderList = ['masculine', 'feminine', 'neuter'];
-      const animacyList = ['animate', 'inanimate'];
-      const caseList = ['nominative', 'genitive', 'dative', 'accusative', 'instrumental', 'prepositional', 'locative'];
-      const numberList = ['singular', 'plural'];
+
 
       const cleanInput = cleanWord.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
       for (const form of (entry?.forms || [])) {
         const tags = (form.tags || []).map((t: string) => t.toLowerCase());
         if (gender === "not found") {
-          const foundG = tags.find((t: string) => genderList.includes(t));
+          const foundG = tags.find((t: string) => (RUSSIAN_GENDER_LIST as readonly string[]).includes(t));
           if (foundG) gender = foundG;
         }
         if (animacy === "not found") {
-          const foundA = tags.find((t: string) => animacyList.includes(t));
+          const foundA = tags.find((t: string) => (RUSSIAN_ANIMACY_LIST as readonly string[]).includes(t));
           if (foundA) animacy = foundA;
         }
         const cleanFormWord = (form.word || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
         if (cleanFormWord === cleanInput && !caseName) {
-          const foundCase = tags.filter((t: string) => caseList.includes(t)).join('/');
-          const foundNum = tags.filter((t: string) => numberList.includes(t)).join('/');
+          const foundCase = tags.filter((t: string) => (RUSSIAN_CASE_LIST as readonly string[]).includes(t)).join('/');
+          const foundNum = tags.filter((t: string) => (RUSSIAN_NUMBER_LIST as readonly string[]).includes(t)).join('/');
           if (foundCase) {
             caseName = foundNum ? `${foundCase} ${foundNum}` : foundCase;
           }
@@ -291,7 +269,10 @@ async function getWikiDefinitionOfWord(info: chrome.contextMenus.OnClickData, ta
         }).catch(err => console.warn("Failed to send definition to content script:", err));
         return;
       }
-    } else {
+    }
+
+    /* english or swedish word */
+    else {
       const data = await getWordFromFreeDictAPI(langCode, word);
       if (data) {
         const lines: string[] = [];
