@@ -24,7 +24,8 @@ export const VOICES_MAP: Record<string, VoiceOption[]> = {
 export const listOfContextMenus: ContextMenu[] = [
   { id: "pronounce-with-piper-tts", title: "Pronounce in Russian (Piper)", contexts: ["selection"] },
   { id: "pronounce-with-google-tts", title: "Pronounce in Russian (Google TTS)", contexts: ["selection"] },
-  { id: "lookUp-russian-word", title: "Look up meaning", contexts: ["selection"] },
+  { id: "open-wikitionary-of-word", title: "Open Wikitionary of word", contexts: ["selection"] },
+  { id: "get-definition-of-word", title: "Get definition", contexts: ["selection"] },
 ];
 
 export const LANGUAGE_CODES: Record<string, string> = {

@@ -4,7 +4,8 @@
   var listOfContextMenus = [
     { id: "pronounce-with-piper-tts", title: "Pronounce in Russian (Piper)", contexts: ["selection"] },
     { id: "pronounce-with-google-tts", title: "Pronounce in Russian (Google TTS)", contexts: ["selection"] },
-    { id: "lookUp-russian-word", title: "Look up meaning", contexts: ["selection"] }
+    { id: "open-wikitionary-of-word", title: "Open Wikitionary of word", contexts: ["selection"] },
+    { id: "get-definition-of-word", title: "Get definition", contexts: ["selection"] }
   ];
   var LANGUAGE_CODES = {
     russian: "ru",
@@ -709,14 +710,16 @@
   });
   chrome.contextMenus.onClicked.addListener((info2, tab) => {
     if (info2.menuItemId === "pronounce-with-piper-tts") {
-      AddPiperTTS(info2, tab);
+      PiperTTS(info2, tab);
     } else if (info2.menuItemId === "pronounce-with-google-tts") {
-      AddGoogleTTS(info2);
-    } else if (info2.menuItemId === "lookUp-russian-word") {
-      AddWikiSearch(info2, tab);
+      GoogleTTS(info2);
+    } else if (info2.menuItemId === "open-wikitionary-of-word") {
+      OpenWordWikiByWord(info2, tab);
+    } else if (info2.menuItemId === "get-definition-of-word") {
+      getWikiDefinitionOfWord(info2, tab);
     }
   });
-  function AddGoogleTTS(info2) {
+  function GoogleTTS(info2) {
     if (info2.selectionText) {
       chrome.storage.sync.get({
         googleLanguage: DEFAULT_SETTINGS.googleLanguage,
@@ -729,7 +732,7 @@
       });
     }
   }
-  function AddPiperTTS(info2, tab) {
+  function PiperTTS(info2, tab) {
     if (info2.selectionText && tab?.id) {
       chrome.tabs.sendMessage(tab.id, {
         action: "speakSelection",
@@ -739,11 +742,11 @@
       });
     }
   }
-  function classifyLanguageELD(word) {
+  function classifyLatinWord(word) {
     const result = eld.detect(word);
     return result.language === "sv" ? "swedish" : "english";
   }
-  async function AddIdentifiyLanguage(word, tab) {
+  async function IdentifiyLanguage(word, tab) {
     const cleanWord = word.trim();
     const isCyrillic = /[а-яёА-ЯЁ]/.test(cleanWord);
     if (isCyrillic) {
@@ -758,7 +761,7 @@
     });
     const mode = settings.lookupMethod || DEFAULT_SETTINGS.lookupMethod;
     if (mode === "classifier") {
-      return classifyLanguageELD(cleanWord);
+      return classifyLatinWord(cleanWord);
     } else {
       const isSwedish = /[åäöÅÄÖ]/.test(cleanWord);
       if (isSwedish) {
@@ -779,9 +782,165 @@
     }
     return null;
   }
-  async function AddWikiSearch(info2, tab) {
+  async function getWordFromFreeDictAPI(langCode, word) {
+    try {
+      const response = await fetch(`https://freedictionaryapi.com/api/v1/entries/${langCode}/${word}`);
+      if (response.ok) {
+        const responseData = await response.json();
+        const entry = responseData.entries?.[0];
+        const pageUrl = responseData.source?.url || `https://${langCode}.wikipedia.org/wiki/${word}`;
+        const definition = entry?.senses?.[0]?.definition || "Not found";
+        const wordcategory = entry?.partOfSpeech || "not found";
+        const data = {
+          url: pageUrl,
+          definition,
+          wordtype: wordcategory
+        };
+        return data;
+      } else {
+        return {
+          url: `https://${langCode}.wikipedia.org/wiki/${word}`,
+          definition: "Not found",
+          wordtype: "Not found"
+        };
+      }
+    } catch (err) {
+      return {
+        url: `https://${langCode}.wikipedia.org/wiki/${word}`,
+        definition: "Not found",
+        wordtype: "Not found",
+        error: err.message
+      };
+    }
+  }
+  async function getRussianWordFromFreeDictAPI(langCode, word) {
+    const cleanWord = decodeURIComponent(word).trim();
+    try {
+      const response = await fetch(`https://freedictionaryapi.com/api/v1/entries/${langCode}/${word}`);
+      if (response.ok) {
+        const responseData = await response.json();
+        const entry = responseData.entries?.[0];
+        const pageUrl = responseData.source?.url || `https://${langCode}.wikipedia.org/wiki/${word}`;
+        const definition = entry?.senses?.[0]?.definition || "Not found";
+        const wordcategory = entry?.partOfSpeech || "not found";
+        let gender = "not found";
+        let animacy = "not found";
+        let caseName = "";
+        const genderList = ["masculine", "feminine", "neuter"];
+        const animacyList = ["animate", "inanimate"];
+        const caseList = ["nominative", "genitive", "dative", "accusative", "instrumental", "prepositional", "locative"];
+        const numberList = ["singular", "plural"];
+        const cleanInput = cleanWord.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        for (const form of entry?.forms || []) {
+          const tags = (form.tags || []).map((t) => t.toLowerCase());
+          if (gender === "not found") {
+            const foundG = tags.find((t) => genderList.includes(t));
+            if (foundG)
+              gender = foundG;
+          }
+          if (animacy === "not found") {
+            const foundA = tags.find((t) => animacyList.includes(t));
+            if (foundA)
+              animacy = foundA;
+          }
+          const cleanFormWord = (form.word || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+          if (cleanFormWord === cleanInput && !caseName) {
+            const foundCase = tags.filter((t) => caseList.includes(t)).join("/");
+            const foundNum = tags.filter((t) => numberList.includes(t)).join("/");
+            if (foundCase) {
+              caseName = foundNum ? `${foundCase} ${foundNum}` : foundCase;
+            }
+          }
+        }
+        if (!caseName) {
+          const inflectionMatch = definition.match(/((?:[a-z\/]+\s+)*(?:singular|plural))\s+of/i);
+          if (inflectionMatch) {
+            caseName = inflectionMatch[1].trim();
+          }
+        }
+        const data = {
+          url: pageUrl,
+          definition,
+          wordtype: wordcategory,
+          gender,
+          animate: animacy,
+          case: caseName || "nominative singular"
+        };
+        return data;
+      } else {
+        return {
+          url: `https://${langCode}.wikipedia.org/wiki/${word}`,
+          definition: "Not found",
+          wordtype: "Not found"
+        };
+      }
+    } catch (err) {
+      return {
+        url: `https://${langCode}.wikipedia.org/wiki/${word}`,
+        definition: "Not found",
+        wordtype: "Not found",
+        error: err.message
+      };
+    }
+  }
+  async function getWikiDefinitionOfWord(info2, tab) {
+    if (info2.selectionText && tab?.id) {
+      const rawWord = info2.selectionText.trim();
+      const determinedCategory = await IdentifiyLanguage(rawWord, tab);
+      if (!determinedCategory) {
+        return;
+      }
+      const langCode = LANGUAGE_CODES[determinedCategory] || "en";
+      const word = encodeURIComponent(rawWord.toLowerCase());
+      if (determinedCategory === "russian") {
+        const data = await getRussianWordFromFreeDictAPI(langCode, word);
+        if (data) {
+          const lines = [];
+          if ("gender" in data && data.gender !== "not found") {
+            const grammar = [];
+            if (data.gender && data.gender !== "not found")
+              grammar.push(`Gender: ${data.gender}`);
+            if (data.animate && data.animate !== "not found")
+              grammar.push(`Animacy: ${data.animate}`);
+            if (data.case)
+              grammar.push(`Case: ${data.case}`);
+            if (grammar.length > 0) {
+              lines.push(`[${grammar.join(" | ")}]`);
+            }
+          }
+          lines.push(data.definition);
+          chrome.tabs.sendMessage(tab.id, {
+            action: "showDefinition",
+            word: rawWord,
+            definition: lines,
+            pageUrl: data.url || `https://${langCode}.wikipedia.org/wiki/${word}`,
+            language: determinedCategory
+          }).catch((err) => console.warn("Failed to send definition to content script:", err));
+          return;
+        }
+      } else {
+        const data = await getWordFromFreeDictAPI(langCode, word);
+        if (data) {
+          const lines = [];
+          if (data.wordtype && data.wordtype !== "Not found") {
+            lines.push(`[Type: ${data.wordtype}]`);
+          }
+          lines.push(data.definition);
+          chrome.tabs.sendMessage(tab.id, {
+            action: "showDefinition",
+            word: rawWord,
+            definition: lines,
+            pageUrl: data.url || `https://${langCode}.wikipedia.org/wiki/${word}`,
+            language: determinedCategory
+          }).catch((err) => console.warn("Failed to send definition to content script:", err));
+          return;
+        }
+      }
+    }
+  }
+  async function OpenWordWikiByWord(info2, tab) {
     if (info2.selectionText) {
-      const determinedCategory = await AddIdentifiyLanguage(info2.selectionText, tab);
+      const determinedCategory = await IdentifiyLanguage(info2.selectionText, tab);
       if (!determinedCategory) {
         return;
       }

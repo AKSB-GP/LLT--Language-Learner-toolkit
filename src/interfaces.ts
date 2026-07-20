@@ -19,6 +19,13 @@ export interface PiperSettings {
   piperNoiseW: number;
 }
 
+export interface WikiSummaryPayload {
+  word: string;
+  definition: string;
+  pageUrl: string;
+  language:"russian" |'english' | 'swedish';
+}
+
 export interface GoogleSettings {
   googleLanguage: string;
   googleRate: number;

@@ -42,17 +42,7 @@ export class NotificationView {
     const toast = document.createElement('div');
     toast.className = `tts-toast tts-toast-${type}`;
 
-    // Icon block
-    const iconContainer = document.createElement('div');
-    iconContainer.className = 'tts-toast-icon';
-    if (type === 'loading' || type === 'synthesizing') {
-      iconContainer.appendChild(this.createSpinnerSVG());
-    } else if (type === 'playing') {
-      iconContainer.appendChild(this.createWaveSVG());
-    } else if (type === 'error') {
-      iconContainer.appendChild(this.createWarningSVG());
-    }
-    toast.appendChild(iconContainer);
+
 
     // Text block
     const textContainer = document.createElement('div');
@@ -91,50 +81,6 @@ export class NotificationView {
     }
   }
 
-  private createSpinnerSVG(): SVGSVGElement {
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('viewBox', '0 0 50 50');
-    svg.setAttribute('class', 'tts-spinner');
-
-    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    circle.setAttribute('cx', '25');
-    circle.setAttribute('cy', '25');
-    circle.setAttribute('r', '20');
-    circle.setAttribute('fill', 'none');
-    circle.setAttribute('stroke-width', '5');
-
-    svg.appendChild(circle);
-    return svg;
-  }
-
-  private createWaveSVG(): SVGSVGElement {
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('viewBox', '0 0 24 24');
-    svg.setAttribute('class', 'tts-audio-waves');
-
-    for (let i = 1; i <= 3; i++) {
-      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-      rect.setAttribute('x', String(i * 5 + 1));
-      rect.setAttribute('y', '6');
-      rect.setAttribute('width', '3');
-      rect.setAttribute('height', '12');
-      rect.setAttribute('class', `tts-bar tts-bar-${i}`);
-      svg.appendChild(rect);
-    }
-    return svg;
-  }
-
-  private createWarningSVG(): SVGSVGElement {
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('viewBox', '0 0 24 24');
-    svg.setAttribute('class', 'tts-alert-icon');
-
-    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    path.setAttribute('d', 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z');
-
-    svg.appendChild(path);
-    return svg;
-  }
 
   public promptLanguage(word: string): Promise<'english' | 'swedish' | null> {
     return new Promise((resolve) => {
@@ -243,5 +189,145 @@ export class NotificationView {
         }, 150);
       };
     });
+  }
+
+  public showDefinitionToast(word: string, definition: string | string[], pageUrl?: string, language?: string): void {
+    let top = 100;
+    let left = 100;
+    let height = 0;
+    let width = 0;
+
+    let rect = this.lastSelectionRect;
+
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      const liveRect = range.getBoundingClientRect();
+      if (liveRect.width > 0 && liveRect.height > 0) {
+        rect = {
+          top: liveRect.top,
+          left: liveRect.left,
+          width: liveRect.width,
+          height: liveRect.height,
+          scrollY: window.scrollY,
+          scrollX: window.scrollX
+        };
+      }
+    }
+
+    if (rect) {
+      top = rect.top + rect.scrollY;
+      left = rect.left + rect.scrollX;
+      width = rect.width;
+      height = rect.height;
+    }
+
+    const toast = document.createElement('div');
+    toast.className = 'tts-selection-toast';
+    toast.style.position = 'absolute';
+    toast.style.maxWidth = '360px';
+
+    const content = document.createElement('div');
+    content.className = 'tts-sel-toast-content';
+    content.style.flexDirection = 'column';
+    content.style.alignItems = 'flex-start';
+    content.style.gap = '4px';
+    content.style.padding = '8px 12px';
+
+    // Header row
+    const headerRow = document.createElement('div');
+    headerRow.style.display = 'flex';
+    headerRow.style.alignItems = 'center';
+    headerRow.style.justifyContent = 'space-between';
+    headerRow.style.width = '100%';
+
+    const titleContainer = document.createElement('div');
+    titleContainer.style.display = 'flex';
+    titleContainer.style.alignItems = 'center';
+    titleContainer.style.gap = '6px';
+
+    const wordElem = document.createElement('strong');
+    wordElem.textContent = word;
+    titleContainer.appendChild(wordElem);
+
+    if (language) {
+      const langBadge = document.createElement('span');
+      langBadge.className = 'tts-sel-toast-label';
+      langBadge.textContent = `(${language})`;
+      langBadge.style.fontSize = '10px';
+      titleContainer.appendChild(langBadge);
+    }
+    headerRow.appendChild(titleContainer);
+
+    const btnClose = document.createElement('button');
+    btnClose.className = 'tts-sel-toast-close';
+    btnClose.textContent = '✕';
+    btnClose.addEventListener('click', (e) => {
+      e.stopPropagation();
+      cleanup();
+    });
+    headerRow.appendChild(btnClose);
+    content.appendChild(headerRow);
+
+    // Definition text
+    const defElem = document.createElement('div');
+    defElem.style.fontSize = '11px';
+    defElem.style.lineHeight = '1.4';
+    defElem.style.color = '#e0e0e0';
+    defElem.style.maxHeight = '140px';
+    defElem.style.overflowY = 'auto';
+    defElem.style.whiteSpace = 'pre-wrap';
+    defElem.textContent = Array.isArray(definition) ? definition.join('\n') : definition;
+    content.appendChild(defElem);
+
+    // Read more link
+    if (pageUrl) {
+      const linkElem = document.createElement('a');
+      linkElem.href = pageUrl;
+      linkElem.target = '_blank';
+      linkElem.rel = 'noopener noreferrer';
+      linkElem.textContent = 'Read on Wiktionary →';
+      linkElem.style.color = '#4a90e2';
+      linkElem.style.fontSize = '11px';
+      linkElem.style.marginTop = '2px';
+      linkElem.style.textDecoration = 'none';
+      linkElem.addEventListener('mouseover', () => linkElem.style.textDecoration = 'underline');
+      linkElem.addEventListener('mouseout', () => linkElem.style.textDecoration = 'none');
+      content.appendChild(linkElem);
+    }
+
+    toast.appendChild(content);
+    document.body.appendChild(toast);
+
+    const toastWidth = toast.offsetWidth || 300;
+    const toastHeight = toast.offsetHeight || 80;
+
+    toast.style.top = `${top - toastHeight - 8}px`;
+    toast.style.left = `${Math.max(8, left + width / 2 - toastWidth / 2)}px`;
+
+    if (parseFloat(toast.style.top) < 0) {
+      toast.style.top = `${top + height + 8}px`;
+    }
+
+    requestAnimationFrame(() => {
+      toast.classList.add('tts-sel-toast-visible');
+    });
+
+    const clickOutsideHandler = (e: MouseEvent) => {
+      if (!toast.contains(e.target as Node)) {
+        cleanup();
+      }
+    };
+    setTimeout(() => {
+      document.addEventListener('mousedown', clickOutsideHandler);
+    }, 100);
+
+    const cleanup = () => {
+      document.removeEventListener('mousedown', clickOutsideHandler);
+      toast.classList.remove('tts-sel-toast-visible');
+      setTimeout(() => {
+        toast.remove();
+      }, 150);
+    };
   }
 }

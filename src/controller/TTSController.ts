@@ -28,6 +28,10 @@ export class TTSController {
           sendResponse({ language: choice });
         });
         return true; // Keep message channel open for async response
+      } else if (message.action === "showDefinition" && message.word && message.definition) {
+        this.notificationView.showDefinitionToast(message.word, message.definition, message.pageUrl, message.language);
+      } else if (message.action === "showNotification" && message.text) {
+        this.notificationView.show(message.toastType || 'playing', message.text, message.duration || 4000);
       }
     });
   }

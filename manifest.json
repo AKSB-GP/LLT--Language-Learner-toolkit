@@ -7,7 +7,8 @@
     "contextMenus",
     "activeTab",
     "tts",
-    "storage"
+    "storage",
+    "notifications"
   ],
   "action": {
     "default_popup": "popup.html",
