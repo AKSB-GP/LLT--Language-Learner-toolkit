@@ -1,11 +1,5 @@
-/* =====================================================================
-   styles.css — Swiss Minimalist / Akkurat Editorial Design System
-   Matches Swiss typography layout: clean sharp borders, light grey surface,
-   high contrast black Akkurat typography, prefix markers.
-   ===================================================================== */
-
 /* ------------------------------------------------------------------
-   1. PROGRESS / AUDIO STATUS TOAST (Anchored at word location)
+   progress and audio status toast (I.e popups on highlighted word and audio playing)
    ------------------------------------------------------------------ */
 
 .tts-toast {
@@ -14,7 +8,6 @@
   pointer-events: auto;
   display: flex;
   align-items: center;
-
   opacity: 0;
   transform: translateY(4px);
   transition: opacity 0.15s ease, transform 0.15s ease;
@@ -30,7 +23,6 @@
   transform: translateY(-4px);
 }
 
-/* Flat minimalist editorial toast pill */
 .tts-toast-body {
   display: flex;
   align-items: center;
@@ -48,30 +40,27 @@
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
 }
 
-.tts-toast-icon {
-  font-size: 12px;
-  line-height: 1;
-  flex-shrink: 0;
+
+/* border accents */
+.tts-toast-loading .tts-toast-body {
+  border-left: 3px solid #111111;
 }
 
-/* Spin animation for loading icon */
-.tts-toast-loading .tts-toast-icon {
-  animation: tts-spin 0.9s linear infinite;
+.tts-toast-synthesizing .tts-toast-body {
+  border-left: 3px solid #666666;
 }
 
-@keyframes tts-spin {
-  to { transform: rotate(360deg); }
+.tts-toast-playing .tts-toast-body {
+  border-left: 3px solid #111111;
 }
 
-/* Minimalist border accents */
-.tts-toast-loading     .tts-toast-body { border-left: 3px solid #111111; }
-.tts-toast-synthesizing .tts-toast-body { border-left: 3px solid #666666; }
-.tts-toast-playing     .tts-toast-body { border-left: 3px solid #111111; }
-.tts-toast-error       .tts-toast-body { border-left: 3px solid #d00000; }
+.tts-toast-error .tts-toast-body {
+  border-left: 3px solid #d00000;
+}
 
 
 /* ------------------------------------------------------------------
-   2. SELECTION-ANCHORED TOASTS  (Language picker & Definition card)
+   2. selection toasts (Language picker & Definition card)
    ------------------------------------------------------------------ */
 
 .tts-selection-toast {
@@ -128,25 +117,27 @@
   letter-spacing: -0.01em;
 }
 
+/* styling of highlight buttons*/
 .tts-btn-sv {
   background: #111111;
   color: #ffffff;
 }
 
 .tts-btn-sv:hover {
-  background: #333333;
+  background: #ff8e04;
 }
 
 .tts-btn-en {
-  background: #ffffff;
-  color: #111111;
+
+  background: #111111;
+  color: #ffffff;
 }
 
 .tts-btn-en:hover {
-  background: #f0f0f0;
+  background: #ff8e04;
 }
 
-/* Close button (×) */
+/* Close button for word toast */
 .tts-sel-toast-close {
   background: none;
   border: none;

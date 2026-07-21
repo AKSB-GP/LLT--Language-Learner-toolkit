@@ -1,5 +1,5 @@
 import { VOICES_MAP, DEFAULT_SETTINGS } from './const';
-
+/*add listeners for extension panel */
 document.addEventListener('DOMContentLoaded', () => {
   // Elements
   const languageCategory = document.getElementById('language-category') as HTMLSelectElement;
@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
     languageCategory.value = items.piperLanguageCategory;
     populateVoices(items.piperLanguageCategory, items.piperVoice);
     lookupMethod.value = items.lookupMethod || DEFAULT_SETTINGS.lookupMethod;
-
+    //set speed settings
     piperSpeed.value = items.piperSpeed.toString();
     piperNoiseScale.value = items.piperNoiseScale.toString();
     piperNoiseW.value = items.piperNoiseW.toString();

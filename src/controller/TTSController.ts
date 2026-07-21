@@ -46,23 +46,23 @@ export class TTSController {
       const voice = settings.piperVoice || DEFAULT_SETTINGS.piperVoice;
       const voiceName = voice.charAt(0).toUpperCase() + voice.slice(1);
 
-      // 1. Show model loading alert if session is uninitialized
+      //   Show model loading alert if session is uninitialized
       if (!this.model.session) {
-        this.notificationView.show('loading', `Loading voice model (${voiceName})...`);
+        this.notificationView.show('LOADING', `LOADING VOICE MODEL (${voiceName})...`);
       } else {
-        this.notificationView.show('synthesizing', `Synthesizing "${text}"...`);
+        this.notificationView.show('SYNTHESIZING', `SYNTHESIZING "${text}"...`);
       }
 
       // Explicitly await the loadEngine inside the controller to manage the toast transitions
       await this.model.loadEngine();
 
-      // 2. Transition toast to processing/synthesizing state
-      this.notificationView.show('synthesizing', `Synthesizing "${text}"...`);
+      //  Transition toast to processing/synthesizing state
+      this.notificationView.show('SYNTHESIZING', `SYNTHESIZING "${text}"...`);
 
       const wavBuffer = await this.model.synthesize(text);
 
-      // 3. Transition toast to playing state
-      this.notificationView.show('playing', `Playing speech for "${text}"...`);
+      //  Transition toast to playing state
+      this.notificationView.show('PLAYING', `PLAYING SPEECH FOR "${text}"...`);
 
       const blob = new Blob([wavBuffer], { type: "audio/wav" });
       const audioUrl = URL.createObjectURL(blob);
@@ -74,8 +74,8 @@ export class TTSController {
 
       await audio.play();
     } catch (error: any) {
-      console.error("Speech synthesis failed:", error);
-      this.notificationView.show('error', `Synthesis failed: ${error.message || error}`, 3000);
+      console.error("SPEECH SYNTHESIS FAILED:", error);
+      this.notificationView.show('ERROR', `SYNTHESIS FAILED: ${error.message || error}`, 3000);
     }
   }
 }

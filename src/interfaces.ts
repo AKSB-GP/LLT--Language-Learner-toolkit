@@ -1,9 +1,10 @@
+
 export interface ContextMenu {
   id: string;
   title: string;
   contexts: chrome.contextMenus.ContextType[];
 }
-
+/*piper */
 export interface VoiceOption {
   id: string;
   name: string;
@@ -19,20 +20,8 @@ export interface PiperSettings {
   piperNoiseW: number;
 }
 
-export interface WikiSummaryPayload {
-  word: string;
-  definition: string;
-  pageUrl: string;
-  language: "russian" | "english" | "swedish";
-}
 
-export interface DefinitionPayload {
-  word: string;
-  definition: string | string[];
-  pageUrl?: string;
-  language?: string;
-}
-
+/*api response interface for russian word from freedictionary */
 export interface RussianWordAPIResponse {
   url: string;
   definition: string;
@@ -41,34 +30,27 @@ export interface RussianWordAPIResponse {
   animate: string;
   case?: string;
 }
+/*api response interface for enlish and swedish word from freedictionary */
 
 export interface WordAPIResponse {
   url: string;
   definition: string;
   wordtype: string;
 }
-
+/* api response interface if the request fails */
 export interface WordAPIResponseFailed {
   url?: string;
   definition: string;
   wordtype: string;
   error?: string;
 }
-
-export interface FreeDictionaryResult {
-  definitionText: string[];
-  pageUrl: string;
-  gender?: string | null;
-  case?: string | null;
-}
-
+/* google tts interface */
 export interface GoogleSettings {
   googleLanguage: string;
   googleRate: number;
 }
-
 export interface GeneralSettings {
   lookupMethod: 'manual' | 'classifier';
 }
-
+//types for settings, must have all three settings
 export type ExtensionSettings = PiperSettings & GoogleSettings & GeneralSettings;

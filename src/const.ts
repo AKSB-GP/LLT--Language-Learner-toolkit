@@ -1,5 +1,6 @@
 import { VoiceOption, ContextMenu, ExtensionSettings } from './interfaces';
 
+/* PIPER TTS VOICE MODEL SETTINGS */
 export const VOICES_MAP: Record<string, VoiceOption[]> = {
   russian: [
     { id: 'irina', name: 'Irina (Medium, Smooth)', file: 'ru_RU-irina-medium' },
@@ -20,14 +21,14 @@ export const VOICES_MAP: Record<string, VoiceOption[]> = {
     { id: 'nst', name: 'NST (Medium, Standard)', file: 'sv_SE-nst-medium' }
   ]
 };
-
+/* context menu  */
 export const listOfContextMenus: ContextMenu[] = [
-  { id: "pronounce-with-piper-tts", title: "Pronounce in Russian (Piper)", contexts: ["selection"] },
-  { id: "pronounce-with-google-tts", title: "Pronounce in Russian (Google TTS)", contexts: ["selection"] },
-  { id: "open-wikitionary-of-word", title: "Open Wikitionary of word", contexts: ["selection"] },
-  { id: "get-definition-of-word", title: "Get definition", contexts: ["selection"] },
+  { id: "pronounce-with-piper-tts", title: "PRONOUNCE WITH PIPER TTS", contexts: ["selection"] },
+  { id: "pronounce-with-google-tts", title: "PRONOUNCE WITH GOOGLE TTS", contexts: ["selection"] },
+  { id: "open-wikitionary-of-word", title: "OPEN WIKITIONARY OF WORD", contexts: ["selection"] },
+  { id: "get-definition-of-word", title: "GET DEFINITION OF WORD", contexts: ["selection"] },
 ];
-
+/* language codes */
 export const LANGUAGE_CODES: Record<string, string> = {
   russian: 'ru',
   english: 'en',
@@ -45,7 +46,7 @@ export const DEFAULT_SETTINGS: ExtensionSettings = {
   googleRate: 1.0,
   lookupMethod: 'manual'
 };
-
+/* lists used to help with grammer identify of russian words */
 export const RUSSIAN_GENDER_LIST = ['masculine', 'feminine', 'neuter'] as const;
 export const RUSSIAN_ANIMACY_LIST = ['animate', 'inanimate'] as const;
 export const RUSSIAN_CASE_LIST = ['nominative', 'genitive', 'dative', 'accusative', 'instrumental', 'prepositional', 'locative'] as const;

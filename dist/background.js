@@ -2,10 +2,10 @@
 (() => {
   // src/const.ts
   var listOfContextMenus = [
-    { id: "pronounce-with-piper-tts", title: "Pronounce in Russian (Piper)", contexts: ["selection"] },
-    { id: "pronounce-with-google-tts", title: "Pronounce in Russian (Google TTS)", contexts: ["selection"] },
-    { id: "open-wikitionary-of-word", title: "Open Wikitionary of word", contexts: ["selection"] },
-    { id: "get-definition-of-word", title: "Get definition", contexts: ["selection"] }
+    { id: "pronounce-with-piper-tts", title: "PRONOUNCE WITH PIPER TTS", contexts: ["selection"] },
+    { id: "pronounce-with-google-tts", title: "PRONOUNCE WITH GOOGLE TTS", contexts: ["selection"] },
+    { id: "open-wikitionary-of-word", title: "OPEN WIKITIONARY OF WORD", contexts: ["selection"] },
+    { id: "get-definition-of-word", title: "GET DEFINITION OF WORD", contexts: ["selection"] }
   ];
   var LANGUAGE_CODES = {
     russian: "ru",

@@ -84,24 +84,11 @@ export class NotificationView {
   }
 
   // ─── Status / Audio Progress Toast ───────────────────────────────────────
-
-  private statusIconFor(type: 'loading' | 'synthesizing' | 'playing' | 'error'): string {
-    switch (type) {
-      case 'loading':      return '⏳';
-      case 'synthesizing': return '⚙️';
-      case 'playing':      return '🔊';
-      case 'error':        return '⚠️';
-    }
-  }
-
-  public show(type: 'loading' | 'synthesizing' | 'playing' | 'error', message: string, duration: number | null = null): void {
+  public show(type: 'LOADING' | 'SYNTHESIZING' | 'PLAYING' | 'ERROR', message: string, duration: number | null = null): void {
     // If progress toast is already active, update in-place to avoid position jump
     if (this.activeToast && this.activeToast.parentNode && this.activeToastType) {
       this.activeToast.className = `tts-toast tts-toast-${type} tts-toast-visible`;
       this.activeToastType = type;
-
-      const iconElem = this.activeToast.querySelector('.tts-toast-icon');
-      if (iconElem) iconElem.textContent = this.statusIconFor(type);
 
       const textElem = this.activeToast.querySelector('.tts-toast-text');
       if (textElem) textElem.textContent = message;
@@ -123,10 +110,7 @@ export class NotificationView {
     const body = document.createElement('div');
     body.className = 'tts-toast-body';
 
-    const icon = document.createElement('span');
-    icon.className = 'tts-toast-icon';
-    icon.textContent = this.statusIconFor(type);
-    body.appendChild(icon);
+
 
     const text = document.createElement('span');
     text.className = 'tts-toast-text';
@@ -172,7 +156,7 @@ export class NotificationView {
 
   // ─── Language Picker Toast ────────────────────────────────────────────────
 
-  public promptLanguage(word: string): Promise<'english' | 'swedish' | null> {
+  public promptLanguage(word: string): Promise<'ENGLISH' | 'SWEDISH' | null> {
     return new Promise((resolve) => {
       const pos = this.getSelectionPosition();
 
@@ -185,24 +169,24 @@ export class NotificationView {
 
       const label = document.createElement('span');
       label.className = 'tts-sel-toast-label';
-      label.textContent = 'Lang:';
+      label.textContent = 'LANG:';
       content.appendChild(label);
 
       const btnSwedish = document.createElement('button');
       btnSwedish.className = 'tts-sel-toast-btn tts-btn-sv';
-      btnSwedish.textContent = 'Swedish';
+      btnSwedish.textContent = 'SWEDISH';
       btnSwedish.addEventListener('click', (e) => {
         e.stopPropagation();
-        cleanup('swedish');
+        cleanup('SWEDISH');
       });
       content.appendChild(btnSwedish);
 
       const btnEnglish = document.createElement('button');
       btnEnglish.className = 'tts-sel-toast-btn tts-btn-en';
-      btnEnglish.textContent = 'English';
+      btnEnglish.textContent = 'ENGLISH';
       btnEnglish.addEventListener('click', (e) => {
         e.stopPropagation();
-        cleanup('english');
+        cleanup('ENGLISH');
       });
       content.appendChild(btnEnglish);
 
@@ -233,7 +217,7 @@ export class NotificationView {
       };
       document.addEventListener('mousedown', clickOutsideHandler);
 
-      const cleanup = (choice: 'english' | 'swedish' | null) => {
+      const cleanup = (choice: 'ENGLISH' | 'SWEDISH' | null) => {
         document.removeEventListener('mousedown', clickOutsideHandler);
         toast.classList.remove('tts-sel-toast-visible');
         setTimeout(() => {
@@ -269,7 +253,7 @@ export class NotificationView {
     titleContainer.style.cssText = 'display:flex;align-items:baseline;gap:6px';
 
     const prefixElem = document.createElement('span');
-    prefixElem.textContent = '\\';
+    prefixElem.textContent = '/';
     prefixElem.style.cssText = 'font-size:13px;font-weight:400;color:#999999';
     titleContainer.appendChild(prefixElem);
 
@@ -281,7 +265,7 @@ export class NotificationView {
     if (language) {
       const langBadge = document.createElement('span');
       langBadge.className = 'tts-sel-toast-label';
-      langBadge.textContent = `\\ ${language}`;
+      langBadge.textContent = `/ ${language}`;
       titleContainer.appendChild(langBadge);
     }
     headerRow.appendChild(titleContainer);
@@ -313,17 +297,17 @@ export class NotificationView {
       linkElem.href = pageUrl;
       linkElem.target = '_blank';
       linkElem.rel = 'noopener noreferrer';
-      linkElem.textContent = 'Read on Wiktionary ↗';
+      linkElem.textContent = 'READ ON WIKTIONARY ↗';
       linkElem.style.cssText = 'color:#111111;font-size:11px;font-weight:600;margin-top:4px;text-decoration:underline;text-underline-offset:2px';
       linkElem.addEventListener('mouseover', () => linkElem.style.color = '#555555');
-      linkElem.addEventListener('mouseout',  () => linkElem.style.color = '#111111');
+      linkElem.addEventListener('mouseout', () => linkElem.style.color = '#111111');
       content.appendChild(linkElem);
     }
 
     toast.appendChild(content);
     document.body.appendChild(toast);
 
-    const toastWidth  = toast.offsetWidth  || 300;
+    const toastWidth = toast.offsetWidth || 300;
     const toastHeight = toast.offsetHeight || 90;
     this.positionToast(toast, toastWidth, toastHeight, pos);
 

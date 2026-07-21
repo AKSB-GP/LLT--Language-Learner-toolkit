@@ -236,25 +236,10 @@
       toast.style.left = `${toastLeft}px`;
     }
     // ─── Status / Audio Progress Toast ───────────────────────────────────────
-    statusIconFor(type) {
-      switch (type) {
-        case "loading":
-          return "\u23F3";
-        case "synthesizing":
-          return "\u2699\uFE0F";
-        case "playing":
-          return "\u{1F50A}";
-        case "error":
-          return "\u26A0\uFE0F";
-      }
-    }
     show(type, message, duration = null) {
       if (this.activeToast && this.activeToast.parentNode && this.activeToastType) {
         this.activeToast.className = `tts-toast tts-toast-${type} tts-toast-visible`;
         this.activeToastType = type;
-        const iconElem = this.activeToast.querySelector(".tts-toast-icon");
-        if (iconElem)
-          iconElem.textContent = this.statusIconFor(type);
         const textElem = this.activeToast.querySelector(".tts-toast-text");
         if (textElem)
           textElem.textContent = message;
@@ -271,10 +256,6 @@
       toast.style.position = "absolute";
       const body = document.createElement("div");
       body.className = "tts-toast-body";
-      const icon = document.createElement("span");
-      icon.className = "tts-toast-icon";
-      icon.textContent = this.statusIconFor(type);
-      body.appendChild(icon);
       const text = document.createElement("span");
       text.className = "tts-toast-text";
       text.textContent = message;
@@ -321,22 +302,22 @@
         content.className = "tts-sel-toast-content";
         const label = document.createElement("span");
         label.className = "tts-sel-toast-label";
-        label.textContent = "Lang:";
+        label.textContent = "LANG:";
         content.appendChild(label);
         const btnSwedish = document.createElement("button");
         btnSwedish.className = "tts-sel-toast-btn tts-btn-sv";
-        btnSwedish.textContent = "Swedish";
+        btnSwedish.textContent = "SWEDISH";
         btnSwedish.addEventListener("click", (e) => {
           e.stopPropagation();
-          cleanup("swedish");
+          cleanup("SWEDISH");
         });
         content.appendChild(btnSwedish);
         const btnEnglish = document.createElement("button");
         btnEnglish.className = "tts-sel-toast-btn tts-btn-en";
-        btnEnglish.textContent = "English";
+        btnEnglish.textContent = "ENGLISH";
         btnEnglish.addEventListener("click", (e) => {
           e.stopPropagation();
-          cleanup("english");
+          cleanup("ENGLISH");
         });
         content.appendChild(btnEnglish);
         const btnClose = document.createElement("button");
@@ -389,7 +370,7 @@
       const titleContainer = document.createElement("div");
       titleContainer.style.cssText = "display:flex;align-items:baseline;gap:6px";
       const prefixElem = document.createElement("span");
-      prefixElem.textContent = "\\";
+      prefixElem.textContent = "/";
       prefixElem.style.cssText = "font-size:13px;font-weight:400;color:#999999";
       titleContainer.appendChild(prefixElem);
       const wordElem = document.createElement("strong");
@@ -399,7 +380,7 @@
       if (language) {
         const langBadge = document.createElement("span");
         langBadge.className = "tts-sel-toast-label";
-        langBadge.textContent = `\\ ${language}`;
+        langBadge.textContent = `/ ${language}`;
         titleContainer.appendChild(langBadge);
       }
       headerRow.appendChild(titleContainer);
@@ -424,7 +405,7 @@
         linkElem.href = pageUrl;
         linkElem.target = "_blank";
         linkElem.rel = "noopener noreferrer";
-        linkElem.textContent = "Read on Wiktionary \u2197";
+        linkElem.textContent = "READ ON WIKTIONARY \u2197";
         linkElem.style.cssText = "color:#111111;font-size:11px;font-weight:600;margin-top:4px;text-decoration:underline;text-underline-offset:2px";
         linkElem.addEventListener("mouseover", () => linkElem.style.color = "#555555");
         linkElem.addEventListener("mouseout", () => linkElem.style.color = "#111111");
@@ -494,14 +475,14 @@
         const voice = settings.piperVoice || DEFAULT_SETTINGS.piperVoice;
         const voiceName = voice.charAt(0).toUpperCase() + voice.slice(1);
         if (!this.model.session) {
-          this.notificationView.show("loading", `Loading voice model (${voiceName})...`);
+          this.notificationView.show("LOADING", `LOADING VOICE MODEL (${voiceName})...`);
         } else {
-          this.notificationView.show("synthesizing", `Synthesizing "${text}"...`);
+          this.notificationView.show("SYNTHESIZING", `SYNTHESIZING "${text}"...`);
         }
         await this.model.loadEngine();
-        this.notificationView.show("synthesizing", `Synthesizing "${text}"...`);
+        this.notificationView.show("SYNTHESIZING", `SYNTHESIZING "${text}"...`);
         const wavBuffer = await this.model.synthesize(text);
-        this.notificationView.show("playing", `Playing speech for "${text}"...`);
+        this.notificationView.show("PLAYING", `PLAYING SPEECH FOR "${text}"...`);
         const blob = new Blob([wavBuffer], { type: "audio/wav" });
         const audioUrl = URL.createObjectURL(blob);
         const audio = new Audio(audioUrl);
@@ -510,8 +491,8 @@
         });
         await audio.play();
       } catch (error) {
-        console.error("Speech synthesis failed:", error);
-        this.notificationView.show("error", `Synthesis failed: ${error.message || error}`, 3e3);
+        console.error("SPEECH SYNTHESIS FAILED:", error);
+        this.notificationView.show("ERROR", `SYNTHESIS FAILED: ${error.message || error}`, 3e3);
       }
     }
   };

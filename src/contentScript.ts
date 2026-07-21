@@ -2,7 +2,7 @@ import { TTSModel } from './model/TTSModel';
 import { NotificationView } from './view/NotificationView';
 import { TTSController } from './controller/TTSController';
 
-// Instantiation & Start
+// Load model, view and contrller
 const startApplication = () => {
   const model = new TTSModel();
   const notificationView = new NotificationView();
