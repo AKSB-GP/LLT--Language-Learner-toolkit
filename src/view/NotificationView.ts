@@ -1,7 +1,14 @@
 export class NotificationView {
   private activeToast: HTMLDivElement | null = null;
   private activeToastType: string | null = null;
-  private lastSelectionRect: { top: number; left: number; width: number; height: number; scrollY: number; scrollX: number } | null = null;
+  private lastSelectionRect: {
+    top: number;
+    left: number;
+    width: number;
+    height: number;
+    scrollY: number;
+    scrollX: number;
+  } | null = null;
 
   constructor() {
     this.setupSelectionTracker();
@@ -20,20 +27,28 @@ export class NotificationView {
             width: rect.width,
             height: rect.height,
             scrollY: window.scrollY,
-            scrollX: window.scrollX
+            scrollX: window.scrollX,
           };
         }
       }
     };
 
-    document.addEventListener('selectionchange', updateRect);
-    document.addEventListener('mouseup', updateRect);
-    document.addEventListener('contextmenu', updateRect);
+    document.addEventListener("selectionchange", updateRect);
+    document.addEventListener("mouseup", updateRect);
+    document.addEventListener("contextmenu", updateRect);
   }
 
   /** Resolve the latest selection position, preferring live selection. */
-  private getSelectionPosition(): { top: number; left: number; width: number; height: number } {
-    let top = 100, left = 100, width = 0, height = 0;
+  private getSelectionPosition(): {
+    top: number;
+    left: number;
+    width: number;
+    height: number;
+  } {
+    let top = 100,
+      left = 100,
+      width = 0,
+      height = 0;
     let found = false;
 
     const selection = window.getSelection();
@@ -65,7 +80,7 @@ export class NotificationView {
     toast: HTMLElement,
     toastWidth: number,
     toastHeight: number,
-    pos: { top: number; left: number; width: number; height: number }
+    pos: { top: number; left: number; width: number; height: number },
   ): void {
     const { top, left, width, height } = pos;
 
@@ -84,13 +99,21 @@ export class NotificationView {
   }
 
   // ─── Status / Audio Progress Toast ───────────────────────────────────────
-  public show(type: 'LOADING' | 'SYNTHESIZING' | 'PLAYING' | 'ERROR', message: string, duration: number | null = null): void {
+  public show(
+    type: "LOADING" | "SYNTHESIZING" | "PLAYING" | "ERROR",
+    message: string,
+    duration: number | null = null,
+  ): void {
     // If progress toast is already active, update in-place to avoid position jump
-    if (this.activeToast && this.activeToast.parentNode && this.activeToastType) {
+    if (
+      this.activeToast &&
+      this.activeToast.parentNode &&
+      this.activeToastType
+    ) {
       this.activeToast.className = `tts-toast tts-toast-${type} tts-toast-visible`;
       this.activeToastType = type;
 
-      const textElem = this.activeToast.querySelector('.tts-toast-text');
+      const textElem = this.activeToast.querySelector(".tts-toast-text");
       if (textElem) textElem.textContent = message;
 
       if (duration) {
@@ -103,17 +126,15 @@ export class NotificationView {
       this.activeToast.remove();
     }
 
-    const toast = document.createElement('div');
+    const toast = document.createElement("div");
     toast.className = `tts-toast tts-toast-${type}`;
-    toast.style.position = 'absolute';
+    toast.style.position = "absolute";
 
-    const body = document.createElement('div');
-    body.className = 'tts-toast-body';
+    const body = document.createElement("div");
+    body.className = "tts-toast-body";
 
-
-
-    const text = document.createElement('span');
-    text.className = 'tts-toast-text';
+    const text = document.createElement("span");
+    text.className = "tts-toast-text";
     text.textContent = message;
     body.appendChild(text);
 
@@ -129,7 +150,7 @@ export class NotificationView {
     this.positionToast(toast, toastWidth, toastHeight, pos);
 
     requestAnimationFrame(() => {
-      toast.classList.add('tts-toast-visible');
+      toast.classList.add("tts-toast-visible");
     });
 
     if (duration) {
@@ -142,8 +163,8 @@ export class NotificationView {
   public dismiss(toast: HTMLDivElement | null = null): void {
     const target = toast || this.activeToast;
     if (target) {
-      target.classList.remove('tts-toast-visible');
-      target.classList.add('tts-toast-fadeout');
+      target.classList.remove("tts-toast-visible");
+      target.classList.add("tts-toast-fadeout");
       setTimeout(() => {
         target.remove();
         if (this.activeToast === target) {
@@ -156,44 +177,44 @@ export class NotificationView {
 
   // ─── Language Picker Toast ────────────────────────────────────────────────
 
-  public promptLanguage(word: string): Promise<'ENGLISH' | 'SWEDISH' | null> {
+  public promptLanguage(word: string): Promise<"ENGLISH" | "SWEDISH" | null> {
     return new Promise((resolve) => {
       const pos = this.getSelectionPosition();
 
-      const toast = document.createElement('div');
-      toast.className = 'tts-selection-toast';
-      toast.style.position = 'absolute';
+      const toast = document.createElement("div");
+      toast.className = "tts-selection-toast";
+      toast.style.position = "absolute";
 
-      const content = document.createElement('div');
-      content.className = 'tts-sel-toast-content';
+      const content = document.createElement("div");
+      content.className = "tts-sel-toast-content";
 
-      const label = document.createElement('span');
-      label.className = 'tts-sel-toast-label';
-      label.textContent = 'LANG:';
+      const label = document.createElement("span");
+      label.className = "tts-sel-toast-label";
+      label.textContent = "LANG:";
       content.appendChild(label);
 
-      const btnSwedish = document.createElement('button');
-      btnSwedish.className = 'tts-sel-toast-btn tts-btn-sv';
-      btnSwedish.textContent = 'SWEDISH';
-      btnSwedish.addEventListener('click', (e) => {
+      const btnSwedish = document.createElement("button");
+      btnSwedish.className = "tts-sel-toast-btn tts-btn-sv";
+      btnSwedish.textContent = "SWEDISH";
+      btnSwedish.addEventListener("click", (e) => {
         e.stopPropagation();
-        cleanup('SWEDISH');
+        cleanup("SWEDISH");
       });
       content.appendChild(btnSwedish);
 
-      const btnEnglish = document.createElement('button');
-      btnEnglish.className = 'tts-sel-toast-btn tts-btn-en';
-      btnEnglish.textContent = 'ENGLISH';
-      btnEnglish.addEventListener('click', (e) => {
+      const btnEnglish = document.createElement("button");
+      btnEnglish.className = "tts-sel-toast-btn tts-btn-en";
+      btnEnglish.textContent = "ENGLISH";
+      btnEnglish.addEventListener("click", (e) => {
         e.stopPropagation();
-        cleanup('ENGLISH');
+        cleanup("ENGLISH");
       });
       content.appendChild(btnEnglish);
 
-      const btnClose = document.createElement('button');
-      btnClose.className = 'tts-sel-toast-close';
-      btnClose.innerHTML = '&times;';
-      btnClose.addEventListener('click', (e) => {
+      const btnClose = document.createElement("button");
+      btnClose.className = "tts-sel-toast-close";
+      btnClose.innerHTML = "&times;";
+      btnClose.addEventListener("click", (e) => {
         e.stopPropagation();
         cleanup(null);
       });
@@ -207,7 +228,7 @@ export class NotificationView {
       this.positionToast(toast, toastWidth, toastHeight, pos);
 
       requestAnimationFrame(() => {
-        toast.classList.add('tts-sel-toast-visible');
+        toast.classList.add("tts-sel-toast-visible");
       });
 
       const clickOutsideHandler = (e: MouseEvent) => {
@@ -215,11 +236,11 @@ export class NotificationView {
           cleanup(null);
         }
       };
-      document.addEventListener('mousedown', clickOutsideHandler);
+      document.addEventListener("mousedown", clickOutsideHandler);
 
-      const cleanup = (choice: 'ENGLISH' | 'SWEDISH' | null) => {
-        document.removeEventListener('mousedown', clickOutsideHandler);
-        toast.classList.remove('tts-sel-toast-visible');
+      const cleanup = (choice: "ENGLISH" | "SWEDISH" | null) => {
+        document.removeEventListener("mousedown", clickOutsideHandler);
+        toast.classList.remove("tts-sel-toast-visible");
         setTimeout(() => {
           toast.remove();
           resolve(choice);
@@ -230,50 +251,57 @@ export class NotificationView {
 
   // ─── Definition Card Toast ────────────────────────────────────────────────
 
-  public showDefinitionToast(word: string, definition: string | string[], pageUrl?: string, language?: string): void {
+  public showDefinitionToast(
+    word: string,
+    definition: string | string[],
+    pageUrl?: string,
+    language?: string,
+  ): void {
     const pos = this.getSelectionPosition();
 
-    const toast = document.createElement('div');
-    toast.className = 'tts-selection-toast';
-    toast.style.position = 'absolute';
-    toast.style.maxWidth = '360px';
+    const toast = document.createElement("div");
+    toast.className = "tts-selection-toast";
+    toast.style.position = "absolute";
+    toast.style.maxWidth = "360px";
 
-    const content = document.createElement('div');
-    content.className = 'tts-sel-toast-content';
-    content.style.flexDirection = 'column';
-    content.style.alignItems = 'flex-start';
-    content.style.gap = '6px';
-    content.style.padding = '10px 14px';
+    const content = document.createElement("div");
+    content.className = "tts-sel-toast-content";
+    content.style.flexDirection = "column";
+    content.style.alignItems = "flex-start";
+    content.style.gap = "6px";
+    content.style.padding = "10px 14px";
 
     // Header row
-    const headerRow = document.createElement('div');
-    headerRow.style.cssText = 'display:flex;align-items:baseline;justify-content:space-between;width:100%';
+    const headerRow = document.createElement("div");
+    headerRow.style.cssText =
+      "display:flex;align-items:baseline;justify-content:space-between;width:100%";
 
-    const titleContainer = document.createElement('div');
-    titleContainer.style.cssText = 'display:flex;align-items:baseline;gap:6px';
+    const titleContainer = document.createElement("div");
+    titleContainer.style.cssText = "display:flex;align-items:baseline;gap:6px";
 
-    const prefixElem = document.createElement('span');
-    prefixElem.textContent = '/';
-    prefixElem.style.cssText = 'font-size:13px;font-weight:400;color:#999999';
+    const prefixElem = document.createElement("span");
+    prefixElem.textContent = "/";
+    prefixElem.style.cssText = "font-size:13px;font-weight:400;color:#999999";
     titleContainer.appendChild(prefixElem);
 
-    const wordElem = document.createElement('strong');
+    const wordElem = document.createElement("strong");
     wordElem.textContent = word;
-    wordElem.style.cssText = 'font-size:14px;font-weight:700;letter-spacing:-0.02em;color:#111111';
+    wordElem.style.cssText =
+      "font-size:14px;font-weight:700;letter-spacing:-0.02em;color:#111111";
     titleContainer.appendChild(wordElem);
 
     if (language) {
-      const langBadge = document.createElement('span');
-      langBadge.className = 'tts-sel-toast-label';
+      const langBadge = document.createElement("span");
+      langBadge.className = "tts-sel-toast-label";
       langBadge.textContent = `/ ${language}`;
       titleContainer.appendChild(langBadge);
     }
     headerRow.appendChild(titleContainer);
 
-    const btnClose = document.createElement('button');
-    btnClose.className = 'tts-sel-toast-close';
-    btnClose.textContent = '×';
-    btnClose.addEventListener('click', (e) => {
+    const btnClose = document.createElement("button");
+    btnClose.className = "tts-sel-toast-close";
+    btnClose.textContent = "×";
+    btnClose.addEventListener("click", (e) => {
       e.stopPropagation();
       cleanup();
     });
@@ -281,26 +309,37 @@ export class NotificationView {
     content.appendChild(headerRow);
 
     // Divider
-    const divider = document.createElement('div');
-    divider.style.cssText = 'width:100%;height:1px;background:#111111;margin:2px 0';
+    const divider = document.createElement("div");
+    divider.style.cssText =
+      "width:100%;height:1px;background:#111111;margin:2px 0";
     content.appendChild(divider);
 
     // Definition text
-    const defElem = document.createElement('div');
-    defElem.style.cssText = 'font-size:12px;line-height:1.45;color:#111111;max-height:140px;overflow-y:auto;white-space:pre-wrap;width:100%';
-    defElem.textContent = Array.isArray(definition) ? definition.join('\n') : definition;
+    const defElem = document.createElement("div");
+    defElem.style.cssText =
+      "font-size:12px;line-height:1.45;color:#111111;max-height:140px;overflow-y:auto;white-space:pre-wrap;width:100%";
+    defElem.textContent = Array.isArray(definition)
+      ? definition.join("\n")
+      : definition;
     content.appendChild(defElem);
 
     // Read more link
     if (pageUrl) {
-      const linkElem = document.createElement('a');
+      const linkElem = document.createElement("a");
       linkElem.href = pageUrl;
-      linkElem.target = '_blank';
-      linkElem.rel = 'noopener noreferrer';
-      linkElem.textContent = 'READ ON WIKTIONARY ↗';
-      linkElem.style.cssText = 'color:#111111;font-size:11px;font-weight:600;margin-top:4px;text-decoration:underline;text-underline-offset:2px';
-      linkElem.addEventListener('mouseover', () => linkElem.style.color = '#555555');
-      linkElem.addEventListener('mouseout', () => linkElem.style.color = '#111111');
+      linkElem.target = "_blank";
+      linkElem.rel = "noopener noreferrer";
+      linkElem.textContent = "READ ON WIKTIONARY ↗";
+      linkElem.style.cssText =
+        "color:#111111;font-size:11px;font-weight:600;margin-top:4px;text-decoration:underline;text-underline-offset:2px";
+      linkElem.addEventListener(
+        "mouseover",
+        () => (linkElem.style.color = "#555555"),
+      );
+      linkElem.addEventListener(
+        "mouseout",
+        () => (linkElem.style.color = "#111111"),
+      );
       content.appendChild(linkElem);
     }
 
@@ -312,7 +351,7 @@ export class NotificationView {
     this.positionToast(toast, toastWidth, toastHeight, pos);
 
     requestAnimationFrame(() => {
-      toast.classList.add('tts-sel-toast-visible');
+      toast.classList.add("tts-sel-toast-visible");
     });
 
     const clickOutsideHandler = (e: MouseEvent) => {
@@ -321,12 +360,12 @@ export class NotificationView {
       }
     };
     setTimeout(() => {
-      document.addEventListener('mousedown', clickOutsideHandler);
+      document.addEventListener("mousedown", clickOutsideHandler);
     }, 100);
 
     const cleanup = () => {
-      document.removeEventListener('mousedown', clickOutsideHandler);
-      toast.classList.remove('tts-sel-toast-visible');
+      document.removeEventListener("mousedown", clickOutsideHandler);
+      toast.classList.remove("tts-sel-toast-visible");
       setTimeout(() => {
         toast.remove();
       }, 200);

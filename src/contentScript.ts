@@ -1,6 +1,6 @@
-import { TTSModel } from './model/TTSModel';
-import { NotificationView } from './view/NotificationView';
-import { TTSController } from './controller/TTSController';
+import { TTSModel } from "./model/TTSModel";
+import { NotificationView } from "./view/NotificationView";
+import { TTSController } from "./controller/TTSController";
 
 // Load model, view and contrller
 const startApplication = () => {
@@ -10,8 +10,8 @@ const startApplication = () => {
   controller.init();
 };
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', startApplication);
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", startApplication);
 } else {
   startApplication();
 }

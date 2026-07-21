@@ -2,10 +2,26 @@
 (() => {
   // src/const.ts
   var listOfContextMenus = [
-    { id: "pronounce-with-piper-tts", title: "PRONOUNCE WITH PIPER TTS", contexts: ["selection"] },
-    { id: "pronounce-with-google-tts", title: "PRONOUNCE WITH GOOGLE TTS", contexts: ["selection"] },
-    { id: "open-wikitionary-of-word", title: "OPEN WIKITIONARY OF WORD", contexts: ["selection"] },
-    { id: "get-definition-of-word", title: "GET DEFINITION OF WORD", contexts: ["selection"] }
+    {
+      id: "pronounce-with-piper-tts",
+      title: "PRONOUNCE WITH PIPER TTS",
+      contexts: ["selection"]
+    },
+    {
+      id: "pronounce-with-google-tts",
+      title: "PRONOUNCE WITH GOOGLE TTS",
+      contexts: ["selection"]
+    },
+    {
+      id: "open-wikitionary-of-word",
+      title: "OPEN WIKITIONARY OF WORD",
+      contexts: ["selection"]
+    },
+    {
+      id: "get-definition-of-word",
+      title: "GET DEFINITION OF WORD",
+      contexts: ["selection"]
+    }
   ];
   var LANGUAGE_CODES = {
     russian: "ru",
@@ -25,7 +41,15 @@
   };
   var RUSSIAN_GENDER_LIST = ["masculine", "feminine", "neuter"];
   var RUSSIAN_ANIMACY_LIST = ["animate", "inanimate"];
-  var RUSSIAN_CASE_LIST = ["nominative", "genitive", "dative", "accusative", "instrumental", "prepositional", "locative"];
+  var RUSSIAN_CASE_LIST = [
+    "nominative",
+    "genitive",
+    "dative",
+    "accusative",
+    "instrumental",
+    "prepositional",
+    "locative"
+  ];
   var RUSSIAN_NUMBER_LIST = ["singular", "plural"];
 
   // node_modules/eld/src/avgScore.js
@@ -725,15 +749,18 @@
   });
   function GoogleTTS(info2) {
     if (info2.selectionText) {
-      chrome.storage.sync.get({
-        googleLanguage: DEFAULT_SETTINGS.googleLanguage,
-        googleRate: DEFAULT_SETTINGS.googleRate
-      }, (settings) => {
-        chrome.tts.speak(info2.selectionText, {
-          lang: settings.googleLanguage,
-          rate: settings.googleRate
-        });
-      });
+      chrome.storage.sync.get(
+        {
+          googleLanguage: DEFAULT_SETTINGS.googleLanguage,
+          googleRate: DEFAULT_SETTINGS.googleRate
+        },
+        (settings) => {
+          chrome.tts.speak(info2.selectionText, {
+            lang: settings.googleLanguage,
+            rate: settings.googleRate
+          });
+        }
+      );
     }
   }
   function PiperTTS(info2, tab) {
@@ -742,7 +769,10 @@
         action: "speakSelection",
         text: info2.selectionText
       }).catch((err) => {
-        console.warn("Could not send message to tab. Content script might not be loaded yet.", err);
+        console.warn(
+          "Could not send message to tab. Content script might not be loaded yet.",
+          err
+        );
       });
     }
   }
@@ -757,11 +787,14 @@
       return "russian";
     }
     const settings = await new Promise((resolve) => {
-      chrome.storage.sync.get({
-        lookupMethod: DEFAULT_SETTINGS.lookupMethod
-      }, (items) => {
-        resolve(items);
-      });
+      chrome.storage.sync.get(
+        {
+          lookupMethod: DEFAULT_SETTINGS.lookupMethod
+        },
+        (items) => {
+          resolve(items);
+        }
+      );
     });
     const mode = settings.lookupMethod || DEFAULT_SETTINGS.lookupMethod;
     if (mode === "classifier") {
@@ -779,7 +812,10 @@
           });
           return response?.language || null;
         } catch (err) {
-          console.warn("Could not message active tab content script to display prompt dialog:", err);
+          console.warn(
+            "Could not message active tab content script to display prompt dialog:",
+            err
+          );
           return null;
         }
       }
@@ -792,7 +828,9 @@
   async function getWordFromFreeDictAPI(langCode, word) {
     const wordLowerCase = word.toLowerCase();
     try {
-      const response = await fetch(`https://freedictionaryapi.com/api/v1/entries/${langCode}/${wordLowerCase}`);
+      const response = await fetch(
+        `https://freedictionaryapi.com/api/v1/entries/${langCode}/${wordLowerCase}`
+      );
       if (response.ok) {
         const responseData = await response.json();
         const entry = responseData.entries?.[0];
@@ -824,7 +862,9 @@
   async function getRussianWordFromFreeDictAPI(langCode, word) {
     const cleanWord = decodeURIComponent(word).trim();
     try {
-      const response = await fetch(`https://freedictionaryapi.com/api/v1/entries/${langCode}/${word}`);
+      const response = await fetch(
+        `https://freedictionaryapi.com/api/v1/entries/${langCode}/${word}`
+      );
       if (response.ok) {
         const responseData = await response.json();
         const entry = responseData.entries?.[0];
@@ -838,26 +878,36 @@
         for (const form of entry?.forms || []) {
           const tags = (form.tags || []).map((t) => t.toLowerCase());
           if (gender === "not found") {
-            const foundG = tags.find((t) => RUSSIAN_GENDER_LIST.includes(t));
+            const foundG = tags.find(
+              (t) => RUSSIAN_GENDER_LIST.includes(t)
+            );
             if (foundG)
               gender = foundG;
           }
           if (animacy === "not found") {
-            const foundA = tags.find((t) => RUSSIAN_ANIMACY_LIST.includes(t));
+            const foundA = tags.find(
+              (t) => RUSSIAN_ANIMACY_LIST.includes(t)
+            );
             if (foundA)
               animacy = foundA;
           }
           const cleanFormWord = (form.word || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
           if (cleanFormWord === cleanInput && !caseName) {
-            const foundCase = tags.filter((t) => RUSSIAN_CASE_LIST.includes(t)).join("/");
-            const foundNum = tags.filter((t) => RUSSIAN_NUMBER_LIST.includes(t)).join("/");
+            const foundCase = tags.filter(
+              (t) => RUSSIAN_CASE_LIST.includes(t)
+            ).join("/");
+            const foundNum = tags.filter(
+              (t) => RUSSIAN_NUMBER_LIST.includes(t)
+            ).join("/");
             if (foundCase) {
               caseName = foundNum ? `${foundCase} ${foundNum}` : foundCase;
             }
           }
         }
         if (!caseName) {
-          const inflectionMatch = definition.match(/((?:[a-z\/]+\s+)*(?:singular|plural))\s+of/i);
+          const inflectionMatch = definition.match(
+            /((?:[a-z\/]+\s+)*(?:singular|plural))\s+of/i
+          );
           if (inflectionMatch) {
             caseName = inflectionMatch[1].trim();
           }
@@ -919,7 +969,9 @@
             definition: lines,
             pageUrl: data.url || `https://${langCode}.wikipedia.org/wiki/${word}`,
             language: determinedCategory
-          }).catch((err) => console.warn("Failed to send definition to content script:", err));
+          }).catch(
+            (err) => console.warn("Failed to send definition to content script:", err)
+          );
           return;
         }
       } else {
@@ -936,7 +988,9 @@
             definition: lines,
             pageUrl: data.url || `https://${langCode}.wikipedia.org/wiki/${word}`,
             language: determinedCategory
-          }).catch((err) => console.warn("Failed to send definition to content script:", err));
+          }).catch(
+            (err) => console.warn("Failed to send definition to content script:", err)
+          );
           return;
         }
       }

@@ -1,4 +1,3 @@
-
 export interface ContextMenu {
   id: string;
   title: string;
@@ -19,7 +18,6 @@ export interface PiperSettings {
   piperNoiseScale: number;
   piperNoiseW: number;
 }
-
 
 /*api response interface for russian word from freedictionary */
 export interface RussianWordAPIResponse {
@@ -50,7 +48,9 @@ export interface GoogleSettings {
   googleRate: number;
 }
 export interface GeneralSettings {
-  lookupMethod: 'manual' | 'classifier';
+  lookupMethod: "manual" | "classifier";
 }
 //types for settings, must have all three settings
-export type ExtensionSettings = PiperSettings & GoogleSettings & GeneralSettings;
+export type ExtensionSettings = PiperSettings &
+  GoogleSettings &
+  GeneralSettings;

@@ -1,5 +1,5 @@
-import { DEFAULT_SETTINGS } from '../const';
-import { PiperSettings } from '../interfaces';
+import { DEFAULT_SETTINGS } from "../const";
+import { PiperSettings } from "../interfaces";
 
 declare const ort: any;
 declare const createPiperPhonemize: any;
@@ -10,26 +10,32 @@ export class TTSModel {
   public engineLoading: boolean = false;
   public loadedVoiceFile: string | null = null;
 
-  constructor() { }
+  constructor() {}
 
+  //load engine in background
   async loadEngine(): Promise<void> {
-    // 1. Fetch preferences from sync storage
-    const settings = await new Promise<{ piperVoiceFile?: string }>(resolve => {
-      chrome.storage.sync.get({
-        piperVoiceFile: DEFAULT_SETTINGS.piperVoiceFile
-      }, (items) => {
-        resolve(items as { piperVoiceFile?: string });
-      });
-    });
-
-    const voiceFile = settings.piperVoiceFile || DEFAULT_SETTINGS.piperVoiceFile;
-
-    // 2. Check if we need to load or swap the model session
-    if (this.session && this.voiceConfig && this.loadedVoiceFile === voiceFile) return;
+    //  Fetch preferences from sync storage
+    const settings = await new Promise<{ piperVoiceFile?: string }>(
+      (resolve) => {
+        chrome.storage.sync.get(
+          {
+            piperVoiceFile: DEFAULT_SETTINGS.piperVoiceFile,
+          },
+          (items) => {
+            resolve(items as { piperVoiceFile?: string });
+          },
+        );
+      },
+    );
+    const voiceFile =
+      settings.piperVoiceFile || DEFAULT_SETTINGS.piperVoiceFile;
+    // Check if we need to load or swap the model session
+    if (this.session && this.voiceConfig && this.loadedVoiceFile === voiceFile)
+      return;
 
     if (this.engineLoading) {
       while (this.engineLoading) {
-        await new Promise(r => setTimeout(r, 100));
+        await new Promise((r) => setTimeout(r, 100));
       }
       if (this.session && this.loadedVoiceFile === voiceFile) return;
     }
@@ -37,7 +43,7 @@ export class TTSModel {
     this.engineLoading = true;
 
     try {
-      // 3. Fetch config JSON and model binary directly from local extension folder
+      //  Fetch config JSON and model binary directly from local extension folder
       const configUrl = chrome.runtime.getURL(`models/${voiceFile}.onnx.json`);
       const configResponse = await fetch(configUrl);
       this.voiceConfig = await configResponse.json();
@@ -46,17 +52,18 @@ export class TTSModel {
       const modelResponse = await fetch(modelUrl);
       const modelBuffer = await modelResponse.arrayBuffer();
 
-      // 4. Configure ONNX Runtime WASM paths
-      // v1.14.0 selects binary via: d(simd, threaded):
+      //  Configure ONNX Runtime WASM paths
       //   simd=false + numThreads=1 => "ort-wasm.wasm" (non-SIMD, non-threaded)
       // wasmPaths as a string prefix is how v1.14.0 resolves filenames (locateFile).
       ort.env.allowLocalModels = false;
       ort.env.wasm.simd = false;
       ort.env.wasm.numThreads = 1;
-      ort.env.wasm.wasmPaths = chrome.runtime.getURL('lib/');
+      ort.env.wasm.wasmPaths = chrome.runtime.getURL("lib/");
 
-      // 5. Load ONNX Session
-      this.session = await ort.InferenceSession.create(modelBuffer, { executionProviders: ['wasm'] });
+      //  Load ONNX Session
+      this.session = await ort.InferenceSession.create(modelBuffer, {
+        executionProviders: ["wasm"],
+      });
       this.loadedVoiceFile = voiceFile;
     } catch (error) {
       console.error("Failed to load Piper TTS engine from local path:", error);
@@ -65,87 +72,111 @@ export class TTSModel {
       this.engineLoading = false;
     }
   }
-
+  // speech synthezize for piper tts
   async synthesize(text: string): Promise<ArrayBuffer> {
     await this.loadEngine();
 
-    // Fetch current settings for inference configurations
-    const settings = await new Promise<Partial<PiperSettings>>(resolve => {
-      chrome.storage.sync.get({
-        piperSpeed: DEFAULT_SETTINGS.piperSpeed,
-        piperNoiseScale: DEFAULT_SETTINGS.piperNoiseScale,
-        piperNoiseW: DEFAULT_SETTINGS.piperNoiseW
-      }, (items) => {
-        resolve(items as Partial<PiperSettings>);
-      });
+    // Fetch current settings
+    const settings = await new Promise<Partial<PiperSettings>>((resolve) => {
+      chrome.storage.sync.get(
+        {
+          piperSpeed: DEFAULT_SETTINGS.piperSpeed,
+          piperNoiseScale: DEFAULT_SETTINGS.piperNoiseScale,
+          piperNoiseW: DEFAULT_SETTINGS.piperNoiseW,
+        },
+        (items) => {
+          resolve(items as Partial<PiperSettings>);
+        },
+      );
     });
-
+    //fallback to russian
     const voiceName = this.voiceConfig.espeak?.voice || "ru";
 
-    // Phonemization
-    const phonemeIds = await new Promise<number[] | null>(async (resolve, reject) => {
-      try {
-        const phonemizer = await createPiperPhonemize({
-          print: (l: string) => {
-            try {
-              const parsed = JSON.parse(l);
-              if (parsed && parsed.phoneme_ids) {
-                resolve(parsed.phoneme_ids);
-              } else if (parsed && parsed[0] && parsed[0].phoneme_ids) {
-                resolve(parsed[0].phoneme_ids);
-              } else {
-                resolve(null);
+    // Phonemization, i.e text to phonetic represetation using espeak-ng
+    const phonemeIds = await new Promise<number[] | null>(
+      async (resolve, reject) => {
+        try {
+          const phonemizer = await createPiperPhonemize({
+            print: (l: string) => {
+              try {
+                const parsed = JSON.parse(l);
+                if (parsed && parsed.phoneme_ids) {
+                  resolve(parsed.phoneme_ids);
+                } else if (parsed && parsed[0] && parsed[0].phoneme_ids) {
+                  resolve(parsed[0].phoneme_ids);
+                } else {
+                  resolve(null);
+                }
+              } catch (e) {
+                reject(e);
               }
-            } catch (e) {
-              reject(e);
-            }
-          },
-          printErr: (msg: string) => {
-            console.warn("Phonemizer warning:", msg);
-          },
-          locateFile: (file: string) => {
-            if (file.endsWith(".wasm")) {
-              return chrome.runtime.getURL("lib/piper_phonemize.wasm");
-            }
-            if (file.endsWith(".data")) {
-              return chrome.runtime.getURL("lib/piper_phonemize.data");
-            }
-            return file;
-          }
-        });
-
-        const inputJSON = JSON.stringify([{ text: text.trim() }]);
-        phonemizer.callMain([
-          "-l", voiceName,
-          "--input", inputJSON,
-          "--espeak_data", "/espeak-ng-data"
-        ]);
-      } catch (err) {
-        reject(err);
-      }
-    });
+            },
+            printErr: (msg: string) => {
+              console.warn("Phonemizer warning:", msg);
+            },
+            //fetch phonemaiztion files for piper
+            locateFile: (file: string) => {
+              if (file.endsWith(".wasm")) {
+                return chrome.runtime.getURL("lib/piper_phonemize.wasm");
+              }
+              if (file.endsWith(".data")) {
+                return chrome.runtime.getURL("lib/piper_phonemize.data");
+              }
+              return file;
+            },
+          });
+          //create payload and invoke with arguments
+          const inputJSON = JSON.stringify([{ text: text.trim() }]);
+          phonemizer.callMain([
+            "-l",
+            voiceName,
+            "--input",
+            inputJSON,
+            "--espeak_data",
+            "/espeak-ng-data",
+          ]);
+        } catch (err) {
+          reject(err);
+        }
+      },
+    );
 
     if (!phonemeIds || phonemeIds.length === 0) {
       throw new Error("Could not extract phonemes from text.");
     }
 
-    // ONNX Model Inference
+    // syntheziez the audio for piper tts using onnx runtime
     const baseLengthScale = this.voiceConfig.inference?.length_scale ?? 1.0;
     const speed = settings.piperSpeed ?? DEFAULT_SETTINGS.piperSpeed;
     const lengthScale = baseLengthScale / speed;
-    const noiseScale = settings.piperNoiseScale ?? DEFAULT_SETTINGS.piperNoiseScale;
+    const noiseScale =
+      settings.piperNoiseScale ?? DEFAULT_SETTINGS.piperNoiseScale;
     const noiseW = settings.piperNoiseW ?? DEFAULT_SETTINGS.piperNoiseW;
 
+    //create feed and run onnx inference
     const feed: Record<string, any> = {
-      input: new ort.Tensor("int64", BigInt64Array.from(phonemeIds.map(BigInt)), [1, phonemeIds.length]),
-      input_lengths: new ort.Tensor("int64", BigInt64Array.from([BigInt(phonemeIds.length)])),
-      scales: new ort.Tensor("float32", Float32Array.from([noiseScale, lengthScale, noiseW]))
+      input: new ort.Tensor(
+        "int64",
+        BigInt64Array.from(phonemeIds.map(BigInt)),
+        [1, phonemeIds.length],
+      ),
+      input_lengths: new ort.Tensor(
+        "int64",
+        BigInt64Array.from([BigInt(phonemeIds.length)]),
+      ),
+      scales: new ort.Tensor(
+        "float32",
+        Float32Array.from([noiseScale, lengthScale, noiseW]),
+      ),
     };
-
-    if (this.voiceConfig.speaker_id_map && Object.keys(this.voiceConfig.speaker_id_map).length > 0) {
+    //add speaker id if needed
+    if (
+      this.voiceConfig.speaker_id_map &&
+      Object.keys(this.voiceConfig.speaker_id_map).length > 0
+    ) {
       feed.sid = new ort.Tensor("int64", BigInt64Array.from([0n]));
     }
-
+    //run onnx inference
     const output = await this.session.run(feed);
     const rawAudio = output.output.data;
 
@@ -153,8 +184,12 @@ export class TTSModel {
     const sampleRate = this.voiceConfig.audio?.sample_rate || 22050;
     return this.buildWavHeader(rawAudio, 1, sampleRate);
   }
-
-  buildWavHeader(samples: Float32Array, numChannels: number, sampleRate: number): ArrayBuffer {
+  //build wav header
+  buildWavHeader(
+    samples: Float32Array,
+    numChannels: number,
+    sampleRate: number,
+  ): ArrayBuffer {
     const numSamples = samples.length;
     const headerSize = 44;
     const buffer = new ArrayBuffer(numSamples * 2 + headerSize);

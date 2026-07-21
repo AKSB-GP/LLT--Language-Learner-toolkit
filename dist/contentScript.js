@@ -21,14 +21,20 @@
     loadedVoiceFile = null;
     constructor() {
     }
+    //load engine in background
     async loadEngine() {
-      const settings = await new Promise((resolve) => {
-        chrome.storage.sync.get({
-          piperVoiceFile: DEFAULT_SETTINGS.piperVoiceFile
-        }, (items) => {
-          resolve(items);
-        });
-      });
+      const settings = await new Promise(
+        (resolve) => {
+          chrome.storage.sync.get(
+            {
+              piperVoiceFile: DEFAULT_SETTINGS.piperVoiceFile
+            },
+            (items) => {
+              resolve(items);
+            }
+          );
+        }
+      );
       const voiceFile = settings.piperVoiceFile || DEFAULT_SETTINGS.piperVoiceFile;
       if (this.session && this.voiceConfig && this.loadedVoiceFile === voiceFile)
         return;
@@ -51,7 +57,9 @@
         ort.env.wasm.simd = false;
         ort.env.wasm.numThreads = 1;
         ort.env.wasm.wasmPaths = chrome.runtime.getURL("lib/");
-        this.session = await ort.InferenceSession.create(modelBuffer, { executionProviders: ["wasm"] });
+        this.session = await ort.InferenceSession.create(modelBuffer, {
+          executionProviders: ["wasm"]
+        });
         this.loadedVoiceFile = voiceFile;
       } catch (error) {
         console.error("Failed to load Piper TTS engine from local path:", error);
@@ -60,61 +68,68 @@
         this.engineLoading = false;
       }
     }
+    // speech synthezize for piper tts
     async synthesize(text) {
       await this.loadEngine();
       const settings = await new Promise((resolve) => {
-        chrome.storage.sync.get({
-          piperSpeed: DEFAULT_SETTINGS.piperSpeed,
-          piperNoiseScale: DEFAULT_SETTINGS.piperNoiseScale,
-          piperNoiseW: DEFAULT_SETTINGS.piperNoiseW
-        }, (items) => {
-          resolve(items);
-        });
+        chrome.storage.sync.get(
+          {
+            piperSpeed: DEFAULT_SETTINGS.piperSpeed,
+            piperNoiseScale: DEFAULT_SETTINGS.piperNoiseScale,
+            piperNoiseW: DEFAULT_SETTINGS.piperNoiseW
+          },
+          (items) => {
+            resolve(items);
+          }
+        );
       });
       const voiceName = this.voiceConfig.espeak?.voice || "ru";
-      const phonemeIds = await new Promise(async (resolve, reject) => {
-        try {
-          const phonemizer = await createPiperPhonemize({
-            print: (l) => {
-              try {
-                const parsed = JSON.parse(l);
-                if (parsed && parsed.phoneme_ids) {
-                  resolve(parsed.phoneme_ids);
-                } else if (parsed && parsed[0] && parsed[0].phoneme_ids) {
-                  resolve(parsed[0].phoneme_ids);
-                } else {
-                  resolve(null);
+      const phonemeIds = await new Promise(
+        async (resolve, reject) => {
+          try {
+            const phonemizer = await createPiperPhonemize({
+              print: (l) => {
+                try {
+                  const parsed = JSON.parse(l);
+                  if (parsed && parsed.phoneme_ids) {
+                    resolve(parsed.phoneme_ids);
+                  } else if (parsed && parsed[0] && parsed[0].phoneme_ids) {
+                    resolve(parsed[0].phoneme_ids);
+                  } else {
+                    resolve(null);
+                  }
+                } catch (e) {
+                  reject(e);
                 }
-              } catch (e) {
-                reject(e);
+              },
+              printErr: (msg) => {
+                console.warn("Phonemizer warning:", msg);
+              },
+              //fetch phonemaiztion files for piper
+              locateFile: (file) => {
+                if (file.endsWith(".wasm")) {
+                  return chrome.runtime.getURL("lib/piper_phonemize.wasm");
+                }
+                if (file.endsWith(".data")) {
+                  return chrome.runtime.getURL("lib/piper_phonemize.data");
+                }
+                return file;
               }
-            },
-            printErr: (msg) => {
-              console.warn("Phonemizer warning:", msg);
-            },
-            locateFile: (file) => {
-              if (file.endsWith(".wasm")) {
-                return chrome.runtime.getURL("lib/piper_phonemize.wasm");
-              }
-              if (file.endsWith(".data")) {
-                return chrome.runtime.getURL("lib/piper_phonemize.data");
-              }
-              return file;
-            }
-          });
-          const inputJSON = JSON.stringify([{ text: text.trim() }]);
-          phonemizer.callMain([
-            "-l",
-            voiceName,
-            "--input",
-            inputJSON,
-            "--espeak_data",
-            "/espeak-ng-data"
-          ]);
-        } catch (err) {
-          reject(err);
+            });
+            const inputJSON = JSON.stringify([{ text: text.trim() }]);
+            phonemizer.callMain([
+              "-l",
+              voiceName,
+              "--input",
+              inputJSON,
+              "--espeak_data",
+              "/espeak-ng-data"
+            ]);
+          } catch (err) {
+            reject(err);
+          }
         }
-      });
+      );
       if (!phonemeIds || phonemeIds.length === 0) {
         throw new Error("Could not extract phonemes from text.");
       }
@@ -124,9 +139,19 @@
       const noiseScale = settings.piperNoiseScale ?? DEFAULT_SETTINGS.piperNoiseScale;
       const noiseW = settings.piperNoiseW ?? DEFAULT_SETTINGS.piperNoiseW;
       const feed = {
-        input: new ort.Tensor("int64", BigInt64Array.from(phonemeIds.map(BigInt)), [1, phonemeIds.length]),
-        input_lengths: new ort.Tensor("int64", BigInt64Array.from([BigInt(phonemeIds.length)])),
-        scales: new ort.Tensor("float32", Float32Array.from([noiseScale, lengthScale, noiseW]))
+        input: new ort.Tensor(
+          "int64",
+          BigInt64Array.from(phonemeIds.map(BigInt)),
+          [1, phonemeIds.length]
+        ),
+        input_lengths: new ort.Tensor(
+          "int64",
+          BigInt64Array.from([BigInt(phonemeIds.length)])
+        ),
+        scales: new ort.Tensor(
+          "float32",
+          Float32Array.from([noiseScale, lengthScale, noiseW])
+        )
       };
       if (this.voiceConfig.speaker_id_map && Object.keys(this.voiceConfig.speaker_id_map).length > 0) {
         feed.sid = new ort.Tensor("int64", BigInt64Array.from([0n]));
@@ -136,6 +161,7 @@
       const sampleRate = this.voiceConfig.audio?.sample_rate || 22050;
       return this.buildWavHeader(rawAudio, 1, sampleRate);
     }
+    //build wav header
     buildWavHeader(samples, numChannels, sampleRate) {
       const numSamples = samples.length;
       const headerSize = 44;
@@ -407,8 +433,14 @@
         linkElem.rel = "noopener noreferrer";
         linkElem.textContent = "READ ON WIKTIONARY \u2197";
         linkElem.style.cssText = "color:#111111;font-size:11px;font-weight:600;margin-top:4px;text-decoration:underline;text-underline-offset:2px";
-        linkElem.addEventListener("mouseover", () => linkElem.style.color = "#555555");
-        linkElem.addEventListener("mouseout", () => linkElem.style.color = "#111111");
+        linkElem.addEventListener(
+          "mouseover",
+          () => linkElem.style.color = "#555555"
+        );
+        linkElem.addEventListener(
+          "mouseout",
+          () => linkElem.style.color = "#111111"
+        );
         content.appendChild(linkElem);
       }
       toast.appendChild(content);
@@ -445,6 +477,7 @@
       this.model = model;
       this.notificationView = notificationView;
     }
+    // Pre-warm the model engine in background asynchronously
     async init() {
       this.model.loadEngine().catch((err) => console.warn("TTS Pre-warming failed:", err));
       this.setupListeners();
@@ -459,23 +492,38 @@
           });
           return true;
         } else if (message.action === "showDefinition" && message.word && message.definition) {
-          this.notificationView.showDefinitionToast(message.word, message.definition, message.pageUrl, message.language);
+          this.notificationView.showDefinitionToast(
+            message.word,
+            message.definition,
+            message.pageUrl,
+            message.language
+          );
         } else if (message.action === "showNotification" && message.text) {
-          this.notificationView.show(message.toastType || "playing", message.text, message.duration || 4e3);
+          this.notificationView.show(
+            message.toastType || "playing",
+            message.text,
+            message.duration || 4e3
+          );
         }
       });
     }
     async speak(text) {
       try {
         const settings = await new Promise((resolve) => {
-          chrome.storage.sync.get({ piperVoice: DEFAULT_SETTINGS.piperVoice }, (items) => {
-            resolve(items);
-          });
+          chrome.storage.sync.get(
+            { piperVoice: DEFAULT_SETTINGS.piperVoice },
+            (items) => {
+              resolve(items);
+            }
+          );
         });
         const voice = settings.piperVoice || DEFAULT_SETTINGS.piperVoice;
         const voiceName = voice.charAt(0).toUpperCase() + voice.slice(1);
         if (!this.model.session) {
-          this.notificationView.show("LOADING", `LOADING VOICE MODEL (${voiceName})...`);
+          this.notificationView.show(
+            "LOADING",
+            `LOADING VOICE MODEL (${voiceName})...`
+          );
         } else {
           this.notificationView.show("SYNTHESIZING", `SYNTHESIZING "${text}"...`);
         }
@@ -492,7 +540,11 @@
         await audio.play();
       } catch (error) {
         console.error("SPEECH SYNTHESIS FAILED:", error);
-        this.notificationView.show("ERROR", `SYNTHESIS FAILED: ${error.message || error}`, 3e3);
+        this.notificationView.show(
+          "ERROR",
+          `SYNTHESIS FAILED: ${error.message || error}`,
+          3e3
+        );
       }
     }
   };

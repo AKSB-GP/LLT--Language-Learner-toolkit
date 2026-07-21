@@ -16,13 +16,8 @@
   },
   "web_accessible_resources": [
     {
-      "resources": [
-        "models/*",
-        "lib/*"
-      ],
-      "matches": [
-        "<all_urls>"
-      ]
+      "resources": ["models/*", "lib/*"],
+      "matches": ["<all_urls>"]
     }
   ],
   "background": {
@@ -30,12 +25,8 @@
   },
   "content_scripts": [
     {
-      "matches": [
-        "<all_urls>"
-      ],
-      "css": [
-        "styles.css"
-      ],
+      "matches": ["<all_urls>"],
+      "css": ["styles.css"],
       "js": [
         "lib/ort.wasm.min.js",
         "lib/piper_phonemize.min.js",
