@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "TTS Word Highlighter",
+  "name": "LLT - LANGUAGE LEARNER TOOLKIT",
   "version": "1.1",
-  "description": "Highlight Russian words on any webpage. Click to pronounce them using Piper TTS ONNX.",
+  "description": "Provides as series of tools for helping when learning russia, english and swedish. Provider two tts models, PIPER and google for prounication, word look up on wiktionary and wikidata, and quick search on wikipedia, wiktionary, yandex and google and fetching word definition.",
   "permissions": [
     "contextMenus",
     "activeTab",
@@ -16,8 +16,13 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["models/*", "lib/*"],
-      "matches": ["<all_urls>"]
+      "resources": [
+        "models/*",
+        "lib/*"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
     }
   ],
   "background": {
@@ -25,8 +30,12 @@
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "css": ["styles.css"],
+      "matches": [
+        "<all_urls>"
+      ],
+      "css": [
+        "styles.css"
+      ],
       "js": [
         "lib/ort.wasm.min.js",
         "lib/piper_phonemize.min.js",
