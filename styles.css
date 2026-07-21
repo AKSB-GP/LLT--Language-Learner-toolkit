@@ -1,100 +1,165 @@
-/* styles.css – Bare minimum structural layout rules for notification overlay */
+/* =====================================================================
+   styles.css — Swiss Minimalist / Akkurat Editorial Design System
+   Matches Swiss typography layout: clean sharp borders, light grey surface,
+   high contrast black Akkurat typography, prefix markers.
+   ===================================================================== */
 
-#tts-notifications-container {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  z-index: 2147483647;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  pointer-events: none;
-}
+/* ------------------------------------------------------------------
+   1. PROGRESS / AUDIO STATUS TOAST (Anchored at word location)
+   ------------------------------------------------------------------ */
 
 .tts-toast {
+  position: absolute;
+  z-index: 2147483647;
   pointer-events: auto;
   display: flex;
   align-items: center;
-  gap: 8px;
+
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
-/* Selection Toast (anchored to highlighted text) */
-.tts-selection-toast {
-  z-index: 2147483647;
+.tts-toast.tts-toast-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.tts-toast.tts-toast-fadeout {
   opacity: 0;
-  transform: translateY(5px) scale(0.95);
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transform: translateY(-4px);
+}
+
+/* Flat minimalist editorial toast pill */
+.tts-toast-body {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: #e8e8ea;
+  border: 1px solid #111111;
+  color: #111111;
+
+  font-family: 'Akkurat', 'Akkurat LL', 'Akkurat Pro', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+  font-size: 12px;
+  font-weight: 550;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+}
+
+.tts-toast-icon {
+  font-size: 12px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* Spin animation for loading icon */
+.tts-toast-loading .tts-toast-icon {
+  animation: tts-spin 0.9s linear infinite;
+}
+
+@keyframes tts-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Minimalist border accents */
+.tts-toast-loading     .tts-toast-body { border-left: 3px solid #111111; }
+.tts-toast-synthesizing .tts-toast-body { border-left: 3px solid #666666; }
+.tts-toast-playing     .tts-toast-body { border-left: 3px solid #111111; }
+.tts-toast-error       .tts-toast-body { border-left: 3px solid #d00000; }
+
+
+/* ------------------------------------------------------------------
+   2. SELECTION-ANCHORED TOASTS  (Language picker & Definition card)
+   ------------------------------------------------------------------ */
+
+.tts-selection-toast {
+  position: absolute;
+  z-index: 2147483647;
   pointer-events: auto;
+
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
 .tts-selection-toast.tts-sel-toast-visible {
   opacity: 1;
-  transform: translateY(0) scale(1);
+  transform: translateY(0);
 }
 
+/* Shared minimalist editorial card container */
 .tts-sel-toast-content {
-  background: rgba(30, 30, 30, 0.95);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 6px;
-  padding: 6px 10px;
+  background: #e8e8ea;
+  border: 1px solid #111111;
+  padding: 10px 14px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-  color: #ffffff;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  gap: 10px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.14);
+
+  color: #111111;
+  font-family: 'Akkurat', 'Akkurat LL', 'Akkurat Pro', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
   font-size: 12px;
   font-weight: 500;
+  letter-spacing: -0.01em;
 }
 
+/* Label text */
 .tts-sel-toast-label {
-  color: #a5a5a5;
-  font-weight: 600;
-  user-select: none;
-}
-
-.tts-sel-toast-btn {
-  border: none;
-  border-radius: 4px;
-  padding: 4px 8px;
+  color: #888888;
   font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
+  font-weight: 500;
+  user-select: none;
   font-family: inherit;
 }
 
+/* Language selector buttons */
+.tts-sel-toast-btn {
+  border: 1px solid #111111;
+  border-radius: 0;
+  padding: 4px 12px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  font-family: inherit;
+  letter-spacing: -0.01em;
+}
+
 .tts-btn-sv {
-  background: #007aff;
-  color: white;
+  background: #111111;
+  color: #ffffff;
 }
 
 .tts-btn-sv:hover {
-  background: #0062cc;
+  background: #333333;
 }
 
 .tts-btn-en {
-  background: #34c759;
-  color: white;
+  background: #ffffff;
+  color: #111111;
 }
 
 .tts-btn-en:hover {
-  background: #28a745;
+  background: #f0f0f0;
 }
 
+/* Close button (×) */
 .tts-sel-toast-close {
   background: none;
   border: none;
-  color: #a5a5a5;
-  font-size: 16px;
+  color: #111111;
+  font-size: 15px;
+  font-weight: 400;
   line-height: 1;
   cursor: pointer;
   padding: 0 2px;
-  font-weight: bold;
+  flex-shrink: 0;
+  transition: color 0.15s;
 }
 
 .tts-sel-toast-close:hover {
-  color: #ffffff;
+  color: #666666;
 }

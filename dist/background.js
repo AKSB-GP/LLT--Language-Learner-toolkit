@@ -786,13 +786,17 @@
     }
     return null;
   }
+  function getWordOnWiktionary(langCode, word) {
+    return `https://${langCode}.wiktionary.org/wiki/${word.toLocaleLowerCase()}`;
+  }
   async function getWordFromFreeDictAPI(langCode, word) {
+    const wordLowerCase = word.toLowerCase();
     try {
-      const response = await fetch(`https://freedictionaryapi.com/api/v1/entries/${langCode}/${word}`);
+      const response = await fetch(`https://freedictionaryapi.com/api/v1/entries/${langCode}/${wordLowerCase}`);
       if (response.ok) {
         const responseData = await response.json();
         const entry = responseData.entries?.[0];
-        const pageUrl = responseData.source?.url || `https://${langCode}.wikipedia.org/wiki/${word}`;
+        const pageUrl = responseData.source?.url || getWordOnWiktionary(langCode, wordLowerCase);
         const definition = entry?.senses?.[0]?.definition || "Not found";
         const wordcategory = entry?.partOfSpeech || "not found";
         const data = {
@@ -803,14 +807,14 @@
         return data;
       } else {
         return {
-          url: `https://${langCode}.wikipedia.org/wiki/${word}`,
+          url: getWordOnWiktionary(langCode, word),
           definition: "Not found",
           wordtype: "Not found"
         };
       }
     } catch (err) {
       return {
-        url: `https://${langCode}.wikipedia.org/wiki/${word}`,
+        url: getWordOnWiktionary(langCode, word),
         definition: "Not found",
         wordtype: "Not found",
         error: err.message
@@ -824,7 +828,7 @@
       if (response.ok) {
         const responseData = await response.json();
         const entry = responseData.entries?.[0];
-        const pageUrl = responseData.source?.url || `https://${langCode}.wiktionary.org/wiki/${word}`;
+        const pageUrl = responseData.source?.url || getWordOnWiktionary(langCode, word);
         const definition = entry?.senses?.[0]?.definition || "Not found";
         const wordcategory = entry?.partOfSpeech || "not found";
         let gender = "not found";
@@ -869,14 +873,14 @@
         return data;
       } else {
         return {
-          url: `https://${langCode}.wikipedia.org/wiki/${word}`,
-          definition: "Not found",
+          url: getWordOnWiktionary(langCode, word),
+          definition: "Not found on Freedict, check wiktionary",
           wordtype: "Not found"
         };
       }
     } catch (err) {
       return {
-        url: `https://${langCode}.wikipedia.org/wiki/${word}`,
+        url: getWordOnWiktionary(langCode, word),
         definition: "Not found",
         wordtype: "Not found",
         error: err.message

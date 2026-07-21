@@ -4,20 +4,236 @@
 <head>
     <meta charset="utf-8">
     <title>Settings</title>
+    <style>
+        /* =====================================================================
+           Swiss Minimalist / Akkurat Editorial Design System
+           Inspired by International Typographic Style (Tilda / Akkurat layout)
+           ===================================================================== */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html {
+            width: 340px;
+            background: #e8e8e8;
+        }
+
+        body {
+            width: 340px;
+            margin: 0;
+            padding: 20px 18px 24px;
+            background: #e8e8e8;
+            color: #111111;
+            font-family: 'Akkurat', 'Akkurat LL', 'Akkurat Pro', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+            font-size: 12.5px;
+            line-height: 1.4;
+            letter-spacing: -0.01em;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ─── Main Header ─── */
+        .header {
+            margin-bottom: 24px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #111111;
+        }
+
+        .header-title {
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            line-height: 1.1;
+            color: #111111;
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+        }
+
+        .header-title .prefix {
+            color: #111111;
+            font-weight: 400;
+        }
+
+        .header-sub {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #777777;
+            margin-top: 6px;
+        }
+
+        /* ─── Section Item (List-style Row) ─── */
+        .section-item {
+            border-top: 1px solid #111111;
+            padding: 14px 0 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .section-item:last-of-type {
+            border-bottom: 1px solid #111111;
+        }
+
+        /* Section Title Row with \ 01 prefix */
+        .section-header {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+        }
+
+        .section-num {
+            font-size: 15px;
+            font-weight: 300;
+            color: #a0a0a0;
+            letter-spacing: -0.02em;
+            font-family: inherit;
+        }
+
+        .section-title {
+            font-size: 15px;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            color: #111111;
+        }
+
+        /* ─── Form Controls ─── */
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            padding-left: 28px;
+        }
+
+        .form-group label {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            font-size: 12px;
+            font-weight: 500;
+            color: #222222;
+        }
+
+        .val-display {
+            font-size: 11px;
+            font-weight: 600;
+            font-family: inherit;
+            color: #111111;
+            background: #ffffff;
+            border: 1px solid #111111;
+            padding: 1px 6px;
+            border-radius: 0;
+        }
+
+        /* Select Input */
+        select {
+            width: 100%;
+            appearance: none;
+            -webkit-appearance: none;
+            background: #f4f4f4;
+            border: 1px solid #111111;
+            border-radius: 0;
+            padding: 7px 28px 7px 10px;
+            color: #111111;
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            outline: none;
+            transition: background 0.15s, border-color 0.15s;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23111111'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+        }
+
+        select:focus {
+            background-color: #ffffff;
+            border-color: #000000;
+        }
+
+        select option {
+            background: #ffffff;
+            color: #111111;
+        }
+
+        /* Range Slider */
+        input[type="range"] {
+            width: 100%;
+            height: 2px;
+            appearance: none;
+            -webkit-appearance: none;
+            background: #111111;
+            outline: none;
+            cursor: pointer;
+            margin: 6px 0;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: 0;
+            background: #111111;
+            border: 1px solid #111111;
+            cursor: pointer;
+            transition: transform 0.1s ease;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 12px;
+            height: 12px;
+            border-radius: 0;
+            background: #111111;
+            border: 1px solid #111111;
+            cursor: pointer;
+        }
+
+        /* Auto-save Status Bar */
+        .status-toast {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 8px 18px;
+            background: #111111;
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            opacity: 0;
+            transform: translateY(100%);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            z-index: 9999;
+        }
+
+        .status-toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
 </head>
 
 <body>
 
-    <!-- Sleek Header -->
+    <!-- Editorial Header -->
     <div class="header">
-        <h2>TTS Settings Panel</h2>
+        <div class="header-title"><span class="prefix">\</span> Settings</div>
+        <div class="header-sub">\ RU Word Highlighter</div>
     </div>
 
-    <!-- Piper TTS Settings -->
-    <div class="card">
-        <h3>Offline Piper TTS</h3>
+    <!-- Section 01: Offline Piper TTS -->
+    <div class="section-item">
+        <div class="section-header">
+            <span class="section-num">\ 01</span>
+            <span class="section-title">Offline Piper TTS</span>
+        </div>
 
-        <!-- Language selection -->
         <div class="form-group">
             <label for="language-category">Language Category</label>
             <select id="language-category">
@@ -27,45 +243,45 @@
             </select>
         </div>
 
-        <!-- Voice choice selection -->
         <div class="form-group">
             <label for="piper-voice">Voice Model</label>
             <select id="piper-voice">
-                <!-- populated dynamically by popup.js -->
+                <!-- populated dynamically -->
             </select>
         </div>
 
-        <!-- Speed slider -->
         <div class="form-group">
             <label for="piper-speed">
-                <span title="This is a hover text example">Speech Speed</span>
+                <span>Speech Speed</span>
                 <span id="piper-speed-val" class="val-display">1.0x</span>
             </label>
             <input type="range" id="piper-speed" min="0.5" max="2.0" step="0.1" value="1.0">
         </div>
 
-        <!-- Variation (noise scale) slider -->
         <div class="form-group">
             <label for="piper-noise-scale">
-                <span title="This is a hover text example">Voice Variation </span>
+                <span>Voice Variation</span>
                 <span id="piper-noise-scale-val" class="val-display">0.67</span>
             </label>
             <input type="range" id="piper-noise-scale" min="0.1" max="1.5" step="0.05" value="0.67">
         </div>
 
-        <!-- Emotion / rhythm (noise w) slider -->
         <div class="form-group">
             <label for="piper-noise-w">
-                <span title="This is a hover text example">Rhythm & Emotion</span>
+                <span>Rhythm &amp; Emotion</span>
                 <span id="piper-noise-w-val" class="val-display">0.80</span>
             </label>
             <input type="range" id="piper-noise-w" min="0.1" max="1.5" step="0.05" value="0.80">
         </div>
     </div>
 
-    <!-- General Settings -->
-    <div class="card">
-        <h3>Wiktionary Lookup Mode</h3>
+    <!-- Section 02: Wiktionary Lookup Mode -->
+    <div class="section-item">
+        <div class="section-header">
+            <span class="section-num">\ 02</span>
+            <span class="section-title">Wiktionary Lookup Mode</span>
+        </div>
+
         <div class="form-group">
             <label for="lookup-method">Language Identification</label>
             <select id="lookup-method">
@@ -75,11 +291,13 @@
         </div>
     </div>
 
-    <!-- Google TTS Settings -->
-    <div class="card google">
-        <h3>Google TTS</h3>
+    <!-- Section 03: Google TTS -->
+    <div class="section-item">
+        <div class="section-header">
+            <span class="section-num">\ 03</span>
+            <span class="section-title">Google TTS</span>
+        </div>
 
-        <!-- Language choice selection -->
         <div class="form-group">
             <label for="google-language">Language</label>
             <select id="google-language">
@@ -89,7 +307,6 @@
             </select>
         </div>
 
-        <!-- Speed slider -->
         <div class="form-group">
             <label for="google-rate">
                 <span>Speech Speed</span>
@@ -100,9 +317,11 @@
     </div>
 
     <!-- Auto-save notification -->
-    <div id="status" class="status-toast">Settings saved automatically.</div>
+    <div id="status" class="status-toast">
+        <span>Settings saved automatically</span>
+        <span>✓</span>
+    </div>
 
-    <!-- Scripts -->
     <script src="dist/popup.js"></script>
 </body>
 

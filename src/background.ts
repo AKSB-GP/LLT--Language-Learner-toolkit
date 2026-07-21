@@ -123,17 +123,23 @@ async function IdentifiyLanguage(word: string, tab?: chrome.tabs.Tab): Promise<s
 
 
 function getWordOnWikipedia(langCode: string, word: string): string {
-  return `https://${langCode}.wikipedia.org/wiki/${word}`;
+  return `https://${langCode}.wikipedia.org/wiki/${word.toLocaleLowerCase()}`;
+}
+
+
+function getWordOnWiktionary(langCode: string, word: string): string {
+  return `https://${langCode}.wiktionary.org/wiki/${word.toLocaleLowerCase()}`;
 }
 
 /* english or swedish word */
 async function getWordFromFreeDictAPI(langCode: string, word: string): Promise<WordAPIResponse | WordAPIResponseFailed> {
+  const wordLowerCase = word.toLowerCase();
   try {
-    const response = await fetch(`https://freedictionaryapi.com/api/v1/entries/${langCode}/${word}`);
+    const response = await fetch(`https://freedictionaryapi.com/api/v1/entries/${langCode}/${wordLowerCase}`);
     if (response.ok) {
       const responseData = await response.json();
       const entry = responseData.entries?.[0];
-      const pageUrl = responseData.source?.url || `https://${langCode}.wikipedia.org/wiki/${word}`;
+      const pageUrl = responseData.source?.url || getWordOnWiktionary(langCode, wordLowerCase);
       const definition = entry?.senses?.[0]?.definition || "Not found";
       const wordcategory = entry?.partOfSpeech || "not found";
 
@@ -145,14 +151,14 @@ async function getWordFromFreeDictAPI(langCode: string, word: string): Promise<W
       return data;
     } else {
       return {
-        url: `https://${langCode}.wikipedia.org/wiki/${word}`,
+        url: getWordOnWiktionary(langCode, word),
         definition: "Not found",
         wordtype: "Not found",
       };
     }
   } catch (err: any) {
     return {
-      url: `https://${langCode}.wikipedia.org/wiki/${word}`,
+      url: getWordOnWiktionary(langCode, word),
       definition: "Not found",
       wordtype: "Not found",
       error: err.message,
@@ -163,6 +169,7 @@ async function getWordFromFreeDictAPI(langCode: string, word: string): Promise<W
 russian words have gender, animate/inanimate and case declension 
 */
 async function getRussianWordFromFreeDictAPI(langCode: string, word: string): Promise<RussianWordAPIResponse | WordAPIResponseFailed> {
+
   const cleanWord = decodeURIComponent(word).trim();
   try {
     const response = await fetch(`https://freedictionaryapi.com/api/v1/entries/${langCode}/${word}`);
@@ -170,7 +177,7 @@ async function getRussianWordFromFreeDictAPI(langCode: string, word: string): Pr
       const responseData = await response.json();
       const entry = responseData.entries?.[0];
       //fallback to wikipedia 
-      const pageUrl = responseData.source?.url || `https://${langCode}.wiktionary.org/wiki/${word}`;
+      const pageUrl = responseData.source?.url || getWordOnWiktionary(langCode, word);
       const definition = entry?.senses?.[0]?.definition || "Not found";
       const wordcategory = entry?.partOfSpeech || "not found";
 
@@ -220,14 +227,14 @@ async function getRussianWordFromFreeDictAPI(langCode: string, word: string): Pr
       return data;
     } else {
       return {
-        url: `https://${langCode}.wikipedia.org/wiki/${word}`,
-        definition: "Not found",
+        url: getWordOnWiktionary(langCode, word),
+        definition: "Not found on Freedict, check wiktionary",
         wordtype: "Not found",
       };
     }
   } catch (err: any) {
     return {
-      url: `https://${langCode}.wikipedia.org/wiki/${word}`,
+      url: getWordOnWiktionary(langCode, word),
       definition: "Not found",
       wordtype: "Not found",
       error: err.message,

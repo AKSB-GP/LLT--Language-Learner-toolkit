@@ -47,17 +47,13 @@ export class TTSModel {
       const modelBuffer = await modelResponse.arrayBuffer();
 
       // 4. Configure ONNX Runtime WASM paths
-      // ort.wasm.min.js v1.14.0 uses locateFile() (no .mjs dynamic imports).
-      // numThreads=1 forces the non-threaded ort-wasm.wasm binary which does
-      // NOT require SharedArrayBuffer or crossOriginIsolated headers.
+      // v1.14.0 selects binary via: d(simd, threaded):
+      //   simd=false + numThreads=1 => "ort-wasm.wasm" (non-SIMD, non-threaded)
+      // wasmPaths as a string prefix is how v1.14.0 resolves filenames (locateFile).
       ort.env.allowLocalModels = false;
+      ort.env.wasm.simd = false;
       ort.env.wasm.numThreads = 1;
-      ort.env.wasm.wasmPaths = {
-        'ort-wasm.wasm':              chrome.runtime.getURL('lib/ort-wasm.wasm'),
-        'ort-wasm-simd.wasm':         chrome.runtime.getURL('lib/ort-wasm-simd.wasm'),
-        'ort-wasm-threaded.wasm':     chrome.runtime.getURL('lib/ort-wasm.wasm'),
-        'ort-wasm-simd-threaded.wasm': chrome.runtime.getURL('lib/ort-wasm.wasm'),
-      };
+      ort.env.wasm.wasmPaths = chrome.runtime.getURL('lib/');
 
       // 5. Load ONNX Session
       this.session = await ort.InferenceSession.create(modelBuffer, { executionProviders: ['wasm'] });

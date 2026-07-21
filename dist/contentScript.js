@@ -48,13 +48,9 @@
         const modelResponse = await fetch(modelUrl);
         const modelBuffer = await modelResponse.arrayBuffer();
         ort.env.allowLocalModels = false;
+        ort.env.wasm.simd = false;
         ort.env.wasm.numThreads = 1;
-        ort.env.wasm.wasmPaths = {
-          "ort-wasm.wasm": chrome.runtime.getURL("lib/ort-wasm.wasm"),
-          "ort-wasm-simd.wasm": chrome.runtime.getURL("lib/ort-wasm-simd.wasm"),
-          "ort-wasm-threaded.wasm": chrome.runtime.getURL("lib/ort-wasm.wasm"),
-          "ort-wasm-simd-threaded.wasm": chrome.runtime.getURL("lib/ort-wasm.wasm")
-        };
+        ort.env.wasm.wasmPaths = chrome.runtime.getURL("lib/");
         this.session = await ort.InferenceSession.create(modelBuffer, { executionProviders: ["wasm"] });
         this.loadedVoiceFile = voiceFile;
       } catch (error) {
@@ -171,20 +167,14 @@
 
   // src/view/NotificationView.ts
   var NotificationView = class {
-    container = null;
     activeToast = null;
+    activeToastType = null;
     lastSelectionRect = null;
     constructor() {
-      this.createContainer();
       this.setupSelectionTracker();
     }
-    createContainer() {
-      this.container = document.createElement("div");
-      this.container.id = "tts-notifications-container";
-      document.body.appendChild(this.container);
-    }
     setupSelectionTracker() {
-      document.addEventListener("selectionchange", () => {
+      const updateRect = () => {
         const selection = window.getSelection();
         if (selection && selection.rangeCount > 0) {
           const range = selection.getRangeAt(0);
@@ -200,22 +190,103 @@
             };
           }
         }
-      });
+      };
+      document.addEventListener("selectionchange", updateRect);
+      document.addEventListener("mouseup", updateRect);
+      document.addEventListener("contextmenu", updateRect);
+    }
+    /** Resolve the latest selection position, preferring live selection. */
+    getSelectionPosition() {
+      let top = 100, left = 100, width = 0, height = 0;
+      let found = false;
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const liveRect = range.getBoundingClientRect();
+        if (liveRect.width > 0 && liveRect.height > 0) {
+          top = liveRect.top + window.scrollY;
+          left = liveRect.left + window.scrollX;
+          width = liveRect.width;
+          height = liveRect.height;
+          found = true;
+        }
+      }
+      if (!found && this.lastSelectionRect) {
+        top = this.lastSelectionRect.top + this.lastSelectionRect.scrollY;
+        left = this.lastSelectionRect.left + this.lastSelectionRect.scrollX;
+        width = this.lastSelectionRect.width;
+        height = this.lastSelectionRect.height;
+        found = true;
+      }
+      return { top, left, width, height };
+    }
+    /** Position toast above selection (flips below if near top of screen). */
+    positionToast(toast, toastWidth, toastHeight, pos) {
+      const { top, left, width, height } = pos;
+      let toastTop = top - toastHeight - 8;
+      let toastLeft = left + width / 2 - toastWidth / 2;
+      if (toastTop < window.scrollY + 4) {
+        toastTop = top + height + 8;
+      }
+      toastLeft = Math.max(window.scrollX + 8, toastLeft);
+      const maxLeft = window.scrollX + window.innerWidth - toastWidth - 8;
+      if (toastLeft > maxLeft)
+        toastLeft = maxLeft;
+      toast.style.top = `${toastTop}px`;
+      toast.style.left = `${toastLeft}px`;
+    }
+    // ─── Status / Audio Progress Toast ───────────────────────────────────────
+    statusIconFor(type) {
+      switch (type) {
+        case "loading":
+          return "\u23F3";
+        case "synthesizing":
+          return "\u2699\uFE0F";
+        case "playing":
+          return "\u{1F50A}";
+        case "error":
+          return "\u26A0\uFE0F";
+      }
     }
     show(type, message, duration = null) {
+      if (this.activeToast && this.activeToast.parentNode && this.activeToastType) {
+        this.activeToast.className = `tts-toast tts-toast-${type} tts-toast-visible`;
+        this.activeToastType = type;
+        const iconElem = this.activeToast.querySelector(".tts-toast-icon");
+        if (iconElem)
+          iconElem.textContent = this.statusIconFor(type);
+        const textElem = this.activeToast.querySelector(".tts-toast-text");
+        if (textElem)
+          textElem.textContent = message;
+        if (duration) {
+          setTimeout(() => this.dismiss(this.activeToast), duration);
+        }
+        return;
+      }
       if (this.activeToast) {
         this.activeToast.remove();
       }
       const toast = document.createElement("div");
       toast.className = `tts-toast tts-toast-${type}`;
-      const textContainer = document.createElement("div");
-      textContainer.className = "tts-toast-text";
-      textContainer.textContent = message;
-      toast.appendChild(textContainer);
-      if (this.container) {
-        this.container.appendChild(toast);
-      }
+      toast.style.position = "absolute";
+      const body = document.createElement("div");
+      body.className = "tts-toast-body";
+      const icon = document.createElement("span");
+      icon.className = "tts-toast-icon";
+      icon.textContent = this.statusIconFor(type);
+      body.appendChild(icon);
+      const text = document.createElement("span");
+      text.className = "tts-toast-text";
+      text.textContent = message;
+      body.appendChild(text);
+      toast.appendChild(body);
+      document.body.appendChild(toast);
       this.activeToast = toast;
+      this.activeToastType = type;
+      const pos = this.getSelectionPosition();
+      const toastWidth = toast.offsetWidth || 180;
+      const toastHeight = toast.offsetHeight || 36;
+      this.positionToast(toast, toastWidth, toastHeight, pos);
       requestAnimationFrame(() => {
         toast.classList.add("tts-toast-visible");
       });
@@ -234,38 +305,15 @@
           target.remove();
           if (this.activeToast === target) {
             this.activeToast = null;
+            this.activeToastType = null;
           }
         }, 300);
       }
     }
+    // ─── Language Picker Toast ────────────────────────────────────────────────
     promptLanguage(word) {
       return new Promise((resolve) => {
-        let top = 100;
-        let left = 100;
-        let height = 0;
-        let width = 0;
-        let rect = this.lastSelectionRect;
-        const selection = window.getSelection();
-        if (selection && selection.rangeCount > 0) {
-          const range = selection.getRangeAt(0);
-          const liveRect = range.getBoundingClientRect();
-          if (liveRect.width > 0 && liveRect.height > 0) {
-            rect = {
-              top: liveRect.top,
-              left: liveRect.left,
-              width: liveRect.width,
-              height: liveRect.height,
-              scrollY: window.scrollY,
-              scrollX: window.scrollX
-            };
-          }
-        }
-        if (rect) {
-          top = rect.top + rect.scrollY;
-          left = rect.left + rect.scrollX;
-          width = rect.width;
-          height = rect.height;
-        }
+        const pos = this.getSelectionPosition();
         const toast = document.createElement("div");
         toast.className = "tts-selection-toast";
         toast.style.position = "absolute";
@@ -301,16 +349,9 @@
         content.appendChild(btnClose);
         toast.appendChild(content);
         document.body.appendChild(toast);
-        const toastWidth = toast.offsetWidth || 205;
-        const toastHeight = toast.offsetHeight || 31;
-        toast.style.top = `${top - toastHeight - 8}px`;
-        toast.style.left = `${left + width / 2 - toastWidth / 2}px`;
-        if (parseFloat(toast.style.top) < 0) {
-          toast.style.top = `${top + height + 8}px`;
-        }
-        if (parseFloat(toast.style.left) < 0) {
-          toast.style.left = "8px";
-        }
+        const toastWidth = toast.offsetWidth || 210;
+        const toastHeight = toast.offsetHeight || 36;
+        this.positionToast(toast, toastWidth, toastHeight, pos);
         requestAnimationFrame(() => {
           toast.classList.add("tts-sel-toast-visible");
         });
@@ -330,33 +371,9 @@
         };
       });
     }
+    // ─── Definition Card Toast ────────────────────────────────────────────────
     showDefinitionToast(word, definition, pageUrl, language) {
-      let top = 100;
-      let left = 100;
-      let height = 0;
-      let width = 0;
-      let rect = this.lastSelectionRect;
-      const selection = window.getSelection();
-      if (selection && selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        const liveRect = range.getBoundingClientRect();
-        if (liveRect.width > 0 && liveRect.height > 0) {
-          rect = {
-            top: liveRect.top,
-            left: liveRect.left,
-            width: liveRect.width,
-            height: liveRect.height,
-            scrollY: window.scrollY,
-            scrollX: window.scrollX
-          };
-        }
-      }
-      if (rect) {
-        top = rect.top + rect.scrollY;
-        left = rect.left + rect.scrollX;
-        width = rect.width;
-        height = rect.height;
-      }
+      const pos = this.getSelectionPosition();
       const toast = document.createElement("div");
       toast.className = "tts-selection-toast";
       toast.style.position = "absolute";
@@ -365,44 +382,41 @@
       content.className = "tts-sel-toast-content";
       content.style.flexDirection = "column";
       content.style.alignItems = "flex-start";
-      content.style.gap = "4px";
-      content.style.padding = "8px 12px";
+      content.style.gap = "6px";
+      content.style.padding = "10px 14px";
       const headerRow = document.createElement("div");
-      headerRow.style.display = "flex";
-      headerRow.style.alignItems = "center";
-      headerRow.style.justifyContent = "space-between";
-      headerRow.style.width = "100%";
+      headerRow.style.cssText = "display:flex;align-items:baseline;justify-content:space-between;width:100%";
       const titleContainer = document.createElement("div");
-      titleContainer.style.display = "flex";
-      titleContainer.style.alignItems = "center";
-      titleContainer.style.gap = "6px";
+      titleContainer.style.cssText = "display:flex;align-items:baseline;gap:6px";
+      const prefixElem = document.createElement("span");
+      prefixElem.textContent = "\\";
+      prefixElem.style.cssText = "font-size:13px;font-weight:400;color:#999999";
+      titleContainer.appendChild(prefixElem);
       const wordElem = document.createElement("strong");
       wordElem.textContent = word;
+      wordElem.style.cssText = "font-size:14px;font-weight:700;letter-spacing:-0.02em;color:#111111";
       titleContainer.appendChild(wordElem);
       if (language) {
         const langBadge = document.createElement("span");
         langBadge.className = "tts-sel-toast-label";
-        langBadge.textContent = `(${language})`;
-        langBadge.style.fontSize = "10px";
+        langBadge.textContent = `\\ ${language}`;
         titleContainer.appendChild(langBadge);
       }
       headerRow.appendChild(titleContainer);
       const btnClose = document.createElement("button");
       btnClose.className = "tts-sel-toast-close";
-      btnClose.textContent = "\u2715";
+      btnClose.textContent = "\xD7";
       btnClose.addEventListener("click", (e) => {
         e.stopPropagation();
         cleanup();
       });
       headerRow.appendChild(btnClose);
       content.appendChild(headerRow);
+      const divider = document.createElement("div");
+      divider.style.cssText = "width:100%;height:1px;background:#111111;margin:2px 0";
+      content.appendChild(divider);
       const defElem = document.createElement("div");
-      defElem.style.fontSize = "11px";
-      defElem.style.lineHeight = "1.4";
-      defElem.style.color = "#e0e0e0";
-      defElem.style.maxHeight = "140px";
-      defElem.style.overflowY = "auto";
-      defElem.style.whiteSpace = "pre-wrap";
+      defElem.style.cssText = "font-size:12px;line-height:1.45;color:#111111;max-height:140px;overflow-y:auto;white-space:pre-wrap;width:100%";
       defElem.textContent = Array.isArray(definition) ? definition.join("\n") : definition;
       content.appendChild(defElem);
       if (pageUrl) {
@@ -410,24 +424,17 @@
         linkElem.href = pageUrl;
         linkElem.target = "_blank";
         linkElem.rel = "noopener noreferrer";
-        linkElem.textContent = "Read on Wiktionary \u2192";
-        linkElem.style.color = "#4a90e2";
-        linkElem.style.fontSize = "11px";
-        linkElem.style.marginTop = "2px";
-        linkElem.style.textDecoration = "none";
-        linkElem.addEventListener("mouseover", () => linkElem.style.textDecoration = "underline");
-        linkElem.addEventListener("mouseout", () => linkElem.style.textDecoration = "none");
+        linkElem.textContent = "Read on Wiktionary \u2197";
+        linkElem.style.cssText = "color:#111111;font-size:11px;font-weight:600;margin-top:4px;text-decoration:underline;text-underline-offset:2px";
+        linkElem.addEventListener("mouseover", () => linkElem.style.color = "#555555");
+        linkElem.addEventListener("mouseout", () => linkElem.style.color = "#111111");
         content.appendChild(linkElem);
       }
       toast.appendChild(content);
       document.body.appendChild(toast);
       const toastWidth = toast.offsetWidth || 300;
-      const toastHeight = toast.offsetHeight || 80;
-      toast.style.top = `${top - toastHeight - 8}px`;
-      toast.style.left = `${Math.max(8, left + width / 2 - toastWidth / 2)}px`;
-      if (parseFloat(toast.style.top) < 0) {
-        toast.style.top = `${top + height + 8}px`;
-      }
+      const toastHeight = toast.offsetHeight || 90;
+      this.positionToast(toast, toastWidth, toastHeight, pos);
       requestAnimationFrame(() => {
         toast.classList.add("tts-sel-toast-visible");
       });
@@ -444,7 +451,7 @@
         toast.classList.remove("tts-sel-toast-visible");
         setTimeout(() => {
           toast.remove();
-        }, 150);
+        }, 200);
       };
     }
   };
