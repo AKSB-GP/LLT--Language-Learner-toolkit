@@ -54,3 +54,24 @@ export interface GeneralSettings {
 export type ExtensionSettings = PiperSettings &
   GoogleSettings &
   GeneralSettings;
+
+
+export interface VocabularyRecord {
+  id?: number;
+  word: string;
+  language: string;
+  definition: string;
+  pageUrl?: string;
+  createdAt: number;
+  updatedAt?: number;
+  notes?: string;
+  tags?: string[];
+}
+
+export interface AudioCacheRecord {
+  cacheKey: string;
+  audioBuffer: ArrayBuffer;
+  createdAt: number;
+  lastAccessed?: number;
+}
+

@@ -185,4 +185,71 @@ document.addEventListener("DOMContentLoaded", () => {
       notifyContentScript();
     });
   });
+
+  const exportCsvBtn = document.getElementById(
+    "export-csv-btn",
+  ) as HTMLButtonElement | null;
+  if (exportCsvBtn) {
+    exportCsvBtn.addEventListener("click", async () => {
+      const dbModel = new DatabaseModel();
+      const records = await dbModel.getAllVocabulary();
+      if (!records || records.length === 0) {
+        alert("No vocabulary records found to export.");
+        return;
+      }
+
+      const headers = [
+        "Word",
+        "Language",
+        "Definition",
+        "Wiktionary URL",
+        "Date Saved",
+      ];
+      const rows = records.map((r) => [
+        `"${r.word.replace(/"/g, '""')}"`,
+        `"${r.language}"`,
+        `"${r.definition.replace(/"/g, '""')}"`,
+        `"${r.pageUrl || ""}"`,
+        `"${new Date(r.createdAt).toISOString().split("T")[0]}"`,
+      ]);
+
+      const csvContent = [
+        headers.join(","),
+        ...rows.map((row) => row.join(",")),
+      ].join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `LLT_Vocabulary_${new Date().toISOString().split("T")[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+  }
+
+  const clearAudioCacheBtn = document.getElementById(
+    "clear-audio-cache-btn",
+  ) as HTMLButtonElement | null;
+  if (clearAudioCacheBtn) {
+    clearAudioCacheBtn.addEventListener("click", async () => {
+      if (confirm("Are you sure you want to clear the cached audio recordings?")) {
+        const dbModel = new DatabaseModel();
+        await dbModel.clearAudioCache();
+        triggerSaveToast();
+      }
+    });
+  }
+
+  const clearVocabBtn = document.getElementById(
+    "clear-vocab-btn",
+  ) as HTMLButtonElement | null;
+  if (clearVocabBtn) {
+    clearVocabBtn.addEventListener("click", async () => {
+      if (confirm("Are you sure you want to delete all saved vocabulary records? This cannot be undone.")) {
+        const dbModel = new DatabaseModel();
+        await dbModel.clearAllVocabulary();
+        triggerSaveToast();
+      }
+    });
+  }
 });
