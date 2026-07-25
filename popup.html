@@ -1,0 +1,141 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <title>Settings</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+
+<body>
+  <!-- Editorial Header -->
+  <div class="header-title">LLT - LANGUAGE LEARNER TOOLKIT</div>
+  <!-- Section 01: Offline Piper TTS -->
+  <div class="section-item">
+    <div class="section-header"
+      title="USE PIPER TTS: A NEURAL TEXT-TO-SPEECH ENGINE. WORKS OFFLINE WITH BETTER QUALITY BUT IS SLOWER TO GENERATE AUDIO.">
+      <span class="section-num">01 / </span>
+      <span class="section-title">PIPER TTS</span>
+    </div>
+
+    <div class="form-group">
+      <label for="language-category" title="AVAILABLE LANGUAGES for PIPER TTS ">LANGUAGE CATEGORY</label>
+      <select id="language-category" title="SELECT A LANGUAGE ">
+        <option value="russian">RUSSIAN</option>
+        <option value="english">ENGLISH</option>
+        <option value="swedish">SWEDISH</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="piper-voice" title="AVAILABLE VOICE MODELS">VOICE MODEL</label>
+      <select id="piper-voice" title="SELECT A VOICE MODEL">
+        <!-- populated dynamically -->
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="piper-speed" title="SPEED SETTINGS FOR PIPER TTS ">
+        <span title="AFFECTS THE SPEED OF SPEECH. HIGHER VALUE IS FASTER">SPEECH SPEED</span>
+        <span id="piper-speed-val" class="val-display">1.0x</span>
+      </label>
+      <input type="range" id="piper-speed" min="0.5" max="2.0" step="0.1" value="1.0" />
+    </div>
+
+    <div class="form-group">
+      <label for="piper-noise-scale" title="VARIATION SETTINGS FOR PIPER TTS ">
+        <span title="AFFECTS THE VARIATION IN VOICE. HIGHER VALUE IS MORE NATURAL.">VOICE VARIATION</span>
+        <span id="piper-noise-scale-val" class="val-display">0.67</span>
+      </label>
+      <input type="range" id="piper-noise-scale" min="0.1" max="1.5" step="0.05" value="0.67" />
+    </div>
+
+    <div class="form-group">
+      <label for="piper-noise-w" title="VARIATION SETTINGS FOR PIPER TTS ">
+        <span title="AFFECTS THE RHYTHM AND EMOTION OF SPEECH. HIGHER VALUE IS MORE EMOTIONAL.">RHYTHM &amp;
+          EMOTION</span>
+        <span id="piper-noise-w-val" class="val-display">0.80</span>
+      </label>
+      <input type="range" id="piper-noise-w" min="0.1" max="1.5" step="0.05" value="0.80" />
+    </div>
+  </div>
+
+  <!-- Section 02: Google TTS -->
+  <div class="section-item">
+    <div class="section-header"
+      title="GOOGLE TTS: THE DEFAULT TTS ENGINE IN CHROME. IT IS FASTER THAN PIPER BUT HAS A MORE ROBOTIC PRONUNCIATION.">
+      <span class="section-num">02 /</span>
+      <span class="section-title">GOOGLE TTS</span>
+    </div>
+
+    <div class="form-group" title="LANGUAGES AVAILABLE FOR GOOGLE TTS IN LLT">
+      <label for="google-language">LANGUAGE</label>
+      <select id="google-language" title="SELECT A LANGAUGE">
+        <option value="ru-RU">RUSSIAN</option>
+        <option value="en-US">ENGLISH</option>
+        <option value="sv-SE">SWEDISH</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="google-rate" title="SPEED SETTINGS FOR GOOGLE TTS">
+        <span title="AFFECTS THE SPEED OF SPEECH. HIGHER VALUE IS FASTER">SPEECH SPEED
+        </span>
+        <span id="google-rate-val" class="val-display">1.0x</span>
+      </label>
+      <input type="range" id="google-rate" min="0.5" max="2.5" step="0.1" value="1.0" />
+    </div>
+  </div>
+  <!-- Section 03: Wiktionary Lookup Mode -->
+  <div class="section-item">
+    <div class="section-header" title="IDENTIFICATION METHOD SETTINGS">
+      <span class="section-num">03 / </span>
+      <span class="section-title">LANGUAGE IDENTIFICATION METHOD</span>
+    </div>
+
+    <div class="form-group" title="LLT USES TWO METHODS FOR LANGUAGE IDENTIFICATION: MANUAL AND AUTOMATIC.">
+      <label for="lookup-method">LANGUAGE IDENTIFICATION</label>
+      <select id="lookup-method" title="SELECT AN IDENTIFICATION METHOD ">
+        <option value="manual"
+          title="WHEN SELECTED, LLT WILL PROMPT YOU TO SELECT WHICH LANGUAGE THE HIGHLIGHTED WORD IS IN.">
+          MANUAL WORD IDENTIFICATION POPUP
+        </option>
+        <option value="classifier"
+          title="WHEN SELECTED, LLT WILL USE A NAIVE BAYES CLASSIFIER TO DECIDE WHICH LANGUAGE THE HIGHLIGHTED WORD IS IN. THIS IS AUTOMATIC BUT MIGHT SOMETIMES GUESS WRONG">
+          AUTOMATIC WORD IDENTIFICATION
+        </option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Section 04: Vocabulary Export & Storage -->
+  <div class="section-item">
+    <div class="section-header" title="EXPORT VOCABULARY HISTORY OR MANAGE INDEXEDDB STORAGE">
+      <span class="section-num">04 / </span>
+      <span class="section-title">DATA & STORAGE</span>
+    </div>
+
+    <div class="form-group">
+      <button class="data-control-btn" id="export-csv-btn" type="button">
+        EXPORT (.CSV)
+      </button>
+
+      <button class="data-control-btn" id="clear-audio-cache-btn" type="button"
+        title="Clear cached TTS audio recordings to free up space">
+        CLEAR AUDIO CACHE
+      </button>
+
+      <button class="data-control-btn" id="clear-vocab-btn" type="button" title="Clear all saved vocabulary records">
+        CLEAR VOCABULARY
+      </button>
+    </div>
+  </div>
+
+  <!-- Auto-save notification -->
+  <div id="status" class="status-toast">
+    <span>SAVED</span>
+  </div>
+  <script src="dist/popup.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,248 @@
+/* ------------------------------------------------------------------
+   Popup Settings Panel styling
+   cant have top level styling in a content script when injecting 
+   ------------------------------------------------------------------ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  width: 340px;
+  background: #e8e8e8;
+}
+
+body {
+  width: 340px;
+  margin: 0;
+  padding: 20px 18px 24px;
+  background: #e8e8e8;
+  color: #111111;
+  font-family:
+    "Akkurat",
+    "Akkurat LL",
+    "Akkurat Pro",
+    -apple-system,
+    BlinkMacSystemFont,
+    "SF Pro Display",
+    "Helvetica Neue",
+    sans-serif;
+  font-size: 12.5px;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Main Header ─── */
+.header {
+  margin-bottom: 24px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #111111;
+}
+
+.header-title {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: #111111;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.header-title .prefix {
+  color: #111111;
+  font-weight: 400;
+}
+
+.header-sub {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #777777;
+  margin-top: 6px;
+}
+
+/* ─── Section Item (List-style Row) ─── */
+.section-item {
+  border-top: 1px solid #111111;
+  padding: 14px 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.section-item:last-of-type {
+  border-bottom: 1px solid #111111;
+}
+
+/* Section Title Row with \ 01 prefix */
+.section-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.section-num {
+  font-size: 15px;
+  font-weight: 300;
+  color: #a0a0a0;
+  letter-spacing: -0.02em;
+  font-family: inherit;
+}
+
+.section-title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #111111;
+}
+
+/* ─── Form Controls ─── */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding-left: 28px;
+}
+
+.form-group label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 12px;
+  font-weight: 500;
+  color: #222222;
+}
+
+.val-display {
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #111111;
+  background: #f4f4f4;
+  border: 1px solid #111111;
+  padding: 1px 6px;
+  border-radius: 0;
+}
+
+/* Select Input */
+select {
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  background: #f4f4f4;
+  border: 1px solid #111111;
+  border-radius: 0;
+  padding: 7px 28px 7px 10px;
+  color: #111111;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23111111'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+
+select:focus {
+  background-color: #ffffff;
+  border-color: #000000;
+}
+
+select option {
+  background: #ffffff;
+  color: #111111;
+}
+
+/* Range Slider */
+input[type="range"] {
+  width: 100%;
+  height: 2px;
+  appearance: none;
+  -webkit-appearance: none;
+  background: #111111;
+  outline: none;
+  cursor: pointer;
+  margin: 6px 0;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 0;
+  background: #111111;
+  border: 1px solid #111111;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 0;
+  background: #111111;
+  border: 1px solid #111111;
+  cursor: pointer;
+}
+
+/* Auto-save Status Bar */
+.status-toast {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 8px 18px;
+  background: #111111;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  opacity: 0;
+  transform: translateY(100%);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+  z-index: 9999;
+}
+
+.status-toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* export and clearing buttons */
+.data-control-btn {
+  background: #111111;
+  color: #ffffff;
+  border: 1px solid #111111;
+  padding: 8px 14px;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.data-control-btn:hover {
+  background: #ff8e04;
+}

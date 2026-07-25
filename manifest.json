@@ -1,0 +1,50 @@
+{
+  "manifest_version": 3,
+  "name": "LLT - LANGUAGE LEARNER TOOLKIT",
+  "version": "1.1",
+  "description": "Provides as series of tools for helping when learning russia, english and swedish. Provides tts models, Word look up, Fetching word definitions and saving words to CSV",
+  "permissions": [
+    "contextMenus",
+    "activeTab",
+    "tts",
+    "storage",
+    "notifications"
+  ],
+  "icons": {
+    "32": "icons/LLT_icon_32.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "App settings"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "models/*",
+        "lib/*"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ],
+  "background": {
+    "service_worker": "dist/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "css": [
+        "styles.css"
+      ],
+      "js": [
+        "lib/ort.wasm.min.js",
+        "lib/piper_phonemize.min.js",
+        "dist/contentScript.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}
