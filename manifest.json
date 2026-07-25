@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "LLT - LANGUAGE LEARNER TOOLKIT",
   "version": "1.1",
-  "description": "Provides as series of tools for helping when learning russia, english and swedish. Provider two tts models, PIPER and google for prounication, word look up on wiktionary and wikidata, and quick search on wikipedia, wiktionary, yandex and google and fetching word definition.",
+  "description": "Provides as series of tools for helping when learning russia, english and swedish. Provides tts models, Word look up, Fetching word definitions and saving words to CSV",
   "permissions": [
     "contextMenus",
     "activeTab",
@@ -10,6 +10,9 @@
     "storage",
     "notifications"
   ],
+  "icons": {
+    "32": "icons/LLT_icon_32.png"
+  },
   "action": {
     "default_popup": "popup.html",
     "default_title": "App settings"
