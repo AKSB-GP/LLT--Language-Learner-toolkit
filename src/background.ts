@@ -14,6 +14,9 @@ import {
   RUSSIAN_NUMBER_LIST,
 } from "./const";
 import { eld } from "eld/extrasmall";
+import { DatabaseModel } from "./model/DatabaseModel";
+
+const dbModel = new DatabaseModel();
 
 // set eld subsets as to avoid as most languages wont be used
 //eld is an word classifier
@@ -47,6 +50,8 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     OpenWordWikiByWord(info, tab);
   } else if (info.menuItemId === "get-definition-of-word") {
     getWikiDefinitionOfWord(info, tab);
+  } else if (info.menuItemId === "save-word-to-vocabulary") {
+    SaveWordToVocabulary(info, tab);
   }
 });
 
@@ -449,5 +454,60 @@ async function OpenWordWikiByWord(
     chrome.tabs.create({
       url: `https://${langCode}.wiktionary.org/wiki/${word}`,
     });
+  }
+}
+
+/**
+ * Handles explicit context menu click for "save word to vocabulary".
+ * Fetches word details and stores them in IndexedDB vocabulary database.
+ *
+ * @param info - Context menu click data.
+ * @param tab - Active browser tab.
+ */
+async function SaveWordToVocabulary(
+  info: chrome.contextMenus.OnClickData,
+  tab?: chrome.tabs.Tab,
+): Promise<void> {
+  if (info.selectionText) {
+    const rawWord = info.selectionText.trim();
+    const determinedCategory = await IdentifiyLanguage(rawWord, tab);
+    const langCategory = determinedCategory || "unknown";
+    const langCode = LANGUAGE_CODES[langCategory] || "en";
+    const word = encodeURIComponent(rawWord.toLowerCase());
+
+    let definition = "Saved from context menu";
+    let pageUrl = `https://${langCode}.wiktionary.org/wiki/${word}`;
+
+    if (langCategory === "russian") {
+      const data = await getRussianWordFromFreeDictAPI(langCode, word);
+      if (data && data.definition) {
+        definition = data.definition;
+        if (data.url) pageUrl = data.url;
+      }
+    } else if (langCategory !== "unknown") {
+      const data = await getWordFromFreeDictAPI(langCode, word);
+      if (data && data.definition) {
+        definition = data.definition;
+        if (data.url) pageUrl = data.url;
+      }
+    }
+
+    await dbModel.saveVocabulary({
+      word: rawWord,
+      language: langCategory,
+      definition: definition,
+      pageUrl: pageUrl,
+    });
+
+    if (tab?.id) {
+      chrome.tabs
+        .sendMessage(tab.id, {
+          action: "showNotification",
+          toastType: "PLAYING",
+          text: `SAVED "${rawWord.toUpperCase()}" TO VOCABULARY`,
+          duration: 3000,
+        })
+        .catch(() => {});
+    }
   }
 }

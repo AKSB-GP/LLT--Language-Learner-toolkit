@@ -53,6 +53,456 @@
     lookupMethod: "manual"
   };
 
+  // src/model/DatabaseModel.ts
+  var DatabaseModel = class {
+    dbName = "LLT_Database";
+    version = 2;
+    db = null;
+    /**
+     * Opens connection to IndexedDB database with schema versioning and lifecycle handlers.
+     */
+    async open() {
+      if (this.db)
+        return this.db;
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(this.dbName, this.version);
+        request.onupgradeneeded = (event) => {
+          const db = event.target.result;
+          const transaction = event.target.transaction;
+          let audioStore;
+          if (!db.objectStoreNames.contains("audio_cache")) {
+            audioStore = db.createObjectStore("audio_cache", { keyPath: "cacheKey" });
+          } else {
+            audioStore = transaction.objectStore("audio_cache");
+          }
+          if (!audioStore.indexNames.contains("lastAccessed")) {
+            audioStore.createIndex("lastAccessed", "lastAccessed", { unique: false });
+          }
+          let vocabStore;
+          if (!db.objectStoreNames.contains("vocabulary")) {
+            vocabStore = db.createObjectStore("vocabulary", {
+              keyPath: "id",
+              autoIncrement: true
+            });
+          } else {
+            vocabStore = transaction.objectStore("vocabulary");
+          }
+          if (!vocabStore.indexNames.contains("word")) {
+            vocabStore.createIndex("word", "word", { unique: false });
+          }
+          if (!vocabStore.indexNames.contains("language")) {
+            vocabStore.createIndex("language", "language", { unique: false });
+          }
+          if (!vocabStore.indexNames.contains("createdAt")) {
+            vocabStore.createIndex("createdAt", "createdAt", { unique: false });
+          }
+          if (!vocabStore.indexNames.contains("word_language")) {
+            vocabStore.createIndex("word_language", ["word", "language"], { unique: false });
+          }
+        };
+        request.onsuccess = () => {
+          const db = request.result;
+          this.db = db;
+          db.onversionchange = () => {
+            db.close();
+            this.db = null;
+          };
+          resolve(db);
+        };
+        request.onblocked = () => {
+          console.warn("IndexedDB open request blocked. Please close other open tabs using LLT.");
+        };
+        request.onerror = () => reject(request.error);
+      });
+    }
+    /**
+     * Closes active database connection.
+     */
+    close() {
+      if (this.db) {
+        this.db.close();
+        this.db = null;
+      }
+    }
+    // ─── Audio Cache ──────────────────────────────────────────────────────────
+    /**
+     * Retrieves cached audio buffer by cacheKey and asynchronously updates its lastAccessed timestamp.
+     */
+    async getCachedAudio(cacheKey) {
+      try {
+        const db = await this.open();
+        return new Promise((resolve) => {
+          const tx = db.transaction("audio_cache", "readwrite");
+          const store = tx.objectStore("audio_cache");
+          const req = store.get(cacheKey);
+          req.onsuccess = () => {
+            const record = req.result;
+            if (record && record.audioBuffer) {
+              record.lastAccessed = Date.now();
+              store.put(record);
+              resolve(record.audioBuffer);
+            } else {
+              resolve(null);
+            }
+          };
+          req.onerror = () => resolve(null);
+        });
+      } catch {
+        return null;
+      }
+    }
+    /**
+     * Stores TTS audio buffer in cache with QuotaExceeded auto-pruning fallback.
+     */
+    async setCachedAudio(cacheKey, audioBuffer) {
+      try {
+        const db = await this.open();
+        const now = Date.now();
+        const record = {
+          cacheKey,
+          audioBuffer,
+          createdAt: now,
+          lastAccessed: now
+        };
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction("audio_cache", "readwrite");
+          const store = tx.objectStore("audio_cache");
+          store.put(record);
+          tx.oncomplete = () => resolve();
+          tx.onerror = async (e) => {
+            const error = tx.error || e.target?.error;
+            if (error && error.name === "QuotaExceededError") {
+              console.warn("QuotaExceededError encountered. Pruning audio cache...");
+              await this.pruneAudioCache(50, 7 * 24 * 60 * 60 * 1e3);
+              try {
+                await this.setCachedAudio(cacheKey, audioBuffer);
+                resolve();
+                return;
+              } catch (retryErr) {
+                reject(retryErr);
+                return;
+              }
+            }
+            reject(error);
+          };
+        });
+      } catch (err) {
+        console.warn("Failed to cache audio in IndexedDB:", err);
+      }
+    }
+    /**
+     * Prunes old or excessive audio cache entries.
+     */
+    async pruneAudioCache(maxEntries = 200, maxAgeMs = 30 * 24 * 60 * 60 * 1e3) {
+      try {
+        const db = await this.open();
+        const now = Date.now();
+        return new Promise((resolve) => {
+          const tx = db.transaction("audio_cache", "readwrite");
+          const store = tx.objectStore("audio_cache");
+          const req = store.getAll();
+          req.onsuccess = () => {
+            const records = req.result || [];
+            let deletedCount = 0;
+            const remaining = [];
+            for (const rec of records) {
+              const age = now - (rec.lastAccessed || rec.createdAt);
+              if (age > maxAgeMs) {
+                store.delete(rec.cacheKey);
+                deletedCount++;
+              } else {
+                remaining.push(rec);
+              }
+            }
+            if (remaining.length > maxEntries) {
+              remaining.sort(
+                (a, b) => (a.lastAccessed || a.createdAt) - (b.lastAccessed || b.createdAt)
+              );
+              const toRemove = remaining.slice(0, remaining.length - maxEntries);
+              for (const rec of toRemove) {
+                store.delete(rec.cacheKey);
+                deletedCount++;
+              }
+            }
+            resolve(deletedCount);
+          };
+          req.onerror = () => resolve(0);
+        });
+      } catch {
+        return 0;
+      }
+    }
+    /**
+     * Clears all items in the audio_cache store.
+     */
+    async clearAudioCache() {
+      try {
+        const db = await this.open();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction("audio_cache", "readwrite");
+          const req = tx.objectStore("audio_cache").clear();
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+        });
+      } catch (err) {
+        console.warn("Failed to clear audio cache:", err);
+      }
+    }
+    // ─── Vocabulary History & Management ─────────────────────────────────────
+    /**
+     * Looks up a vocabulary record by word and language to prevent duplicates.
+     */
+    async getVocabularyByWord(word, language) {
+      try {
+        const db = await this.open();
+        return new Promise((resolve) => {
+          const tx = db.transaction("vocabulary", "readonly");
+          const store = tx.objectStore("vocabulary");
+          const targetWord = word.toLowerCase().trim();
+          if (store.indexNames.contains("word_language")) {
+            const index = store.index("word_language");
+            const req = index.get([targetWord, language]);
+            req.onsuccess = () => resolve(req.result || null);
+            req.onerror = () => resolve(null);
+          } else {
+            const req = store.getAll();
+            req.onsuccess = () => {
+              const list = req.result || [];
+              const match = list.find(
+                (r) => r.word.toLowerCase().trim() === targetWord && r.language === language
+              );
+              resolve(match || null);
+            };
+            req.onerror = () => resolve(null);
+          }
+        });
+      } catch {
+        return null;
+      }
+    }
+    /**
+     * Saves a vocabulary record with deduplication. Updates existing record if word+language exists.
+     */
+    async saveVocabulary(record) {
+      try {
+        const existing = await this.getVocabularyByWord(record.word, record.language);
+        const db = await this.open();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction("vocabulary", "readwrite");
+          const store = tx.objectStore("vocabulary");
+          const now = Date.now();
+          let fullRecord;
+          if (existing && existing.id !== void 0) {
+            fullRecord = {
+              ...existing,
+              ...record,
+              updatedAt: now
+            };
+            const req = store.put(fullRecord);
+            req.onsuccess = () => resolve(fullRecord);
+            req.onerror = () => reject(req.error);
+          } else {
+            fullRecord = {
+              ...record,
+              createdAt: now
+            };
+            const req = store.add(fullRecord);
+            req.onsuccess = (e) => {
+              fullRecord.id = e.target.result;
+              resolve(fullRecord);
+            };
+            req.onerror = () => reject(req.error);
+          }
+        });
+      } catch (err) {
+        console.warn("Failed to save vocabulary in IndexedDB:", err);
+      }
+    }
+    /**
+     * Batch inserts multiple vocabulary records efficiently in a single transaction.
+     */
+    async saveVocabularyBatch(records) {
+      try {
+        const db = await this.open();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction("vocabulary", "readwrite");
+          const store = tx.objectStore("vocabulary");
+          const now = Date.now();
+          let inserted = 0;
+          for (const record of records) {
+            const fullRecord = {
+              ...record,
+              createdAt: now
+            };
+            store.add(fullRecord);
+            inserted++;
+          }
+          tx.oncomplete = () => resolve(inserted);
+          tx.onerror = () => reject(tx.error);
+        });
+      } catch (err) {
+        console.warn("Batch save vocabulary failed:", err);
+        return 0;
+      }
+    }
+    /**
+     * Updates fields of an existing vocabulary record by ID.
+     */
+    async updateVocabulary(id, updates) {
+      try {
+        const db = await this.open();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction("vocabulary", "readwrite");
+          const store = tx.objectStore("vocabulary");
+          const getReq = store.get(id);
+          getReq.onsuccess = () => {
+            if (!getReq.result) {
+              resolve(false);
+              return;
+            }
+            const updatedRecord = {
+              ...getReq.result,
+              ...updates,
+              updatedAt: Date.now()
+            };
+            const putReq = store.put(updatedRecord);
+            putReq.onsuccess = () => resolve(true);
+            putReq.onerror = () => reject(putReq.error);
+          };
+          getReq.onerror = () => reject(getReq.error);
+        });
+      } catch {
+        return false;
+      }
+    }
+    /**
+     * Deletes a single vocabulary record by ID.
+     */
+    async deleteVocabulary(id) {
+      try {
+        const db = await this.open();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction("vocabulary", "readwrite");
+          const req = tx.objectStore("vocabulary").delete(id);
+          req.onsuccess = () => resolve(true);
+          req.onerror = () => reject(req.error);
+        });
+      } catch {
+        return false;
+      }
+    }
+    /**
+     * Deletes multiple vocabulary records by IDs in a single transaction.
+     */
+    async deleteVocabularyBatch(ids) {
+      try {
+        const db = await this.open();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction("vocabulary", "readwrite");
+          const store = tx.objectStore("vocabulary");
+          let deleted = 0;
+          for (const id of ids) {
+            store.delete(id);
+            deleted++;
+          }
+          tx.oncomplete = () => resolve(deleted);
+          tx.onerror = () => reject(tx.error);
+        });
+      } catch {
+        return 0;
+      }
+    }
+    /**
+     * Retrieves all vocabulary records sorted by createdAt descending.
+     */
+    async getAllVocabulary() {
+      try {
+        const db = await this.open();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction("vocabulary", "readonly");
+          const store = tx.objectStore("vocabulary");
+          const req = store.getAll();
+          req.onsuccess = () => {
+            const list = req.result || [];
+            list.sort((a, b) => b.createdAt - a.createdAt);
+            resolve(list);
+          };
+          req.onerror = () => reject(req.error);
+        });
+      } catch {
+        return [];
+      }
+    }
+    /**
+     * Fetches vocabulary records with cursor-based pagination and optional language filter.
+     */
+    async getVocabularyPaginated(offset = 0, limit = 50, language) {
+      try {
+        const db = await this.open();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction("vocabulary", "readonly");
+          const store = tx.objectStore("vocabulary");
+          const items = [];
+          let total = 0;
+          let skipped = 0;
+          const req = store.openCursor(null, "prev");
+          req.onsuccess = (e) => {
+            const cursor = e.target.result;
+            if (!cursor) {
+              resolve({ items, total });
+              return;
+            }
+            const record = cursor.value;
+            const matchesLang = !language || record.language === language;
+            if (matchesLang) {
+              total++;
+              if (skipped < offset) {
+                skipped++;
+              } else if (items.length < limit) {
+                items.push(record);
+              }
+            }
+            cursor.continue();
+          };
+          req.onerror = () => reject(req.error);
+        });
+      } catch {
+        return { items: [], total: 0 };
+      }
+    }
+    /**
+     * Clears all items in the vocabulary store.
+     */
+    async clearAllVocabulary() {
+      try {
+        const db = await this.open();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction("vocabulary", "readwrite");
+          const req = tx.objectStore("vocabulary").clear();
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+        });
+      } catch (err) {
+        console.warn("Failed to clear vocabulary:", err);
+      }
+    }
+    /**
+     * Deletes the entire IndexedDB database safely, closing active connections first.
+     */
+    async deleteDatabase() {
+      this.close();
+      return new Promise((resolve) => {
+        const req = indexedDB.deleteDatabase(this.dbName);
+        req.onsuccess = () => resolve(true);
+        req.onerror = () => resolve(false);
+        req.onblocked = () => {
+          console.warn("Database deletion blocked by open connection.");
+          resolve(false);
+        };
+      });
+    }
+  };
+
   // src/popup.ts
   document.addEventListener("DOMContentLoaded", () => {
     const languageCategory = document.getElementById(
@@ -217,7 +667,20 @@
         const dbModel = new DatabaseModel();
         const records = await dbModel.getAllVocabulary();
         if (!records || records.length === 0) {
-          alert("No vocabulary records found to export.");
+          alert("No vocabulary words saved yet.");
+          return;
+        }
+        const seen = /* @__PURE__ */ new Set();
+        const uniqueRecords = [];
+        for (const r of records) {
+          const key = `${r.word.trim().toLowerCase()}_${r.language.trim().toLowerCase()}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            uniqueRecords.push(r);
+          }
+        }
+        if (uniqueRecords.length === 0) {
+          alert("No vocabulary words saved yet.");
           return;
         }
         const headers = [
@@ -227,7 +690,7 @@
           "Wiktionary URL",
           "Date Saved"
         ];
-        const rows = records.map((r) => [
+        const rows = uniqueRecords.map((r) => [
           `"${r.word.replace(/"/g, '""')}"`,
           `"${r.language}"`,
           `"${r.definition.replace(/"/g, '""')}"`,

@@ -1,5 +1,475 @@
 "use strict";
 (() => {
+  var __defProp = Object.defineProperty;
+  var __getOwnPropNames = Object.getOwnPropertyNames;
+  var __esm = (fn, res) => function __init() {
+    return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+  };
+  var __export = (target, all) => {
+    for (var name in all)
+      __defProp(target, name, { get: all[name], enumerable: true });
+  };
+
+  // src/model/DatabaseModel.ts
+  var DatabaseModel_exports = {};
+  __export(DatabaseModel_exports, {
+    DatabaseModel: () => DatabaseModel
+  });
+  var DatabaseModel;
+  var init_DatabaseModel = __esm({
+    "src/model/DatabaseModel.ts"() {
+      "use strict";
+      DatabaseModel = class {
+        dbName = "LLT_Database";
+        version = 2;
+        db = null;
+        /**
+         * Opens connection to IndexedDB database with schema versioning and lifecycle handlers.
+         */
+        async open() {
+          if (this.db)
+            return this.db;
+          return new Promise((resolve, reject) => {
+            const request = indexedDB.open(this.dbName, this.version);
+            request.onupgradeneeded = (event) => {
+              const db = event.target.result;
+              const transaction = event.target.transaction;
+              let audioStore;
+              if (!db.objectStoreNames.contains("audio_cache")) {
+                audioStore = db.createObjectStore("audio_cache", { keyPath: "cacheKey" });
+              } else {
+                audioStore = transaction.objectStore("audio_cache");
+              }
+              if (!audioStore.indexNames.contains("lastAccessed")) {
+                audioStore.createIndex("lastAccessed", "lastAccessed", { unique: false });
+              }
+              let vocabStore;
+              if (!db.objectStoreNames.contains("vocabulary")) {
+                vocabStore = db.createObjectStore("vocabulary", {
+                  keyPath: "id",
+                  autoIncrement: true
+                });
+              } else {
+                vocabStore = transaction.objectStore("vocabulary");
+              }
+              if (!vocabStore.indexNames.contains("word")) {
+                vocabStore.createIndex("word", "word", { unique: false });
+              }
+              if (!vocabStore.indexNames.contains("language")) {
+                vocabStore.createIndex("language", "language", { unique: false });
+              }
+              if (!vocabStore.indexNames.contains("createdAt")) {
+                vocabStore.createIndex("createdAt", "createdAt", { unique: false });
+              }
+              if (!vocabStore.indexNames.contains("word_language")) {
+                vocabStore.createIndex("word_language", ["word", "language"], { unique: false });
+              }
+            };
+            request.onsuccess = () => {
+              const db = request.result;
+              this.db = db;
+              db.onversionchange = () => {
+                db.close();
+                this.db = null;
+              };
+              resolve(db);
+            };
+            request.onblocked = () => {
+              console.warn("IndexedDB open request blocked. Please close other open tabs using LLT.");
+            };
+            request.onerror = () => reject(request.error);
+          });
+        }
+        /**
+         * Closes active database connection.
+         */
+        close() {
+          if (this.db) {
+            this.db.close();
+            this.db = null;
+          }
+        }
+        // ─── Audio Cache ──────────────────────────────────────────────────────────
+        /**
+         * Retrieves cached audio buffer by cacheKey and asynchronously updates its lastAccessed timestamp.
+         */
+        async getCachedAudio(cacheKey) {
+          try {
+            const db = await this.open();
+            return new Promise((resolve) => {
+              const tx = db.transaction("audio_cache", "readwrite");
+              const store = tx.objectStore("audio_cache");
+              const req = store.get(cacheKey);
+              req.onsuccess = () => {
+                const record = req.result;
+                if (record && record.audioBuffer) {
+                  record.lastAccessed = Date.now();
+                  store.put(record);
+                  resolve(record.audioBuffer);
+                } else {
+                  resolve(null);
+                }
+              };
+              req.onerror = () => resolve(null);
+            });
+          } catch {
+            return null;
+          }
+        }
+        /**
+         * Stores TTS audio buffer in cache with QuotaExceeded auto-pruning fallback.
+         */
+        async setCachedAudio(cacheKey, audioBuffer) {
+          try {
+            const db = await this.open();
+            const now = Date.now();
+            const record = {
+              cacheKey,
+              audioBuffer,
+              createdAt: now,
+              lastAccessed: now
+            };
+            return new Promise((resolve, reject) => {
+              const tx = db.transaction("audio_cache", "readwrite");
+              const store = tx.objectStore("audio_cache");
+              store.put(record);
+              tx.oncomplete = () => resolve();
+              tx.onerror = async (e) => {
+                const error = tx.error || e.target?.error;
+                if (error && error.name === "QuotaExceededError") {
+                  console.warn("QuotaExceededError encountered. Pruning audio cache...");
+                  await this.pruneAudioCache(50, 7 * 24 * 60 * 60 * 1e3);
+                  try {
+                    await this.setCachedAudio(cacheKey, audioBuffer);
+                    resolve();
+                    return;
+                  } catch (retryErr) {
+                    reject(retryErr);
+                    return;
+                  }
+                }
+                reject(error);
+              };
+            });
+          } catch (err) {
+            console.warn("Failed to cache audio in IndexedDB:", err);
+          }
+        }
+        /**
+         * Prunes old or excessive audio cache entries.
+         */
+        async pruneAudioCache(maxEntries = 200, maxAgeMs = 30 * 24 * 60 * 60 * 1e3) {
+          try {
+            const db = await this.open();
+            const now = Date.now();
+            return new Promise((resolve) => {
+              const tx = db.transaction("audio_cache", "readwrite");
+              const store = tx.objectStore("audio_cache");
+              const req = store.getAll();
+              req.onsuccess = () => {
+                const records = req.result || [];
+                let deletedCount = 0;
+                const remaining = [];
+                for (const rec of records) {
+                  const age = now - (rec.lastAccessed || rec.createdAt);
+                  if (age > maxAgeMs) {
+                    store.delete(rec.cacheKey);
+                    deletedCount++;
+                  } else {
+                    remaining.push(rec);
+                  }
+                }
+                if (remaining.length > maxEntries) {
+                  remaining.sort(
+                    (a, b) => (a.lastAccessed || a.createdAt) - (b.lastAccessed || b.createdAt)
+                  );
+                  const toRemove = remaining.slice(0, remaining.length - maxEntries);
+                  for (const rec of toRemove) {
+                    store.delete(rec.cacheKey);
+                    deletedCount++;
+                  }
+                }
+                resolve(deletedCount);
+              };
+              req.onerror = () => resolve(0);
+            });
+          } catch {
+            return 0;
+          }
+        }
+        /**
+         * Clears all items in the audio_cache store.
+         */
+        async clearAudioCache() {
+          try {
+            const db = await this.open();
+            return new Promise((resolve, reject) => {
+              const tx = db.transaction("audio_cache", "readwrite");
+              const req = tx.objectStore("audio_cache").clear();
+              tx.oncomplete = () => resolve();
+              tx.onerror = () => reject(tx.error);
+            });
+          } catch (err) {
+            console.warn("Failed to clear audio cache:", err);
+          }
+        }
+        // ─── Vocabulary History & Management ─────────────────────────────────────
+        /**
+         * Looks up a vocabulary record by word and language to prevent duplicates.
+         */
+        async getVocabularyByWord(word, language) {
+          try {
+            const db = await this.open();
+            return new Promise((resolve) => {
+              const tx = db.transaction("vocabulary", "readonly");
+              const store = tx.objectStore("vocabulary");
+              const targetWord = word.toLowerCase().trim();
+              if (store.indexNames.contains("word_language")) {
+                const index = store.index("word_language");
+                const req = index.get([targetWord, language]);
+                req.onsuccess = () => resolve(req.result || null);
+                req.onerror = () => resolve(null);
+              } else {
+                const req = store.getAll();
+                req.onsuccess = () => {
+                  const list = req.result || [];
+                  const match = list.find(
+                    (r) => r.word.toLowerCase().trim() === targetWord && r.language === language
+                  );
+                  resolve(match || null);
+                };
+                req.onerror = () => resolve(null);
+              }
+            });
+          } catch {
+            return null;
+          }
+        }
+        /**
+         * Saves a vocabulary record with deduplication. Updates existing record if word+language exists.
+         */
+        async saveVocabulary(record) {
+          try {
+            const existing = await this.getVocabularyByWord(record.word, record.language);
+            const db = await this.open();
+            return new Promise((resolve, reject) => {
+              const tx = db.transaction("vocabulary", "readwrite");
+              const store = tx.objectStore("vocabulary");
+              const now = Date.now();
+              let fullRecord;
+              if (existing && existing.id !== void 0) {
+                fullRecord = {
+                  ...existing,
+                  ...record,
+                  updatedAt: now
+                };
+                const req = store.put(fullRecord);
+                req.onsuccess = () => resolve(fullRecord);
+                req.onerror = () => reject(req.error);
+              } else {
+                fullRecord = {
+                  ...record,
+                  createdAt: now
+                };
+                const req = store.add(fullRecord);
+                req.onsuccess = (e) => {
+                  fullRecord.id = e.target.result;
+                  resolve(fullRecord);
+                };
+                req.onerror = () => reject(req.error);
+              }
+            });
+          } catch (err) {
+            console.warn("Failed to save vocabulary in IndexedDB:", err);
+          }
+        }
+        /**
+         * Batch inserts multiple vocabulary records efficiently in a single transaction.
+         */
+        async saveVocabularyBatch(records) {
+          try {
+            const db = await this.open();
+            return new Promise((resolve, reject) => {
+              const tx = db.transaction("vocabulary", "readwrite");
+              const store = tx.objectStore("vocabulary");
+              const now = Date.now();
+              let inserted = 0;
+              for (const record of records) {
+                const fullRecord = {
+                  ...record,
+                  createdAt: now
+                };
+                store.add(fullRecord);
+                inserted++;
+              }
+              tx.oncomplete = () => resolve(inserted);
+              tx.onerror = () => reject(tx.error);
+            });
+          } catch (err) {
+            console.warn("Batch save vocabulary failed:", err);
+            return 0;
+          }
+        }
+        /**
+         * Updates fields of an existing vocabulary record by ID.
+         */
+        async updateVocabulary(id, updates) {
+          try {
+            const db = await this.open();
+            return new Promise((resolve, reject) => {
+              const tx = db.transaction("vocabulary", "readwrite");
+              const store = tx.objectStore("vocabulary");
+              const getReq = store.get(id);
+              getReq.onsuccess = () => {
+                if (!getReq.result) {
+                  resolve(false);
+                  return;
+                }
+                const updatedRecord = {
+                  ...getReq.result,
+                  ...updates,
+                  updatedAt: Date.now()
+                };
+                const putReq = store.put(updatedRecord);
+                putReq.onsuccess = () => resolve(true);
+                putReq.onerror = () => reject(putReq.error);
+              };
+              getReq.onerror = () => reject(getReq.error);
+            });
+          } catch {
+            return false;
+          }
+        }
+        /**
+         * Deletes a single vocabulary record by ID.
+         */
+        async deleteVocabulary(id) {
+          try {
+            const db = await this.open();
+            return new Promise((resolve, reject) => {
+              const tx = db.transaction("vocabulary", "readwrite");
+              const req = tx.objectStore("vocabulary").delete(id);
+              req.onsuccess = () => resolve(true);
+              req.onerror = () => reject(req.error);
+            });
+          } catch {
+            return false;
+          }
+        }
+        /**
+         * Deletes multiple vocabulary records by IDs in a single transaction.
+         */
+        async deleteVocabularyBatch(ids) {
+          try {
+            const db = await this.open();
+            return new Promise((resolve, reject) => {
+              const tx = db.transaction("vocabulary", "readwrite");
+              const store = tx.objectStore("vocabulary");
+              let deleted = 0;
+              for (const id of ids) {
+                store.delete(id);
+                deleted++;
+              }
+              tx.oncomplete = () => resolve(deleted);
+              tx.onerror = () => reject(tx.error);
+            });
+          } catch {
+            return 0;
+          }
+        }
+        /**
+         * Retrieves all vocabulary records sorted by createdAt descending.
+         */
+        async getAllVocabulary() {
+          try {
+            const db = await this.open();
+            return new Promise((resolve, reject) => {
+              const tx = db.transaction("vocabulary", "readonly");
+              const store = tx.objectStore("vocabulary");
+              const req = store.getAll();
+              req.onsuccess = () => {
+                const list = req.result || [];
+                list.sort((a, b) => b.createdAt - a.createdAt);
+                resolve(list);
+              };
+              req.onerror = () => reject(req.error);
+            });
+          } catch {
+            return [];
+          }
+        }
+        /**
+         * Fetches vocabulary records with cursor-based pagination and optional language filter.
+         */
+        async getVocabularyPaginated(offset = 0, limit = 50, language) {
+          try {
+            const db = await this.open();
+            return new Promise((resolve, reject) => {
+              const tx = db.transaction("vocabulary", "readonly");
+              const store = tx.objectStore("vocabulary");
+              const items = [];
+              let total = 0;
+              let skipped = 0;
+              const req = store.openCursor(null, "prev");
+              req.onsuccess = (e) => {
+                const cursor = e.target.result;
+                if (!cursor) {
+                  resolve({ items, total });
+                  return;
+                }
+                const record = cursor.value;
+                const matchesLang = !language || record.language === language;
+                if (matchesLang) {
+                  total++;
+                  if (skipped < offset) {
+                    skipped++;
+                  } else if (items.length < limit) {
+                    items.push(record);
+                  }
+                }
+                cursor.continue();
+              };
+              req.onerror = () => reject(req.error);
+            });
+          } catch {
+            return { items: [], total: 0 };
+          }
+        }
+        /**
+         * Clears all items in the vocabulary store.
+         */
+        async clearAllVocabulary() {
+          try {
+            const db = await this.open();
+            return new Promise((resolve, reject) => {
+              const tx = db.transaction("vocabulary", "readwrite");
+              const req = tx.objectStore("vocabulary").clear();
+              tx.oncomplete = () => resolve();
+              tx.onerror = () => reject(tx.error);
+            });
+          } catch (err) {
+            console.warn("Failed to clear vocabulary:", err);
+          }
+        }
+        /**
+         * Deletes the entire IndexedDB database safely, closing active connections first.
+         */
+        async deleteDatabase() {
+          this.close();
+          return new Promise((resolve) => {
+            const req = indexedDB.deleteDatabase(this.dbName);
+            req.onsuccess = () => resolve(true);
+            req.onerror = () => resolve(false);
+            req.onblocked = () => {
+              console.warn("Database deletion blocked by open connection.");
+              resolve(false);
+            };
+          });
+        }
+      };
+    }
+  });
+
   // src/const.ts
   var DEFAULT_SETTINGS = {
     piperLanguageCategory: "russian",
@@ -14,12 +484,55 @@
   };
 
   // src/model/TTSModel.ts
+  init_DatabaseModel();
   var TTSModel = class {
     session = null;
     voiceConfig = null;
     engineLoading = false;
     loadedVoiceFile = null;
-    constructor() {
+    dbModel;
+    constructor(dbModel) {
+      this.dbModel = dbModel || new DatabaseModel();
+    }
+    /**
+     * Generates a unique cache key based on voice model, speech settings, and input text.
+     */
+    async getCacheKey(text) {
+      const settings = await new Promise((resolve) => {
+        chrome.storage.sync.get(
+          {
+            piperVoiceFile: DEFAULT_SETTINGS.piperVoiceFile,
+            piperVoice: DEFAULT_SETTINGS.piperVoice,
+            piperSpeed: DEFAULT_SETTINGS.piperSpeed,
+            piperNoiseScale: DEFAULT_SETTINGS.piperNoiseScale,
+            piperNoiseW: DEFAULT_SETTINGS.piperNoiseW
+          },
+          (items) => resolve(items)
+        );
+      });
+      const voice = settings.piperVoiceFile || settings.piperVoice || DEFAULT_SETTINGS.piperVoiceFile;
+      const speed = parseFloat(
+        String(settings.piperSpeed ?? DEFAULT_SETTINGS.piperSpeed)
+      ).toFixed(2);
+      const scale = parseFloat(
+        String(settings.piperNoiseScale ?? DEFAULT_SETTINGS.piperNoiseScale)
+      ).toFixed(2);
+      const noiseW = parseFloat(
+        String(settings.piperNoiseW ?? DEFAULT_SETTINGS.piperNoiseW)
+      ).toFixed(2);
+      const cleanText = text.trim().toLowerCase();
+      return `${voice}_${speed}_${scale}_${noiseW}_${cleanText}`;
+    }
+    /**
+     * Retrieves pre-synthesized audio buffer from IndexedDB cache if available.
+     */
+    async getCachedAudioForText(text) {
+      try {
+        const cacheKey = await this.getCacheKey(text);
+        return await this.dbModel.getCachedAudio(cacheKey);
+      } catch {
+        return null;
+      }
     }
     //load engine in background
     async loadEngine() {
@@ -68,8 +581,13 @@
         this.engineLoading = false;
       }
     }
-    // speech synthezize for piper tts
+    // speech synthezize for piper tts with IndexedDB audio caching
     async synthesize(text) {
+      const cacheKey = await this.getCacheKey(text);
+      const cachedBuffer = await this.dbModel.getCachedAudio(cacheKey);
+      if (cachedBuffer) {
+        return cachedBuffer;
+      }
       await this.loadEngine();
       const settings = await new Promise((resolve) => {
         chrome.storage.sync.get(
@@ -159,7 +677,9 @@
       const output = await this.session.run(feed);
       const rawAudio = output.output.data;
       const sampleRate = this.voiceConfig.audio?.sample_rate || 22050;
-      return this.buildWavHeader(rawAudio, 1, sampleRate);
+      const wavBuffer = this.buildWavHeader(rawAudio, 1, sampleRate);
+      await this.dbModel.setCachedAudio(cacheKey, wavBuffer);
+      return wavBuffer;
     }
     //build wav header
     buildWavHeader(samples, numChannels, sampleRate) {
@@ -426,13 +946,15 @@
       defElem.style.cssText = "font-size:12px;line-height:1.45;color:#111111;max-height:140px;overflow-y:auto;white-space:pre-wrap;width:100%";
       defElem.textContent = Array.isArray(definition) ? definition.join("\n") : definition;
       content.appendChild(defElem);
+      const actionRow = document.createElement("div");
+      actionRow.style.cssText = "display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:6px;gap:8px";
       if (pageUrl) {
         const linkElem = document.createElement("a");
         linkElem.href = pageUrl;
         linkElem.target = "_blank";
         linkElem.rel = "noopener noreferrer";
         linkElem.textContent = "READ ON WIKTIONARY \u2197";
-        linkElem.style.cssText = "color:#111111;font-size:11px;font-weight:600;margin-top:4px;text-decoration:underline;text-underline-offset:2px";
+        linkElem.style.cssText = "color:#111111;font-size:11px;font-weight:600;text-decoration:underline;text-underline-offset:2px;cursor:pointer";
         linkElem.addEventListener(
           "mouseover",
           () => linkElem.style.color = "#555555"
@@ -441,8 +963,27 @@
           "mouseout",
           () => linkElem.style.color = "#111111"
         );
-        content.appendChild(linkElem);
+        actionRow.appendChild(linkElem);
       }
+      const saveBtn = document.createElement("button");
+      saveBtn.textContent = "SAVE TO VOCABULARY +";
+      saveBtn.className = "tts-sel-toast-btn tts-btn-sv";
+      saveBtn.style.cssText = "font-size:10px;padding:3px 8px;margin-left:auto;cursor:pointer";
+      saveBtn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        const { DatabaseModel: DatabaseModel2 } = await Promise.resolve().then(() => (init_DatabaseModel(), DatabaseModel_exports));
+        const dbModel = new DatabaseModel2();
+        await dbModel.saveVocabulary({
+          word,
+          language: language || "unknown",
+          definition: Array.isArray(definition) ? definition.join("\n") : definition,
+          pageUrl: pageUrl || ""
+        });
+        saveBtn.textContent = "\u2713 SAVED";
+        saveBtn.style.background = "#28a745";
+      });
+      actionRow.appendChild(saveBtn);
+      content.appendChild(actionRow);
       toast.appendChild(content);
       document.body.appendChild(toast);
       const toastWidth = toast.offsetWidth || 300;
@@ -509,28 +1050,35 @@
     }
     async speak(text) {
       try {
-        const settings = await new Promise((resolve) => {
-          chrome.storage.sync.get(
-            { piperVoice: DEFAULT_SETTINGS.piperVoice },
-            (items) => {
-              resolve(items);
-            }
-          );
-        });
-        const voice = settings.piperVoice || DEFAULT_SETTINGS.piperVoice;
-        const voiceName = voice.charAt(0).toUpperCase() + voice.slice(1);
-        if (!this.model.session) {
-          this.notificationView.show(
-            "LOADING",
-            `LOADING VOICE MODEL (${voiceName})...`
-          );
+        const cachedBuffer = await this.model.getCachedAudioForText(text);
+        let wavBuffer;
+        if (cachedBuffer) {
+          this.notificationView.show("PLAYING", `PLAYING SPEECH FOR "${text}"...`);
+          wavBuffer = cachedBuffer;
         } else {
+          const settings = await new Promise((resolve) => {
+            chrome.storage.sync.get(
+              { piperVoice: DEFAULT_SETTINGS.piperVoice },
+              (items) => {
+                resolve(items);
+              }
+            );
+          });
+          const voice = settings.piperVoice || DEFAULT_SETTINGS.piperVoice;
+          const voiceName = voice.charAt(0).toUpperCase() + voice.slice(1);
+          if (!this.model.session) {
+            this.notificationView.show(
+              "LOADING",
+              `LOADING VOICE MODEL (${voiceName})...`
+            );
+          } else {
+            this.notificationView.show("SYNTHESIZING", `SYNTHESIZING "${text}"...`);
+          }
+          await this.model.loadEngine();
           this.notificationView.show("SYNTHESIZING", `SYNTHESIZING "${text}"...`);
+          wavBuffer = await this.model.synthesize(text);
+          this.notificationView.show("PLAYING", `PLAYING SPEECH FOR "${text}"...`);
         }
-        await this.model.loadEngine();
-        this.notificationView.show("SYNTHESIZING", `SYNTHESIZING "${text}"...`);
-        const wavBuffer = await this.model.synthesize(text);
-        this.notificationView.show("PLAYING", `PLAYING SPEECH FOR "${text}"...`);
         const blob = new Blob([wavBuffer], { type: "audio/wav" });
         const audioUrl = URL.createObjectURL(blob);
         const audio = new Audio(audioUrl);

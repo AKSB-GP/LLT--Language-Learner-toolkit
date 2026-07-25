@@ -53,37 +53,44 @@ export class TTSController {
 
   async speak(text: string): Promise<void> {
     try {
-      const settings = await new Promise<{ piperVoice?: string }>((resolve) => {
-        chrome.storage.sync.get(
-          { piperVoice: DEFAULT_SETTINGS.piperVoice },
-          (items) => {
-            resolve(items as { piperVoice?: string });
-          },
-        );
-      });
-      const voice = settings.piperVoice || DEFAULT_SETTINGS.piperVoice;
-      const voiceName = voice.charAt(0).toUpperCase() + voice.slice(1);
+      // Fast path: Check IndexedDB audio cache first for instant playback
+      const cachedBuffer = await this.model.getCachedAudioForText(text);
+      let wavBuffer: ArrayBuffer;
 
-      //   Show model loading alert if session is uninitialized
-      if (!this.model.session) {
-        this.notificationView.show(
-          "LOADING",
-          `LOADING VOICE MODEL (${voiceName})...`,
-        );
+      if (cachedBuffer) {
+        this.notificationView.show("PLAYING", `PLAYING SPEECH FOR "${text}"...`);
+        wavBuffer = cachedBuffer;
       } else {
+        const settings = await new Promise<{ piperVoice?: string }>((resolve) => {
+          chrome.storage.sync.get(
+            { piperVoice: DEFAULT_SETTINGS.piperVoice },
+            (items) => {
+              resolve(items as { piperVoice?: string });
+            },
+          );
+        });
+        const voice = settings.piperVoice || DEFAULT_SETTINGS.piperVoice;
+        const voiceName = voice.charAt(0).toUpperCase() + voice.slice(1);
+
+        // Show model loading alert if session is uninitialized
+        if (!this.model.session) {
+          this.notificationView.show(
+            "LOADING",
+            `LOADING VOICE MODEL (${voiceName})...`,
+          );
+        } else {
+          this.notificationView.show("SYNTHESIZING", `SYNTHESIZING "${text}"...`);
+        }
+
+        // Explicitly await loadEngine inside controller to manage toast transitions
+        await this.model.loadEngine();
+
+        // Transition toast to processing/synthesizing state
         this.notificationView.show("SYNTHESIZING", `SYNTHESIZING "${text}"...`);
+
+        wavBuffer = await this.model.synthesize(text);
+        this.notificationView.show("PLAYING", `PLAYING SPEECH FOR "${text}"...`);
       }
-
-      // Explicitly await the loadEngine inside the controller to manage the toast transitions
-      await this.model.loadEngine();
-
-      //  Transition toast to processing/synthesizing state
-      this.notificationView.show("SYNTHESIZING", `SYNTHESIZING "${text}"...`);
-
-      const wavBuffer = await this.model.synthesize(text);
-
-      //  Transition toast to playing state
-      this.notificationView.show("PLAYING", `PLAYING SPEECH FOR "${text}"...`);
 
       const blob = new Blob([wavBuffer], { type: "audio/wav" });
       const audioUrl = URL.createObjectURL(blob);

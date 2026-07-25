@@ -1,4 +1,6 @@
 import { VOICES_MAP, DEFAULT_SETTINGS } from "./const";
+import { DatabaseModel } from "./model/DatabaseModel";
+
 /*add listeners for extension panel */
 document.addEventListener("DOMContentLoaded", () => {
   // Elements
@@ -194,7 +196,25 @@ document.addEventListener("DOMContentLoaded", () => {
       const dbModel = new DatabaseModel();
       const records = await dbModel.getAllVocabulary();
       if (!records || records.length === 0) {
-        alert("No vocabulary records found to export.");
+        alert("No vocabulary words saved yet.");
+        return;
+      }
+
+      // Deduplicate records by normalized word + language key
+      //check so that duplicates arent stord in csv file
+      const seen = new Set<string>();
+      const uniqueRecords: typeof records = [];
+
+      for (const r of records) {
+        const key = `${r.word.trim().toLowerCase()}_${r.language.trim().toLowerCase()}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          uniqueRecords.push(r);
+        }
+      }
+
+      if (uniqueRecords.length === 0) {
+        alert("No vocabulary words saved yet.");
         return;
       }
 
@@ -205,7 +225,7 @@ document.addEventListener("DOMContentLoaded", () => {
         "Wiktionary URL",
         "Date Saved",
       ];
-      const rows = records.map((r) => [
+      const rows = uniqueRecords.map((r) => [
         `"${r.word.replace(/"/g, '""')}"`,
         `"${r.language}"`,
         `"${r.definition.replace(/"/g, '""')}"`,

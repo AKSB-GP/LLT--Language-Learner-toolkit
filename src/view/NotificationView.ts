@@ -323,7 +323,11 @@ export class NotificationView {
       : definition;
     content.appendChild(defElem);
 
-    // Read more link
+    // Footer actions container (Read link + Save button)
+    const actionRow = document.createElement("div");
+    actionRow.style.cssText =
+      "display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:6px;gap:8px";
+
     if (pageUrl) {
       const linkElem = document.createElement("a");
       linkElem.href = pageUrl;
@@ -331,7 +335,7 @@ export class NotificationView {
       linkElem.rel = "noopener noreferrer";
       linkElem.textContent = "READ ON WIKTIONARY ↗";
       linkElem.style.cssText =
-        "color:#111111;font-size:11px;font-weight:600;margin-top:4px;text-decoration:underline;text-underline-offset:2px";
+        "color:#111111;font-size:11px;font-weight:600;text-decoration:underline;text-underline-offset:2px;cursor:pointer";
       linkElem.addEventListener(
         "mouseover",
         () => (linkElem.style.color = "#555555"),
@@ -340,8 +344,33 @@ export class NotificationView {
         "mouseout",
         () => (linkElem.style.color = "#111111"),
       );
-      content.appendChild(linkElem);
+      actionRow.appendChild(linkElem);
     }
+
+    const saveBtn = document.createElement("button");
+    saveBtn.textContent = "SAVE TO VOCABULARY +";
+    saveBtn.className = "tts-sel-toast-btn tts-btn-sv";
+    saveBtn.style.cssText =
+      "font-size:10px;padding:3px 8px;margin-left:auto;cursor:pointer";
+
+    saveBtn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const { DatabaseModel } = await import("../model/DatabaseModel.js");
+      const dbModel = new DatabaseModel();
+      await dbModel.saveVocabulary({
+        word: word,
+        language: language || "unknown",
+        definition: Array.isArray(definition)
+          ? definition.join("\n")
+          : definition,
+        pageUrl: pageUrl || "",
+      });
+      saveBtn.textContent = "✓ SAVED";
+      saveBtn.style.background = "#28a745";
+    });
+    actionRow.appendChild(saveBtn);
+
+    content.appendChild(actionRow);
 
     toast.appendChild(content);
     document.body.appendChild(toast);

@@ -1,7 +1,7 @@
 import { VocabularyRecord, AudioCacheRecord } from "../interfaces";
 export class DatabaseModel {
   private dbName = "LLT_Database";
-  private version = 1;
+  private version = 2;
   private db: IDBDatabase | null = null;
 
   /**
@@ -226,6 +226,7 @@ export class DatabaseModel {
       const db = await this.open();
       return new Promise((resolve, reject) => {
         const tx = db.transaction("audio_cache", "readwrite");
+        const req = tx.objectStore("audio_cache").clear();
         tx.oncomplete = () => resolve();
         tx.onerror = () => reject(tx.error);
       });
@@ -503,6 +504,7 @@ export class DatabaseModel {
       const db = await this.open();
       return new Promise((resolve, reject) => {
         const tx = db.transaction("vocabulary", "readwrite");
+        const req = tx.objectStore("vocabulary").clear();
         tx.oncomplete = () => resolve();
         tx.onerror = () => reject(tx.error);
       });

@@ -63,6 +63,11 @@ export const listOfContextMenus: ContextMenu[] = [
     title: "GET DEFINITION OF WORD",
     contexts: ["selection"],
   },
+  {
+    id: "save-word-to-vocabulary",
+    title: "SAVE WORD TO VOCABULARY",
+    contexts: ["selection"],
+  },
 ];
 /* language codes */
 export const LANGUAGE_CODES: Record<string, string> = {

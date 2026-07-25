@@ -1,5 +1,6 @@
 import { DEFAULT_SETTINGS } from "../const";
 import { PiperSettings } from "../interfaces";
+import { DatabaseModel } from "./DatabaseModel";
 
 declare const ort: any;
 declare const createPiperPhonemize: any;
@@ -9,12 +10,68 @@ export class TTSModel {
   public voiceConfig: any = null;
   public engineLoading: boolean = false;
   public loadedVoiceFile: string | null = null;
+  private dbModel: DatabaseModel;
 
-  constructor() {}
+  constructor(dbModel?: DatabaseModel) {
+    this.dbModel = dbModel || new DatabaseModel();
+  }
+
+  /**
+   * Generates a unique cache key based on voice model, speech settings, and input text.
+   */
+  async getCacheKey(text: string): Promise<string> {
+    const settings = await new Promise<{
+      piperVoiceFile?: string;
+      piperVoice?: string;
+      piperSpeed?: number | string;
+      piperNoiseScale?: number | string;
+      piperNoiseW?: number | string;
+    }>((resolve) => {
+      chrome.storage.sync.get(
+        {
+          piperVoiceFile: DEFAULT_SETTINGS.piperVoiceFile,
+          piperVoice: DEFAULT_SETTINGS.piperVoice,
+          piperSpeed: DEFAULT_SETTINGS.piperSpeed,
+          piperNoiseScale: DEFAULT_SETTINGS.piperNoiseScale,
+          piperNoiseW: DEFAULT_SETTINGS.piperNoiseW,
+        },
+        (items) => resolve(items),
+      );
+    });
+
+    const voice =
+      settings.piperVoiceFile ||
+      settings.piperVoice ||
+      DEFAULT_SETTINGS.piperVoiceFile;
+    const speed = parseFloat(
+      String(settings.piperSpeed ?? DEFAULT_SETTINGS.piperSpeed),
+    ).toFixed(2);
+    const scale = parseFloat(
+      String(settings.piperNoiseScale ?? DEFAULT_SETTINGS.piperNoiseScale),
+    ).toFixed(2);
+    const noiseW = parseFloat(
+      String(settings.piperNoiseW ?? DEFAULT_SETTINGS.piperNoiseW),
+    ).toFixed(2);
+    const cleanText = text.trim().toLowerCase();
+
+    return `${voice}_${speed}_${scale}_${noiseW}_${cleanText}`;
+  }
+
+  /**
+   * Retrieves pre-synthesized audio buffer from IndexedDB cache if available.
+   */
+  async getCachedAudioForText(text: string): Promise<ArrayBuffer | null> {
+    try {
+      const cacheKey = await this.getCacheKey(text);
+      return await this.dbModel.getCachedAudio(cacheKey);
+    } catch {
+      return null;
+    }
+  }
 
   //load engine in background
   async loadEngine(): Promise<void> {
-    //  Fetch preferences from sync storage
+    // Fetch preferences from sync storage
     const settings = await new Promise<{ piperVoiceFile?: string }>(
       (resolve) => {
         chrome.storage.sync.get(
@@ -43,7 +100,7 @@ export class TTSModel {
     this.engineLoading = true;
 
     try {
-      //  Fetch config JSON and model binary directly from local extension folder
+      // Fetch config JSON and model binary directly from local extension folder
       const configUrl = chrome.runtime.getURL(`models/${voiceFile}.onnx.json`);
       const configResponse = await fetch(configUrl);
       this.voiceConfig = await configResponse.json();
@@ -52,15 +109,15 @@ export class TTSModel {
       const modelResponse = await fetch(modelUrl);
       const modelBuffer = await modelResponse.arrayBuffer();
 
-      //  Configure ONNX Runtime WASM paths
-      //   simd=false + numThreads=1 => "ort-wasm.wasm" (non-SIMD, non-threaded)
+      // Configure ONNX Runtime WASM paths
+      // simd=false + numThreads=1 => "ort-wasm.wasm" (non-SIMD, non-threaded)
       // wasmPaths as a string prefix is how v1.14.0 resolves filenames (locateFile).
       ort.env.allowLocalModels = false;
       ort.env.wasm.simd = false;
       ort.env.wasm.numThreads = 1;
       ort.env.wasm.wasmPaths = chrome.runtime.getURL("lib/");
 
-      //  Load ONNX Session
+      // Load ONNX Session
       this.session = await ort.InferenceSession.create(modelBuffer, {
         executionProviders: ["wasm"],
       });
@@ -72,8 +129,15 @@ export class TTSModel {
       this.engineLoading = false;
     }
   }
-  // speech synthezize for piper tts
+
+  // speech synthezize for piper tts with IndexedDB audio caching
   async synthesize(text: string): Promise<ArrayBuffer> {
+    const cacheKey = await this.getCacheKey(text);
+    const cachedBuffer = await this.dbModel.getCachedAudio(cacheKey);
+    if (cachedBuffer) {
+      return cachedBuffer;
+    }
+
     await this.loadEngine();
 
     // Fetch current settings
@@ -182,8 +246,14 @@ export class TTSModel {
 
     // Convert raw PCM to WAV container
     const sampleRate = this.voiceConfig.audio?.sample_rate || 22050;
-    return this.buildWavHeader(rawAudio, 1, sampleRate);
+    const wavBuffer = this.buildWavHeader(rawAudio, 1, sampleRate);
+
+    // Save audio clip to IndexedDB cache asynchronously
+    await this.dbModel.setCachedAudio(cacheKey, wavBuffer);
+
+    return wavBuffer;
   }
+
   //build wav header
   buildWavHeader(
     samples: Float32Array,

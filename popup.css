@@ -1,5 +1,6 @@
 /* ------------------------------------------------------------------
    Popup Settings Panel styling
+   cant have top level styling in a content script when injecting 
    ------------------------------------------------------------------ */
 
 *,
