@@ -48,6 +48,8 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     GoogleTTS(info);
   } else if (info.menuItemId === "open-wikitionary-of-word") {
     OpenWordWikiByWord(info, tab);
+  } else if (info.menuItemId === "open-youglish-of-word") {
+    OpenWordYouglishByWord(info, tab);
   } else if (info.menuItemId === "get-definition-of-word") {
     getWikiDefinitionOfWord(info, tab);
   } else if (info.menuItemId === "save-word-to-vocabulary") {
@@ -453,6 +455,29 @@ async function OpenWordWikiByWord(
     const word = encodeURIComponent(info.selectionText.trim().toLowerCase());
     chrome.tabs.create({
       url: `https://${langCode}.wiktionary.org/wiki/${word}`,
+    });
+  }
+}
+
+/**
+ * Handles context menu click for "Open YouGlish of word".
+ * Detects word language and opens corresponding YouGlish URL in a new browser tab.
+ *
+ * @param info - Context menu click data.
+ * @param tab - Active browser tab.
+ */
+async function OpenWordYouglishByWord(
+  info: chrome.contextMenus.OnClickData,
+  tab?: chrome.tabs.Tab,
+): Promise<void> {
+  if (info.selectionText) {
+    const determinedCategory = await IdentifiyLanguage(info.selectionText, tab);
+    if (!determinedCategory) {
+      return;
+    }
+    const word = encodeURIComponent(info.selectionText.trim().toLowerCase());
+    chrome.tabs.create({
+      url: `https://youglish.com/pronounce/${word}/${determinedCategory}`,
     });
   }
 }

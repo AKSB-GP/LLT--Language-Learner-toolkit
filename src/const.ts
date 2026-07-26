@@ -59,6 +59,11 @@ export const listOfContextMenus: ContextMenu[] = [
     contexts: ["selection"],
   },
   {
+    id: "open-youglish-of-word",
+    title: "OPEN YOUGLISH OF WORD",
+    contexts: ["selection"],
+  },
+  {
     id: "get-definition-of-word",
     title: "GET DEFINITION OF WORD",
     contexts: ["selection"],

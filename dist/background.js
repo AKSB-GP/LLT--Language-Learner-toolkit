@@ -18,6 +18,11 @@
       contexts: ["selection"]
     },
     {
+      id: "open-youglish-of-word",
+      title: "OPEN YOUGLISH OF WORD",
+      contexts: ["selection"]
+    },
+    {
       id: "get-definition-of-word",
       title: "GET DEFINITION OF WORD",
       contexts: ["selection"]
@@ -1199,6 +1204,8 @@
       GoogleTTS(info2);
     } else if (info2.menuItemId === "open-wikitionary-of-word") {
       OpenWordWikiByWord(info2, tab);
+    } else if (info2.menuItemId === "open-youglish-of-word") {
+      OpenWordYouglishByWord(info2, tab);
     } else if (info2.menuItemId === "get-definition-of-word") {
       getWikiDefinitionOfWord(info2, tab);
     } else if (info2.menuItemId === "save-word-to-vocabulary") {
@@ -1464,6 +1471,18 @@
       const word = encodeURIComponent(info2.selectionText.trim().toLowerCase());
       chrome.tabs.create({
         url: `https://${langCode}.wiktionary.org/wiki/${word}`
+      });
+    }
+  }
+  async function OpenWordYouglishByWord(info2, tab) {
+    if (info2.selectionText) {
+      const determinedCategory = await IdentifiyLanguage(info2.selectionText, tab);
+      if (!determinedCategory) {
+        return;
+      }
+      const word = encodeURIComponent(info2.selectionText.trim().toLowerCase());
+      chrome.tabs.create({
+        url: `https://youglish.com/pronounce/${word}/${determinedCategory}`
       });
     }
   }
