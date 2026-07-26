@@ -80,21 +80,21 @@
 
 The extension includes **12 pre-packaged Piper neural text-to-speech models** in ONNX format stored in the `models/` directory:
 
-| Language | Model Name | Gender | Quality | Description | Filename Prefix |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **Russian** | Irina | Female | Medium | Smooth, natural Russian pronunciation | `ru_RU-irina-medium` |
-| **Russian** | Denis | Male | Medium | Energetic Russian pronunciation | `ru_RU-denis-medium` |
-| **Russian** | Dmitri | Male | Medium | Natural Russian pronunciation | `ru_RU-dmitri-medium` |
-| **Russian** | Ruslan | Male | Medium | Warm Russian pronunciation | `ru_RU-ruslan-medium` |
-| **English (GB)** | Alan | Male | Medium | Standard British English accent | `en_GB-alan-medium` |
-| **English (GB)** | Alba | Female | Medium | Standard British English accent | `en_GB-alba-medium` |
-| **English (GB)** | Cori | Female | High | High-fidelity British English accent | `en_GB-cori-high` |
-| **English (US)** | Bryce | Male | Medium | Standard American English accent | `en_US-bryce-medium` |
-| **English (US)** | HFC Female | Female | Medium | Clear American English accent | `en_US-hfc_female-medium` |
-| **English (US)** | HFC Male | Male | Medium | Clear American English accent | `en_US-hfc_male-medium` |
-| **Swedish** | Alma | Female | Medium | Soft Swedish pronunciation | `sv_SE-alma-medium` |
-| **Swedish** | Lisa | Female | Medium | Standard Swedish pronunciation | `sv_SE-lisa-medium` |
-| **Swedish** | NST | Male/Neutral | Medium | Standard Nordic Swedish voice model | `sv_SE-nst-medium` |
+| Language         | Model Name | Gender       | Quality | Description                           | Filename Prefix           |
+| :--------------- | :--------- | :----------- | :------ | :------------------------------------ | :------------------------ |
+| **Russian**      | Irina      | Female       | Medium  | Smooth, natural Russian pronunciation | `ru_RU-irina-medium`      |
+| **Russian**      | Denis      | Male         | Medium  | Energetic Russian pronunciation       | `ru_RU-denis-medium`      |
+| **Russian**      | Dmitri     | Male         | Medium  | Natural Russian pronunciation         | `ru_RU-dmitri-medium`     |
+| **Russian**      | Ruslan     | Male         | Medium  | Warm Russian pronunciation            | `ru_RU-ruslan-medium`     |
+| **English (GB)** | Alan       | Male         | Medium  | Standard British English accent       | `en_GB-alan-medium`       |
+| **English (GB)** | Alba       | Female       | Medium  | Standard British English accent       | `en_GB-alba-medium`       |
+| **English (GB)** | Cori       | Female       | High    | High-fidelity British English accent  | `en_GB-cori-high`         |
+| **English (US)** | Bryce      | Male         | Medium  | Standard American English accent      | `en_US-bryce-medium`      |
+| **English (US)** | HFC Female | Female       | Medium  | Clear American English accent         | `en_US-hfc_female-medium` |
+| **English (US)** | HFC Male   | Male         | Medium  | Clear American English accent         | `en_US-hfc_male-medium`   |
+| **Swedish**      | Alma       | Female       | Medium  | Soft Swedish pronunciation            | `sv_SE-alma-medium`       |
+| **Swedish**      | Lisa       | Female       | Medium  | Standard Swedish pronunciation        | `sv_SE-lisa-medium`       |
+| **Swedish**      | NST        | Male/Neutral | Medium  | Standard Nordic Swedish voice model   | `sv_SE-nst-medium`        |
 
 ---
 
@@ -179,15 +179,16 @@ sequenceDiagram
 
 ### Tech Stack
 
-| Layer | Technology | Description |
-| :--- | :--- | :--- |
-| **Extension Platform** | Chrome Manifest V3 | Background Service Worker, Content Scripts, Options Panel |
-| **Language & Runtime** | TypeScript, Node.js | Strongly-typed architecture compiled to JavaScript |
-| **ML Inference Engine** | ONNX Runtime Web (`ort-wasm.wasm`) | WebAssembly ONNX inference engine running locally in-browser |
-| **Phonemizer Engine** | Piper Phonemize (`piper_phonemize.wasm`) | eSpeak-NG WebAssembly phonemization engine for text-to-phoneme conversion |
-| **Language Classifier** | ELD (Efficient Language Detector) | Fast n-gram classifier for Latin-script text identification (`oldlang_model.json`) |
-| **Local Storage** | IndexedDB API | Persistent storage for saved vocabulary records and synthesized audio cache |
-| **External APIs** | Free Dictionary API, Wiktionary | Dictionary entry fetching and full morphological reference links |
+| Layer                   | Technology                               | Description                                                                        |
+| :---------------------- | :--------------------------------------- | :--------------------------------------------------------------------------------- |
+| **Extension Platform**  | Chrome Manifest V3                       | Background Service Worker, Content Scripts, Options Panel                          |
+| **Language & Runtime**  | TypeScript, Node.js                      | Strongly-typed architecture compiled to JavaScript                                 |
+| **ML Inference Engine** | ONNX Runtime Web (`ort-wasm.wasm`)       | WebAssembly ONNX inference engine running locally in-browser                       |
+| **Phonemizer Engine**   | Piper Phonemize (`piper_phonemize.wasm`) | eSpeak-NG WebAssembly phonemization engine for text-to-phoneme conversion          |
+| **Language Classifier** | ELD (Efficient Language Detector)        | Fast n-gram classifier for Latin-script text identification (`oldlang_model.json`) |
+| **Local Storage**       | IndexedDB API                            | Persistent storage for saved vocabulary records and synthesized audio cache        |
+| **Local Storage**       | Youglish lookup                          | Lookup word on youglish to hear example pronunciations                             |
+| **External APIs**       | Free Dictionary API, Wiktionary          | Dictionary entry fetching and full morphological reference links                   |
 
 ---
 
@@ -240,31 +241,31 @@ Below is a complete description of every parameter used across model inference, 
 
 ### Piper Neural TTS Parameters
 
-| Parameter | Type | Default Value | Description |
-| :--- | :--- | :--- | :--- |
-| `piperLanguageCategory` | `string` | `"russian"` | Active target language category (`"russian"`, `"english"`, or `"swedish"`). Selects the voice pool. |
-| `piperVoice` | `string` | `"irina"` | Identifier of the selected voice model within the active language category (e.g., `"irina"`, `"alan"`, `"alma"`). |
-| `piperVoiceFile` | `string` | `"ru_RU-irina-medium"` | Relative filename prefix of the `.onnx` model binary and `.onnx.json` configuration file inside `models/`. |
-| `piperSpeed` | `number` | `1.0` | Controls speech rate / tempo multiplier (Range: `0.5`x to `2.0`x). Used in model inference to compute `lengthScale = baseLengthScale / piperSpeed`. Lower values slow down speech rate; higher values accelerate speech. |
-| `piperNoiseScale` | `number` | `0.667` | Phoneme duration variability parameter. Controls the amount of stochastic noise added to phoneme durations during synthesis. Higher values increase expressiveness; lower values produce uniform, monotone timing. |
-| `piperNoiseW` | `number` | `0.80` | Noise Width parameter. Controls acoustic generator noise and pitch fluctuation / vocal timbre. Higher values add pitch variation; lower values produce smoother pitch output. |
-| `scales` (ONNX Tensor) | `ort.Tensor` | `[noiseScale, lengthScale, noiseW]` | Float32 Tensor `[1, 3]` sent directly to ONNX InferenceSession controlling synthesis timing, speed, and pitch parameters. |
-| `input` (ONNX Tensor) | `ort.Tensor` | Phoneme IDs | BigInt64 Tensor `[1, N]` containing numerical phoneme sequence IDs generated by eSpeak-NG phonemizer. |
-| `input_lengths` (ONNX Tensor) | `ort.Tensor` | `[N]` | BigInt64 Tensor `[1]` specifying total length of the phoneme ID sequence. |
-| `sid` (ONNX Tensor) | `ort.Tensor` | `[0]` | Optional BigInt64 Tensor `[1]` specifying speaker ID index for multi-speaker models. |
+| Parameter                     | Type         | Default Value                       | Description                                                                                                                                                                                                              |
+| :---------------------------- | :----------- | :---------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `piperLanguageCategory`       | `string`     | `"russian"`                         | Active target language category (`"russian"`, `"english"`, or `"swedish"`). Selects the voice pool.                                                                                                                      |
+| `piperVoice`                  | `string`     | `"irina"`                           | Identifier of the selected voice model within the active language category (e.g., `"irina"`, `"alan"`, `"alma"`).                                                                                                        |
+| `piperVoiceFile`              | `string`     | `"ru_RU-irina-medium"`              | Relative filename prefix of the `.onnx` model binary and `.onnx.json` configuration file inside `models/`.                                                                                                               |
+| `piperSpeed`                  | `number`     | `1.0`                               | Controls speech rate / tempo multiplier (Range: `0.5`x to `2.0`x). Used in model inference to compute `lengthScale = baseLengthScale / piperSpeed`. Lower values slow down speech rate; higher values accelerate speech. |
+| `piperNoiseScale`             | `number`     | `0.667`                             | Phoneme duration variability parameter. Controls the amount of stochastic noise added to phoneme durations during synthesis. Higher values increase expressiveness; lower values produce uniform, monotone timing.       |
+| `piperNoiseW`                 | `number`     | `0.80`                              | Noise Width parameter. Controls acoustic generator noise and pitch fluctuation / vocal timbre. Higher values add pitch variation; lower values produce smoother pitch output.                                            |
+| `scales` (ONNX Tensor)        | `ort.Tensor` | `[noiseScale, lengthScale, noiseW]` | Float32 Tensor `[1, 3]` sent directly to ONNX InferenceSession controlling synthesis timing, speed, and pitch parameters.                                                                                                |
+| `input` (ONNX Tensor)         | `ort.Tensor` | Phoneme IDs                         | BigInt64 Tensor `[1, N]` containing numerical phoneme sequence IDs generated by eSpeak-NG phonemizer.                                                                                                                    |
+| `input_lengths` (ONNX Tensor) | `ort.Tensor` | `[N]`                               | BigInt64 Tensor `[1]` specifying total length of the phoneme ID sequence.                                                                                                                                                |
+| `sid` (ONNX Tensor)           | `ort.Tensor` | `[0]`                               | Optional BigInt64 Tensor `[1]` specifying speaker ID index for multi-speaker models.                                                                                                                                     |
 
 ### Google Native Speech API Parameters
 
-| Parameter | Type | Default Value | Description |
-| :--- | :--- | :--- | :--- |
-| `googleLanguage` | `string` | `"ru-RU"` | BCP-47 language locale tag passed to `chrome.tts.speak` (e.g., `"ru-RU"`, `"en-US"`, `"sv-SE"`). |
-| `googleRate` | `number` | `1.0` | Speech rate multiplier for Chrome's native Speech Synthesis API (Range: `0.5`x to `2.0`x). |
+| Parameter        | Type     | Default Value | Description                                                                                      |
+| :--------------- | :------- | :------------ | :----------------------------------------------------------------------------------------------- |
+| `googleLanguage` | `string` | `"ru-RU"`     | BCP-47 language locale tag passed to `chrome.tts.speak` (e.g., `"ru-RU"`, `"en-US"`, `"sv-SE"`). |
+| `googleRate`     | `number` | `1.0`         | Speech rate multiplier for Chrome's native Speech Synthesis API (Range: `0.5`x to `2.0`x).       |
 
 ### General & Lookup Parameters
 
-| Parameter | Type | Default Value | Description |
-| :--- | :--- | :--- | :--- |
-| `lookupMethod` | `string` | `"manual"` | Strategy for resolving Latin-script words: `"manual"` prompts the user with an in-page UI dialog to select Swedish vs English; `"classifier"` uses ELD machine learning to select automatically. |
+| Parameter      | Type     | Default Value | Description                                                                                                                                                                                      |
+| :------------- | :------- | :------------ | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lookupMethod` | `string` | `"manual"`    | Strategy for resolving Latin-script words: `"manual"` prompts the user with an in-page UI dialog to select Swedish vs English; `"classifier"` uses ELD machine learning to select automatically. |
 
 ---
 
@@ -335,6 +336,7 @@ Ensure you have the following installed:
 ### Developer Installation
 
 1. **Clone the Repository**
+
    ```bash
    git clone https://github.com/AKSB-GP/LLT--Language-Learner-toolkit.git
    cd LLT--Language-Learner-toolkit
@@ -342,11 +344,13 @@ Ensure you have the following installed:
    ```
 
 2. **Install Dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Compile Source Code**
+
    ```bash
    npm run build
    ```
@@ -361,11 +365,11 @@ Ensure you have the following installed:
 
 ### Build Scripts
 
-| Command | Description |
-| :--- | :--- |
-| `npm run build` | Compiles TypeScript files into JavaScript in `dist/` and root output files. |
-| `npm run compile` | Runs `tsc` compiler to verify TypeScript types without emitting files. |
-| `npm run watch` | Runs TypeScript compiler in watch mode for auto-recompilation during development. |
+| Command           | Description                                                                       |
+| :---------------- | :-------------------------------------------------------------------------------- |
+| `npm run build`   | Compiles TypeScript files into JavaScript in `dist/` and root output files.       |
+| `npm run compile` | Runs `tsc` compiler to verify TypeScript types without emitting files.            |
+| `npm run watch`   | Runs TypeScript compiler in watch mode for auto-recompilation during development. |
 
 ---
 
