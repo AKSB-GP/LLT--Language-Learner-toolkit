@@ -157,9 +157,9 @@ The codebase adheres to a decoupled **MVP (Model-View-Presenter)** architecture:
 
 ---
 
-## Language Identification System
+## Language Identification setup
 
-LLT employs a multi-stage pipeline to identify word language prior to dictionary lookups or Wiktionary routing:
+LLTs pipeline to identify word language prior to dictionary lookups or Wiktionary routing is the following:
 
 ```text
                [ Selected Word ]
