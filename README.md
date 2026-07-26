@@ -64,11 +64,13 @@
 
 4. **Open Wiktionary Page**:
    - Highlight a word, right-click, and select **OPEN WIKTIONARY OF WORD**.
+5. **Hear pronunciation examples on Youglish**:
+   - Highlight a word, right-click, and select **OPEN YOUSGLISH OF WORD**.
 
-5. **Save Word Directly**:
+6. **Save Word Directly**:
    - Highlight a word, right-click, and select **SAVE WORD TO VOCABULARY**.
 
-6. **Manage Settings & Export Vocabulary**:
+7. **Manage Settings & Export Vocabulary**:
    - Click the LLT extension icon in the Chrome toolbar to open the options panel.
    - Configure Piper voice models, speech rate (`0.5x` - `2.0x`), noise scale parameters, and language lookup mode.
    - Click **Export Vocabulary (CSV)** to download all saved words as a `.csv` file.
@@ -141,42 +143,6 @@ The codebase adheres to a decoupled **MVP (Model-View-Presenter)** architecture:
 
 ---
 
-### System Flow Diagram
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User
-    participant ContextMenu as Chrome Context Menu
-    participant Background as background.ts (Service Worker)
-    participant ContentScript as contentScript.ts / Controller
-    participant TTSModel as TTSModel.ts (ONNX / WASM)
-    participant IndexedDB as DatabaseModel.ts (IndexedDB)
-    participant View as NotificationView.ts (DOM Overlay)
-
-    User->>ContextMenu: Highlight text & right-click "Pronounce with Piper TTS"
-    ContextMenu->>Background: Trigger onClicked event
-    Background->>ContentScript: Send message "speakSelection" with selected text
-    ContentScript->>IndexedDB: Check audio_cache for existing audio buffer
-    alt Cache Hit
-        IndexedDB-->>ContentScript: Return cached WAV ArrayBuffer
-        ContentScript->>View: Show "PLAYING" toast
-        ContentScript->>User: Play audio immediately via HTML5 Audio API
-    else Cache Miss
-        ContentScript->>View: Show "LOADING / SYNTHESIZING" toast
-        ContentScript->>TTSModel: Load voice model (.onnx & .json)
-        TTSModel->>TTSModel: Phonemize text via eSpeak-NG WASM
-        TTSModel->>TTSModel: Execute ONNX Inference (Tensor scales & input IDs)
-        TTSModel->>TTSModel: Wrap PCM Float32Array in 16-bit WAV header
-        TTSModel->>IndexedDB: Cache synthesized WAV buffer asynchronously
-        TTSModel-->>ContentScript: Return compiled WAV buffer
-        ContentScript->>View: Update toast to "PLAYING"
-        ContentScript->>User: Play audio via HTML5 Audio API
-    end
-```
-
----
-
 ### Tech Stack
 
 | Layer                   | Technology                               | Description                                                                        |
@@ -187,7 +153,6 @@ sequenceDiagram
 | **Phonemizer Engine**   | Piper Phonemize (`piper_phonemize.wasm`) | eSpeak-NG WebAssembly phonemization engine for text-to-phoneme conversion          |
 | **Language Classifier** | ELD (Efficient Language Detector)        | Fast n-gram classifier for Latin-script text identification (`oldlang_model.json`) |
 | **Local Storage**       | IndexedDB API                            | Persistent storage for saved vocabulary records and synthesized audio cache        |
-| **Local Storage**       | Youglish lookup                          | Lookup word on youglish to hear example pronunciations                             |
 | **External APIs**       | Free Dictionary API, Wiktionary          | Dictionary entry fetching and full morphological reference links                   |
 
 ---
