@@ -1,6 +1,6 @@
 # LLT - Language Learner Toolkit
 
-> A Chrome Extension written in TypeScript for language learning featuring offline neural Text-to-Speech (TTS), grammatical metadata analysis, Wiktionary lookup, definition fetching, and vocabulary export.
+> A Chrome Extension written in TypeScript for language learning featuring offline neural Text-to-Speech (TTS), grammatical analysis, Wiktionary lookup, definition fetching, direct translation of text and vocabulary export.
 
 ---
 
