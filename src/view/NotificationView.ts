@@ -249,6 +249,81 @@ export class NotificationView {
     });
   }
 
+  // ─── Target Language Picker Toast (For Translation) ─────────────────────────
+
+  public promptTargetLanguage(options?: Array<{ label: string; code: string }>,): Promise<string | null> {
+    const targetOpts =
+      Array.isArray(options) && options.length > 0
+        ? options
+        : [
+          { label: "RUSSIAN", code: "ru" },
+          { label: "SWEDISH", code: "sv" },
+        ];
+
+    return new Promise((resolve) => {
+      const pos = this.getSelectionPosition();
+
+      const toast = document.createElement("div");
+      toast.className = "tts-selection-toast";
+      toast.style.position = "absolute";
+
+      const content = document.createElement("div");
+      content.className = "tts-sel-toast-content";
+
+      const label = document.createElement("span");
+      label.className = "tts-sel-toast-label";
+      label.textContent = "TRANSLATE TO:";
+      content.appendChild(label);
+
+      targetOpts.forEach((opt, idx) => {
+        const btn = document.createElement("button");
+        btn.className = `tts-sel-toast-btn ${idx % 2 === 0 ? "tts-btn-sv" : "tts-btn-en"}`;
+        btn.textContent = opt.label;
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          cleanup(opt.code);
+        });
+        content.appendChild(btn);
+      });
+
+      const btnClose = document.createElement("button");
+      btnClose.className = "tts-sel-toast-close";
+      btnClose.innerHTML = "&times;";
+      btnClose.addEventListener("click", (e) => {
+        e.stopPropagation();
+        cleanup(null);
+      });
+      content.appendChild(btnClose);
+
+      toast.appendChild(content);
+      document.body.appendChild(toast);
+
+      const toastWidth = toast.offsetWidth || 230;
+      const toastHeight = toast.offsetHeight || 36;
+      this.positionToast(toast, toastWidth, toastHeight, pos);
+
+      requestAnimationFrame(() => {
+        toast.classList.add("tts-sel-toast-visible");
+      });
+
+      const clickOutsideHandler = (e: MouseEvent) => {
+        if (!toast.contains(e.target as Node)) {
+          cleanup(null);
+        }
+      };
+      document.addEventListener("mousedown", clickOutsideHandler);
+
+      const cleanup = (choice: string | null) => {
+        document.removeEventListener("mousedown", clickOutsideHandler);
+        toast.classList.remove("tts-sel-toast-visible");
+        setTimeout(() => {
+          toast.remove();
+          resolve(choice);
+        }, 150);
+      };
+    });
+  }
+
   // ─── Definition Card Toast ────────────────────────────────────────────────
 
   public showDefinitionToast(
@@ -348,7 +423,7 @@ export class NotificationView {
     }
 
     const saveBtn = document.createElement("button");
-    saveBtn.textContent = "SAVE TO VOCABULARY +";
+    saveBtn.textContent = "SAVE TO VOCABULARY LIST";
     saveBtn.className = "tts-sel-toast-btn tts-btn-sv";
     saveBtn.style.cssText =
       "font-size:10px;padding:3px 8px;margin-left:auto;cursor:pointer";
@@ -365,7 +440,7 @@ export class NotificationView {
           : definition,
         pageUrl: pageUrl || "",
       });
-      saveBtn.textContent = "✓ SAVED";
+      saveBtn.textContent = " SAVED";
       saveBtn.style.background = "#28a745";
     });
     actionRow.appendChild(saveBtn);
@@ -400,4 +475,171 @@ export class NotificationView {
       }, 200);
     };
   }
+
+  // ─── Translation Card Toast ───────────────────────────────────────────────
+
+  public showTranslationToast(
+    originalText: string,
+    translatedText: string,
+    fromLanguage?: string,
+    toLanguage?: string,
+  ): void {
+    const pos = this.getSelectionPosition();
+
+    const toast = document.createElement("div");
+    toast.className = "tts-selection-toast";
+    toast.style.position = "absolute";
+    toast.style.maxWidth = "380px";
+    toast.style.minWidth = "260px";
+
+    const content = document.createElement("div");
+    content.className = "tts-sel-toast-content";
+    content.style.flexDirection = "column";
+    content.style.alignItems = "flex-start";
+    content.style.gap = "6px";
+    content.style.padding = "10px 14px";
+
+    // Header row/title
+    const headerRow = document.createElement("div");
+    headerRow.style.cssText =
+      "display:flex;align-items:baseline;justify-content:space-between;width:100%";
+
+    const titleContainer = document.createElement("div");
+    titleContainer.style.cssText = "display:flex;align-items:center;gap:6px";
+
+    const prefixElem = document.createElement("span");
+    prefixElem.textContent = "/";
+    prefixElem.style.cssText = "font-size:13px;font-weight:400;color:#999999";
+    titleContainer.appendChild(prefixElem);
+
+    const titleElem = document.createElement("strong");
+    titleElem.textContent = "TRANSLATION";
+    titleElem.style.cssText =
+      "font-size:13px;font-weight:700;letter-spacing:-0.02em;color:#111111";
+    titleContainer.appendChild(titleElem);
+
+    const formatLangCode = (lang?: string): string => {
+      if (!lang || lang === "auto") return "AUTO";
+      const map: Record<string, string> = {
+        russian: "RU",
+        english: "EN",
+        swedish: "SV",
+        ru: "RU",
+        en: "EN",
+        sv: "SV",
+      };
+      return map[lang.toLowerCase()] || lang.toUpperCase();
+    };
+
+    const fromCode = formatLangCode(fromLanguage);
+    const toCode = formatLangCode(toLanguage);
+
+    if (fromLanguage || toLanguage) {
+      const langBadge = document.createElement("span");
+      langBadge.className = "tts-sel-toast-label";
+      langBadge.textContent = `/ ${fromCode} --> ${toCode}`;
+      titleContainer.appendChild(langBadge);
+    }
+    headerRow.appendChild(titleContainer);
+
+    const btnClose = document.createElement("button");
+    btnClose.className = "tts-sel-toast-close";
+    btnClose.textContent = "×";
+    btnClose.addEventListener("click", (e) => {
+      e.stopPropagation();
+      cleanup();
+    });
+    headerRow.appendChild(btnClose);
+    content.appendChild(headerRow);
+
+    // Divider
+    const divider = document.createElement("div");
+    divider.style.cssText =
+      "width:100%;height:1px;background:#111111;margin:2px 0";
+    content.appendChild(divider);
+
+    // Original Text header
+    const inputElemHeader = document.createElement("div");
+    inputElemHeader.style.cssText =
+      "color:#111111;font-size:11px;font-weight:600;text-decoration:underline;text-underline-offset:2px;cursor:pointer";
+    inputElemHeader.textContent = `ORIGINAL (${fromCode}) / `;
+    content.appendChild(inputElemHeader);
+
+    // Original Text (Muted italic preview)
+    const origElem = document.createElement("div");
+    origElem.style.cssText =
+      "font-size:11px;font-style:italic;color:#666666;max-height:50px;overflow-y:auto;white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;width:100%";
+    origElem.textContent = `"${originalText}"`;
+    content.appendChild(origElem);
+
+    // Translated Text header
+    const outputElemHeader = document.createElement("div");
+    outputElemHeader.style.cssText =
+      "color:#111111;font-size:11px;font-weight:600;text-decoration:underline;text-underline-offset:2px;cursor:pointer";
+    outputElemHeader.textContent = `TRANSLATED (${toCode}) / `;
+    content.appendChild(outputElemHeader);
+
+    // Translated text
+    const transElem = document.createElement("div");
+    transElem.style.cssText =
+      "font-size:13px;font-weight:600;line-height:1.45;color:#111111;max-height:140px;overflow-y:auto;white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;width:100%";
+    transElem.textContent = translatedText;
+    content.appendChild(transElem);
+
+    // Footer action row
+    const actionRow = document.createElement("div");
+    actionRow.style.cssText =
+      "display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:6px;gap:8px";
+
+    const copyBtn = document.createElement("button");
+    copyBtn.textContent = "COPY";
+    copyBtn.className = "tts-btn-sv tts-sel-toast-btn";
+    copyBtn.style.cssText =
+      "font-size:10px;padding:3px 8px;cursor:pointer";
+    copyBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      navigator.clipboard.writeText(translatedText).then(() => {
+        copyBtn.textContent = " COPIED";
+        copyBtn.style.background = "#28a745";
+        setTimeout(() => {
+          copyBtn.textContent = "COPY";
+          copyBtn.style.background = "";
+        }, 2000);
+      });
+    });
+    actionRow.appendChild(copyBtn);
+
+
+
+    content.appendChild(actionRow);
+
+    toast.appendChild(content);
+    document.body.appendChild(toast);
+
+    const toastWidth = toast.offsetWidth || 320;
+    const toastHeight = toast.offsetHeight || 120;
+    this.positionToast(toast, toastWidth, toastHeight, pos);
+
+    requestAnimationFrame(() => {
+      toast.classList.add("tts-sel-toast-visible");
+    });
+
+    const clickOutsideHandler = (e: MouseEvent) => {
+      if (!toast.contains(e.target as Node)) {
+        cleanup();
+      }
+    };
+    setTimeout(() => {
+      document.addEventListener("mousedown", clickOutsideHandler);
+    }, 100);
+
+    const cleanup = () => {
+      document.removeEventListener("mousedown", clickOutsideHandler);
+      toast.classList.remove("tts-sel-toast-visible");
+      setTimeout(() => {
+        toast.remove();
+      }, 200);
+    };
+  }
 }
+
