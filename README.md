@@ -141,7 +141,7 @@ The codebase adheres to a decoupled **MVP (Model-View-Presenter)** architecture:
 1. **Model Layer**:
    - `src/model/DatabaseModel.ts`: Manages IndexedDB connection (`LLT_Database`), object stores (`vocabulary` and `audio_cache`), indexes, transaction handling, and LRU cache eviction.
    - `src/model/TTSModel.ts`: Handles loading local ONNX voice models, executing eSpeak-NG phonemization (`piper_phonemize.wasm`), running ONNX inference sessions, and building raw PCM WAV headers.
-   - `src/model/GoogleTranslatorModel.ts`: Wraps `anylang` (`GoogleTranslator` and `Scheduler`) for batching and executing source-to-target language translations.
+   - `src/model/GoogleTranslatorModel.ts`: Wraps `anylang` (`GoogleTranslator` and `Scheduler`) for batching and executing source-to-target language translations. Repo: https://github.com/translate-tools/core 
 
 2. **View Layer**:
    - `src/view/NotificationView.ts`: Renders floating UI elements directly into web page DOMs, including selection tracking, speech progress toasts, language selection prompts, translation cards, and definition overlay cards.
