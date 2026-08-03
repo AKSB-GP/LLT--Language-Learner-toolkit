@@ -37,6 +37,8 @@
 
 ## Key Features
 
+- **In-Page Sentence Translation (`anylang`)**: Integrates `anylang` translation primitives and batching schedulers (`GoogleTranslator`). Enables full-sentence or phrase translation directly in floating toast popups with automatic source script identification (handled by anylang). Target langauge can be set in the options panel ("EN", "SV", "RU" ). Also handles cases when source and target languages are the same (user is prompted to choose target language). Finally copy text to clipboard is also featured.
+
 - **Offline Neural Text-to-Speech (Piper ONNX)**: Runs local machine learning inference inside the browser using ONNX Runtime Web and eSpeak-NG WASM phonemization. Supports 12 local voice models across Russian, English, and Swedish without relying on external cloud APIs.
 - **Google Native TTS Fallback**: Integrates with Chrome's native Speech Synthesis API for quick pronunciation fallback with adjustable speech rate.
 - **Grammatical Metadata Analysis (Russian)**: Automatically extracts grammatical attributes for Russian words from Free Dictionary API, including gender (_masculine_, _feminine_, _neuter_), animacy (_animate_, _inanimate_), case inflections (_nominative_, _genitive_, _dative_, _accusative_, _instrumental_, _prepositional_, _locative_), and number (_singular_, _plural_).
@@ -49,30 +51,38 @@
 
 ## Usage Guide
 
-1. **Pronounce Word (Piper Offline TTS)**:
+1. **Translate Text (Google Translate)**:
+   - Highlight any sentence, phrase, or word on a web page.
+   - Right-click and select **TRANSLATE WITH GOOGLE**.
+   - A floating toast overlay displays the source language badge, original text preview, and translated result.
+   - If the highlighted text's source language matches your configured target language preference (e.g. English text selected while target setting is set to English), an in-page prompt modal allows choosing an alternative target language (`RUSSIAN` or `SWEDISH`) for that translation.
+   - Click **COPY** to copy the translated text to your clipboard.
+
+2. **Pronounce Word (Piper Offline TTS)**:
    - Highlight any word or sentence on a web page.
    - Right-click and select **PRONOUNCE WITH PIPER TTS**.
    - The extension will load the configured local ONNX voice model and play neural audio output.
 
-2. **Pronounce Word (Google Native TTS)**:
+3. **Pronounce Word (Google Native TTS)**:
    - Highlight text, right-click, and select **PRONOUNCE WITH GOOGLE TTS**.
 
-3. **Get Definition & Grammatical Details**:
+4. **Get Definition & Grammatical Details**:
    - Highlight a word, right-click, and select **GET DEFINITION OF WORD**.
    - An in-page floating toast will display the definition, part of speech, and Russian grammatical attributes (gender, animacy, case inflection).
-   - Click **SAVE TO VOCABULARY +** to save the entry into local storage.
+   - Click **SAVE TO VOCABULARY LIST** to save the entry into local storage.
 
-4. **Open Wiktionary Page**:
+5. **Open Wiktionary Page**:
    - Highlight a word, right-click, and select **OPEN WIKTIONARY OF WORD**.
-5. **Hear pronunciation examples on Youglish**:
-   - Highlight a word, right-click, and select **OPEN YOUSGLISH OF WORD**.
 
-6. **Save Word Directly**:
+6. **Hear pronunciation examples on Youglish**:
+   - Highlight a word, right-click, and select **OPEN YOUGLISH OF WORD**.
+
+7. **Save Word Directly**:
    - Highlight a word, right-click, and select **SAVE WORD TO VOCABULARY**.
 
-7. **Manage Settings & Export Vocabulary**:
+8. **Manage Settings & Export Vocabulary**:
    - Click the LLT extension icon in the Chrome toolbar to open the options panel.
-   - Configure Piper voice models, speech rate (`0.5x` - `2.0x`), noise scale parameters, and language lookup mode.
+   - Configure Piper voice models, speech rate (`0.5x` - `2.0x`), noise scale parameters, translation target language (`en`, `sv`, `ru`), and language lookup mode.
    - Click **Export Vocabulary (CSV)** to download all saved words as a `.csv` file.
    - Use **Clear Audio Cache** or **Clear Saved Vocabulary** buttons to manage stored data.
 
@@ -131,9 +141,10 @@ The codebase adheres to a decoupled **MVP (Model-View-Presenter)** architecture:
 1. **Model Layer**:
    - `src/model/DatabaseModel.ts`: Manages IndexedDB connection (`LLT_Database`), object stores (`vocabulary` and `audio_cache`), indexes, transaction handling, and LRU cache eviction.
    - `src/model/TTSModel.ts`: Handles loading local ONNX voice models, executing eSpeak-NG phonemization (`piper_phonemize.wasm`), running ONNX inference sessions, and building raw PCM WAV headers.
+   - `src/model/GoogleTranslatorModel.ts`: Wraps `anylang` (`GoogleTranslator` and `Scheduler`) for batching and executing source-to-target language translations.
 
 2. **View Layer**:
-   - `src/view/NotificationView.ts`: Renders floating UI elements directly into web page DOMs, including selection tracking, speech progress toasts, language selection prompts, and definition overlay cards.
+   - `src/view/NotificationView.ts`: Renders floating UI elements directly into web page DOMs, including selection tracking, speech progress toasts, language selection prompts, translation cards, and definition overlay cards.
 
 3. **Presenter Layer**:
    - `src/controller/TTSController.ts`: Listens for runtime messages from background scripts, manages state transitions between loading, synthesis, and playback, and coordinates data flow between models and views.
@@ -149,6 +160,7 @@ The codebase adheres to a decoupled **MVP (Model-View-Presenter)** architecture:
 | :---------------------- | :--------------------------------------- | :--------------------------------------------------------------------------------- |
 | **Extension Platform**  | Chrome Manifest V3                       | Background Service Worker, Content Scripts, Options Panel                          |
 | **Language & Runtime**  | TypeScript, Node.js                      | Strongly-typed architecture compiled to JavaScript                                 |
+| **Translation Engine**  | `anylang` (`GoogleTranslator`)           | Modular translation primitives and batching scheduler for Google Translate API     |
 | **ML Inference Engine** | ONNX Runtime Web (`ort-wasm.wasm`)       | WebAssembly ONNX inference engine running locally in-browser                       |
 | **Phonemizer Engine**   | Piper Phonemize (`piper_phonemize.wasm`) | eSpeak-NG WebAssembly phonemization engine for text-to-phoneme conversion          |
 | **Language Classifier** | ELD (Efficient Language Detector)        | Fast n-gram classifier for Latin-script text identification (`oldlang_model.json`) |
@@ -228,9 +240,10 @@ Below is a complete description of every parameter used across model inference, 
 
 ### General & Lookup Parameters
 
-| Parameter      | Type     | Default Value | Description                                                                                                                                                                                      |
-| :------------- | :------- | :------------ | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `lookupMethod` | `string` | `"manual"`    | Strategy for resolving Latin-script words: `"manual"` prompts the user with an in-page UI dialog to select Swedish vs English; `"classifier"` uses ELD machine learning to select automatically. |
+| Parameter                       | Type     | Default Value | Description                                                                                                                                                                                                        |
+| :------------------------------ | :------- | :------------ | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lookupMethod`                  | `string` | `"manual"`    | Strategy for resolving Latin-script words: `"manual"` prompts the user with an in-page UI dialog to select Swedish vs English; `"classifier"` uses ELD machine learning to select automatically.                   |
+| `googleTranslateTargetLanguage` | `string` | `"en"`        | Target language ISO code for Google Translate feature (`"en"`, `"sv"`, `"ru"`). Configurable via extension options panel. If source language matches target setting, prompts user to select an alternative target. |
 
 ---
 
@@ -276,8 +289,9 @@ LLT--Language-Learner-toolkit/
 │   ├── controller/
 │   │   └── TTSController.ts  # Presenter layer: coordinates speech flow and view updates
 │   ├── model/
-│   │   ├── DatabaseModel.ts  # Model layer: IndexedDB operations and audio cache manager
-│   │   └── TTSModel.ts       # Model layer: ONNX inference and WAV buffer generator
+│   │   ├── DatabaseModel.ts         # Model layer: IndexedDB operations and audio cache manager
+│   │   ├── GoogleTranslatorModel.ts # Model layer: anylang GoogleTranslator & Scheduler
+│   │   └── TTSModel.ts              # Model layer: ONNX inference and WAV buffer generator
 │   └── view/
 │       └── NotificationView.ts # View layer: DOM text position tracking and toast UI rendering
 └── dist/                      # Compiled JavaScript output directory
