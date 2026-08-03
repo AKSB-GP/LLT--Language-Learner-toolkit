@@ -15,9 +15,10 @@ import {
 } from "./const";
 import { eld } from "eld/extrasmall";
 import { DatabaseModel } from "./model/DatabaseModel";
+import { GoogleTranslatorModel } from "./model/GoogleTranslatorModel";
 
 const dbModel = new DatabaseModel();
-
+const googleTranslatorModel = new GoogleTranslatorModel();
 // set eld subsets as to avoid as most languages wont be used
 //eld is an word classifier
 eld.setLanguageSubset(["en", "sv"]);
@@ -54,6 +55,8 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     getWikiDefinitionOfWord(info, tab);
   } else if (info.menuItemId === "save-word-to-vocabulary") {
     SaveWordToVocabulary(info, tab);
+  } else if (info.menuItemId === "translate-with-google") {
+    TranslateWithGoogle(info.selectionText!, tab);
   }
 });
 
@@ -129,7 +132,7 @@ async function IdentifiyLanguage(
 ): Promise<string | null> {
   const cleanWord = word.trim();
 
-  // 1. Cyrillic letters? If yes, it's Russian.
+  // Cyrillic letters? If yes, it's Russian.
   const isCyrillic = /[а-яёА-ЯЁ]/.test(cleanWord);
   if (isCyrillic) {
     return "russian";
@@ -482,6 +485,110 @@ async function OpenWordYouglishByWord(
   }
 }
 
+
+/**
+ * Handles explicit context menu click for "translate with google".
+ * Detects word language, invokes GoogleTranslatorModel, and sends translation payload to tab content script.
+ * if fromlanguage to target language is the same, the user is prompted to selecte target langauge.
+ * @param text - Selected text to translate.
+ * @param tab - Active browser tab.
+ */
+async function TranslateWithGoogle(text: string, tab?: chrome.tabs.Tab): Promise<void> {
+  if (!text || !tab?.id) return;
+  const rawText = text.trim();
+  if (!rawText) return;
+
+  // Detect source language ISO code
+  const isCyrillic = /[а-яёА-ЯЁ]/.test(rawText);
+  const isSwedish = /[åäöÅÄÖ]/.test(rawText);
+
+  let sourceLangCode = "en";
+  if (isCyrillic) {
+    sourceLangCode = "ru";
+  } else if (isSwedish) {
+    sourceLangCode = "sv";
+  }
+
+  // Fetch user preferred target language setting from storage
+  const settings = await new Promise<{ googleTranslateTargetLanguage: string }>((resolve) => {
+    chrome.storage.sync.get(
+      { googleTranslateTargetLanguage: DEFAULT_SETTINGS.googleTranslateTargetLanguage },
+      (items) => resolve(items as { googleTranslateTargetLanguage: string }),
+    );
+  });
+
+  let targetLang = settings.googleTranslateTargetLanguage;
+
+  // If source language and user settings target language match (e.g. ru to ru, sv to sv, en to en)
+  if (sourceLangCode === targetLang) {
+    const allLangs = [
+      { label: "ENGLISH", code: "en" },
+      { label: "SWEDISH", code: "sv" },
+      { label: "RUSSIAN", code: "ru" },
+    ];
+    // Filter out the source language to prompt for the other two target languages
+    const availableOptions = allLangs.filter((item) => item.code !== sourceLangCode);
+
+    try {
+      const response = await chrome.tabs.sendMessage(tab.id, {
+        action: "promptTargetLanguageSelection",
+        options: availableOptions,
+      });
+
+      if (!response?.targetLanguage) {
+        return; // User cancelled prompt
+      }
+      targetLang = response.targetLanguage;
+    } catch (err) {
+      console.warn("Could not message content script to display target language prompt:", err);
+      return;
+    }
+  }
+
+  // Show status loading toast
+  chrome.tabs
+    .sendMessage(tab.id, {
+      action: "showNotification",
+      toastType: "loading",
+      text: `TRANSLATING "${rawText.substring(0, 20)}${rawText.length > 20 ? "..." : ""}"...`,
+      duration: 5000,
+    })
+    .catch(() => { });
+
+  try {
+    const translatedText = await googleTranslatorModel.Translate(
+      rawText,
+      sourceLangCode,
+      targetLang,
+    );
+
+    // Successfully translated
+    chrome.tabs
+      .sendMessage(tab.id, {
+        action: "showTranslation",
+        originalText: rawText,
+        translatedText: translatedText,
+        fromLanguage: sourceLangCode,
+        toLanguage: targetLang,
+      })
+      .catch((err) => {
+        console.warn("Could not send translation result to tab:", err);
+      });
+  } catch (err: any) {
+    console.error("Google Translation failed:", err);
+    chrome.tabs
+      .sendMessage(tab.id, {
+        action: "showNotification",
+        toastType: "error",
+        text: "TRANSLATION FAILED",
+        duration: 3000,
+      })
+      .catch(() => { });
+  }
+}
+
+
+
 /**
  * Handles explicit context menu click for "save word to vocabulary".
  * Fetches word details and stores them in IndexedDB vocabulary database.
@@ -532,7 +639,7 @@ async function SaveWordToVocabulary(
           text: `SAVED "${rawWord.toUpperCase()}" TO VOCABULARY`,
           duration: 3000,
         })
-        .catch(() => {});
+        .catch(() => { });
     }
   }
 }

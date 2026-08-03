@@ -31,6 +31,15 @@ export class TTSController {
         });
         return true; // Keep message channel open for async response
       } else if (
+        message.action === "promptTargetLanguageSelection"
+      ) {
+        this.notificationView
+          .promptTargetLanguage(message.options)
+          .then((choice) => {
+            sendResponse({ targetLanguage: choice });
+          });
+        return true; // Keep message channel open for async response
+      } else if (
         message.action === "showDefinition" &&
         message.word &&
         message.definition
@@ -40,6 +49,18 @@ export class TTSController {
           message.definition,
           message.pageUrl,
           message.language,
+        );
+      } else if (
+        message.action === "showTranslation" &&
+        message.originalText &&
+        message.translatedText
+      ) {
+        this.notificationView.dismiss();
+        this.notificationView.showTranslationToast(
+          message.originalText,
+          message.translatedText,
+          message.fromLanguage,
+          message.toLanguage,
         );
       } else if (message.action === "showNotification" && message.text) {
         this.notificationView.show(

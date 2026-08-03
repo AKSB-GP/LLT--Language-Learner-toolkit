@@ -21,6 +21,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const googleLanguage = document.getElementById(
     "google-language",
   ) as HTMLSelectElement;
+  const googleTranslateTargetLanguage = document.getElementById(
+    "google-translate-target-language",
+  ) as HTMLSelectElement | null;
   const googleRate = document.getElementById("google-rate") as HTMLInputElement;
   const lookupMethod = document.getElementById(
     "lookup-method",
@@ -112,6 +115,7 @@ document.addEventListener("DOMContentLoaded", () => {
       piperNoiseScale: DEFAULT_SETTINGS.piperNoiseScale,
       piperNoiseW: DEFAULT_SETTINGS.piperNoiseW,
       googleLanguage: DEFAULT_SETTINGS.googleLanguage,
+      googleTranslateTargetLanguage: DEFAULT_SETTINGS.googleTranslateTargetLanguage,
       googleRate: DEFAULT_SETTINGS.googleRate,
       lookupMethod: DEFAULT_SETTINGS.lookupMethod,
     },
@@ -124,6 +128,9 @@ document.addEventListener("DOMContentLoaded", () => {
       piperNoiseScale.value = items.piperNoiseScale.toString();
       piperNoiseW.value = items.piperNoiseW.toString();
       googleLanguage.value = items.googleLanguage;
+      if (googleTranslateTargetLanguage) {
+        googleTranslateTargetLanguage.value = items.googleTranslateTargetLanguage || DEFAULT_SETTINGS.googleTranslateTargetLanguage;
+      }
       googleRate.value = items.googleRate.toString();
 
       // Set label text
@@ -173,6 +180,15 @@ document.addEventListener("DOMContentLoaded", () => {
       triggerSaveToast,
     );
   });
+
+  if (googleTranslateTargetLanguage) {
+    googleTranslateTargetLanguage.addEventListener("change", () => {
+      chrome.storage.sync.set(
+        { googleTranslateTargetLanguage: googleTranslateTargetLanguage.value },
+        triggerSaveToast,
+      );
+    });
+  }
 
   googleRate.addEventListener("input", (e) => {
     const target = e.target as HTMLInputElement;

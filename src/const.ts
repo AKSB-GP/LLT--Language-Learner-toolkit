@@ -73,6 +73,11 @@ export const listOfContextMenus: ContextMenu[] = [
     title: "SAVE WORD TO VOCABULARY",
     contexts: ["selection"],
   },
+  {
+    id: "translate-with-google",
+    title: "TRANSLATE WITH GOOGLE",
+    contexts: ["selection"],
+  },
 ];
 /* language codes */
 export const LANGUAGE_CODES: Record<string, string> = {
@@ -91,6 +96,7 @@ export const DEFAULT_SETTINGS: ExtensionSettings = {
   googleLanguage: "ru-RU",
   googleRate: 1.0,
   lookupMethod: "manual",
+  googleTranslateTargetLanguage: "en",
 };
 /* lists used to help with grammer identify of russian words */
 export const RUSSIAN_GENDER_LIST = ["masculine", "feminine", "neuter"] as const;

@@ -50,7 +50,8 @@
     piperNoiseW: 0.8,
     googleLanguage: "ru-RU",
     googleRate: 1,
-    lookupMethod: "manual"
+    lookupMethod: "manual",
+    googleTranslateTargetLanguage: "en"
   };
 
   // src/model/DatabaseModel.ts
@@ -521,6 +522,9 @@
     const googleLanguage = document.getElementById(
       "google-language"
     );
+    const googleTranslateTargetLanguage = document.getElementById(
+      "google-translate-target-language"
+    );
     const googleRate = document.getElementById("google-rate");
     const lookupMethod = document.getElementById(
       "lookup-method"
@@ -596,6 +600,7 @@
         piperNoiseScale: DEFAULT_SETTINGS.piperNoiseScale,
         piperNoiseW: DEFAULT_SETTINGS.piperNoiseW,
         googleLanguage: DEFAULT_SETTINGS.googleLanguage,
+        googleTranslateTargetLanguage: DEFAULT_SETTINGS.googleTranslateTargetLanguage,
         googleRate: DEFAULT_SETTINGS.googleRate,
         lookupMethod: DEFAULT_SETTINGS.lookupMethod
       },
@@ -607,6 +612,9 @@
         piperNoiseScale.value = items.piperNoiseScale.toString();
         piperNoiseW.value = items.piperNoiseW.toString();
         googleLanguage.value = items.googleLanguage;
+        if (googleTranslateTargetLanguage) {
+          googleTranslateTargetLanguage.value = items.googleTranslateTargetLanguage || DEFAULT_SETTINGS.googleTranslateTargetLanguage;
+        }
         googleRate.value = items.googleRate.toString();
         piperSpeedVal.textContent = `${parseFloat(items.piperSpeed).toFixed(1)}x`;
         piperNoiseScaleVal.textContent = parseFloat(
@@ -647,6 +655,14 @@
         triggerSaveToast
       );
     });
+    if (googleTranslateTargetLanguage) {
+      googleTranslateTargetLanguage.addEventListener("change", () => {
+        chrome.storage.sync.set(
+          { googleTranslateTargetLanguage: googleTranslateTargetLanguage.value },
+          triggerSaveToast
+        );
+      });
+    }
     googleRate.addEventListener("input", (e) => {
       const target = e.target;
       const val = parseFloat(target.value);
