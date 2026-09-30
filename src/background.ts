@@ -39,41 +39,71 @@ chrome.runtime.onInstalled.addListener(() => {
   CreateContextMenus();
 });
 
+//
+
+
+/**
+ * Fetches selected text from active tab via content script message.
+ */
+async function getSelectedTextFromTab(tabId: number): Promise<string> {
+  try {
+    const response = await chrome.tabs.sendMessage(tabId, { action: "getSelectedText" });
+    return response?.text || "";
+  } catch (err) {
+    console.warn("Could not get selected text from tab via message:", err);
+    return "";
+  }
+}
+
+/**
+ * Dispatches an action (from context menu or command hotkey) to its target handler.
+ */
+async function handleAction(
+  actionId: string,
+  selectionText: string,
+  tab?: chrome.tabs.Tab,
+): Promise<void> {
+  const cleanText = selectionText.trim();
+  if (!cleanText) return;
+
+  if (actionId === "pronounce-with-piper-tts") {
+    PiperTTS(cleanText, tab);
+  } else if (actionId === "pronounce-with-google-tts") {
+    GoogleTTS(cleanText);
+  } else if (actionId === "open-wikitionary-of-word") {
+    OpenWordWikiByWord(cleanText, tab);
+  } else if (actionId === "open-youglish-of-word") {
+    OpenWordYouglishByWord(cleanText, tab);
+  } else if (actionId === "get-definition-of-word") {
+    getDefinitionOfWord(cleanText, tab);
+  } else if (actionId === "save-word-to-vocabulary") {
+    SaveWordToVocabulary(cleanText, tab);
+  } else if (actionId === "translate-with-google") {
+    TranslateWithGoogle(cleanText, tab);
+  }
+}
+
 /**
  * Listener to route context menu click actions to their corresponding handlers.
  */
 chrome.contextMenus.onClicked.addListener((info, tab) => {
-  if (info.menuItemId === "pronounce-with-piper-tts") {
-    PiperTTS(info, tab);
-  } else if (info.menuItemId === "pronounce-with-google-tts") {
-    GoogleTTS(info);
-  } else if (info.menuItemId === "open-wikitionary-of-word") {
-    OpenWordWikiByWord(info, tab);
-  } else if (info.menuItemId === "open-youglish-of-word") {
-    OpenWordYouglishByWord(info, tab);
-  } else if (info.menuItemId === "get-definition-of-word") {
-    getWikiDefinitionOfWord(info, tab);
-  } else if (info.menuItemId === "save-word-to-vocabulary") {
-    SaveWordToVocabulary(info, tab);
-  } else if (info.menuItemId === "translate-with-google") {
-    TranslateWithGoogle(info.selectionText!, tab);
+  if (info.selectionText) {
+    handleAction(info.menuItemId as string, info.selectionText, tab);
   }
 });
 
 /**
  * Triggers Google TTS speech synthesis for the selected text.
- *
- * @param info - The context menu click event data containing selected text.
  */
-function GoogleTTS(info: chrome.contextMenus.OnClickData): void {
-  if (info.selectionText) {
+function GoogleTTS(selectionText: string): void {
+  if (selectionText) {
     chrome.storage.sync.get(
       {
         googleLanguage: DEFAULT_SETTINGS.googleLanguage,
         googleRate: DEFAULT_SETTINGS.googleRate,
       },
       (settings) => {
-        chrome.tts.speak(info.selectionText!, {
+        chrome.tts.speak(selectionText, {
           lang: settings.googleLanguage,
           rate: settings.googleRate,
         });
@@ -84,19 +114,16 @@ function GoogleTTS(info: chrome.contextMenus.OnClickData): void {
 
 /**
  * Sends a message to the active tab to perform Piper offline TTS synthesis.
- *
- * @param info - Context menu event data with selection text.
- * @param tab - Active browser tab where the content script is loaded.
  */
 function PiperTTS(
-  info: chrome.contextMenus.OnClickData,
+  selectionText: string,
   tab?: chrome.tabs.Tab,
 ): void {
-  if (info.selectionText && tab?.id) {
+  if (selectionText && tab?.id) {
     chrome.tabs
       .sendMessage(tab.id, {
         action: "speakSelection",
-        text: info.selectionText,
+        text: selectionText,
       })
       .catch((err) => {
         console.warn(
@@ -106,6 +133,19 @@ function PiperTTS(
       });
   }
 }
+
+/**
+ * Listener for keyboard commands defined in manifest.json.
+ */
+chrome.commands.onCommand.addListener(async (command, tab) => {
+  console.log(`Command "${command}" triggered`);
+  if (tab?.id) {
+    const selectionText = await getSelectedTextFromTab(tab.id);
+    if (selectionText) {
+      handleAction(command, selectionText, tab);
+    }
+  }
+});
 
 /**
  * Classifies a Latin-script word as English or Swedish using ELD language detector.
@@ -200,16 +240,19 @@ function getWordOnWiktionary(langCode: string, word: string): string {
  *
  * @param langCode - Language code string ('en' or 'sv').
  * @param word - Word string to look up .
+ * @param tab - Optional active browser tab.
  * @returns Dictionary response or failed response fallback.
  */
 async function getWordFromFreeDictAPI(
   langCode: string,
   word: string,
+  tab?: chrome.tabs.Tab,
 ): Promise<WordAPIResponse | WordAPIResponseFailed> {
-  const wordLowerCase = word.toLowerCase();
+  const cleanWord = decodeURIComponent(word).trim();
+  const wordLowerCase = cleanWord.toLowerCase();
   try {
     const response = await fetch(
-      `https://freedictionaryapi.com/api/v1/entries/${langCode}/${wordLowerCase}`,
+      `https://freedictionaryapi.com/api/v1/entries/${langCode}/${encodeURIComponent(wordLowerCase)}`,
     );
     if (response.ok) {
       const responseData = await response.json();
@@ -217,7 +260,7 @@ async function getWordFromFreeDictAPI(
       const pageUrl =
         responseData.source?.url ||
         getWordOnWiktionary(langCode, wordLowerCase);
-      const definition = entry?.senses?.[0]?.definition || "Not found";
+      const definition = entry?.senses?.[0]?.definition || "Definition not found";
       const wordcategory = entry?.partOfSpeech || "not found";
 
       const data: WordAPIResponse = {
@@ -227,19 +270,31 @@ async function getWordFromFreeDictAPI(
       };
       return data;
     } else {
+      // Use google translate if word not found on freedict
+      const translatedText = await TranslateWithGoogle(cleanWord, tab);
       return {
-        url: getWordOnWiktionary(langCode, word),
-        definition: "Not found",
+        url: "Not found, google translate used for meaning",
+        definition: translatedText,
         wordtype: "Not found",
       };
     }
   } catch (err: any) {
-    return {
-      url: getWordOnWiktionary(langCode, word),
-      definition: "Not found",
-      wordtype: "Not found",
-      error: err.message,
-    };
+    try {
+      const translatedText = await TranslateWithGoogle(cleanWord, tab);
+      return {
+        url: "Not found, google translate used for meaning",
+        definition: translatedText,
+        wordtype: "Not found",
+        error: err.message,
+      };
+    } catch {
+      return {
+        url: getWordOnWiktionary(langCode, wordLowerCase),
+        definition: "Not found on Freedict or google translate, try again later",
+        wordtype: "Not found",
+        error: err.message,
+      };
+    }
   }
 }
 
@@ -248,22 +303,24 @@ async function getWordFromFreeDictAPI(
  *
  * @param langCode - Language code ('ru').
  * @param word - Russian word to look up.
+ * @param tab - Optional active browser tab.
  * @returns RussianWordAPIResponse or failed response payload.
  */
 async function getRussianWordFromFreeDictAPI(
   langCode: string,
   word: string,
+  tab?: chrome.tabs.Tab,
 ): Promise<RussianWordAPIResponse | WordAPIResponseFailed> {
   const cleanWord = decodeURIComponent(word).trim();
   try {
     const response = await fetch(
-      `https://freedictionaryapi.com/api/v1/entries/${langCode}/${word}`,
+      `https://freedictionaryapi.com/api/v1/entries/${langCode}/${encodeURIComponent(cleanWord)}`,
     );
     if (response.ok) {
       const responseData = await response.json();
       const entry = responseData.entries?.[0];
       const pageUrl =
-        responseData.source?.url || getWordOnWiktionary(langCode, word);
+        responseData.source?.url || getWordOnWiktionary(langCode, cleanWord);
       const definition = entry?.senses?.[0]?.definition || "Not found";
       const wordcategory = entry?.partOfSpeech || "not found";
       //set stating values for gender, animacy and case
@@ -334,23 +391,42 @@ async function getRussianWordFromFreeDictAPI(
         wordtype: wordcategory,
         gender: gender,
         animate: animacy,
-        case: caseName || "nominative singular",
+        case: caseName || "Case not identified",
       };
       return data;
-    } else {
+    }
+    // use google translate if word not found on freedict
+    else {
+      const wordTranslated = await TranslateWithGoogle(cleanWord, tab);
       return {
-        url: getWordOnWiktionary(langCode, word),
-        definition: "Not found on Freedict, check wiktionary",
+        url: "No URL found, definition received from google translate",
+        definition: wordTranslated,
         wordtype: "Not found",
+        gender: "not found",
+        animate: "not found",
+        case: "",
       };
     }
   } catch (err: any) {
-    return {
-      url: getWordOnWiktionary(langCode, word),
-      definition: "Not found",
-      wordtype: "Not found",
-      error: err.message,
-    };
+    try {
+      const wordTranslated = await TranslateWithGoogle(cleanWord, tab);
+      return {
+        url: "No URL found, definition received from google translate",
+        definition: wordTranslated,
+        wordtype: "Not found",
+        gender: "not found",
+        animate: "not found",
+        case: "",
+        error: err.message,
+      };
+    } catch {
+      return {
+        url: getWordOnWiktionary(langCode, cleanWord),
+        definition: "Not found",
+        wordtype: "Not found",
+        error: err.message,
+      };
+    }
   }
 }
 
@@ -361,12 +437,12 @@ async function getRussianWordFromFreeDictAPI(
  * @param info - Context menu click data.
  * @param tab - Active browser tab.
  */
-async function getWikiDefinitionOfWord(
-  info: chrome.contextMenus.OnClickData,
+async function getDefinitionOfWord(
+  selectionText: string,
   tab?: chrome.tabs.Tab,
 ): Promise<void> {
-  if (info.selectionText && tab?.id) {
-    const rawWord = info.selectionText.trim();
+  if (selectionText && tab?.id) {
+    const rawWord = selectionText.trim();
     const determinedCategory = await IdentifiyLanguage(rawWord, tab);
     if (!determinedCategory) {
       return;
@@ -376,7 +452,7 @@ async function getWikiDefinitionOfWord(
 
     /*russian words require more processing */
     if (determinedCategory === "russian") {
-      const data = await getRussianWordFromFreeDictAPI(langCode, word);
+      const data = await getRussianWordFromFreeDictAPI(langCode, word, tab);
       if (data) {
         const lines: string[] = [];
         //check if gender, animacy and case is present in data response and add to toast if so
@@ -411,7 +487,7 @@ async function getWikiDefinitionOfWord(
 
     /* english or swedish word */
     else {
-      const data = await getWordFromFreeDictAPI(langCode, word);
+      const data = await getWordFromFreeDictAPI(langCode, word, tab);
       if (data) {
         const lines: string[] = [];
         if (data.wordtype && data.wordtype !== "Not found") {
@@ -445,17 +521,17 @@ async function getWikiDefinitionOfWord(
  * @param tab - Active browser tab.
  */
 async function OpenWordWikiByWord(
-  info: chrome.contextMenus.OnClickData,
+  selectionText: string,
   tab?: chrome.tabs.Tab,
 ): Promise<void> {
-  if (info.selectionText) {
-    const determinedCategory = await IdentifiyLanguage(info.selectionText, tab);
+  if (selectionText) {
+    const determinedCategory = await IdentifiyLanguage(selectionText, tab);
     if (!determinedCategory) {
       return;
     }
     //fallback to english
     const langCode = LANGUAGE_CODES[determinedCategory] || "en";
-    const word = encodeURIComponent(info.selectionText.trim().toLowerCase());
+    const word = encodeURIComponent(selectionText.trim().toLowerCase());
     chrome.tabs.create({
       url: `https://${langCode}.wiktionary.org/wiki/${word}`,
     });
@@ -470,15 +546,15 @@ async function OpenWordWikiByWord(
  * @param tab - Active browser tab.
  */
 async function OpenWordYouglishByWord(
-  info: chrome.contextMenus.OnClickData,
+  selectionText: string,
   tab?: chrome.tabs.Tab,
 ): Promise<void> {
-  if (info.selectionText) {
-    const determinedCategory = await IdentifiyLanguage(info.selectionText, tab);
+  if (selectionText) {
+    const determinedCategory = await IdentifiyLanguage(selectionText, tab);
     if (!determinedCategory) {
       return;
     }
-    const word = encodeURIComponent(info.selectionText.trim().toLowerCase());
+    const word = encodeURIComponent(selectionText.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
     chrome.tabs.create({
       url: `https://youglish.com/pronounce/${word}/${determinedCategory}`,
     });
@@ -493,10 +569,10 @@ async function OpenWordYouglishByWord(
  * @param text - Selected text to translate.
  * @param tab - Active browser tab.
  */
-async function TranslateWithGoogle(text: string, tab?: chrome.tabs.Tab): Promise<void> {
-  if (!text || !tab?.id) return;
+async function TranslateWithGoogle(text: string, tab?: chrome.tabs.Tab): Promise<string> {
+  if (!text) return "Text is not present";
   const rawText = text.trim();
-  if (!rawText) return;
+  if (!rawText) return "Could not Translate selected text due to strange text format";
 
   // Detect source language ISO code
   const isCyrillic = /[а-яёА-ЯЁ]/.test(rawText);
@@ -521,39 +597,46 @@ async function TranslateWithGoogle(text: string, tab?: chrome.tabs.Tab): Promise
 
   // If source language and user settings target language match (e.g. ru to ru, sv to sv, en to en)
   if (sourceLangCode === targetLang) {
-    const allLangs = [
-      { label: "ENGLISH", code: "en" },
-      { label: "SWEDISH", code: "sv" },
-      { label: "RUSSIAN", code: "ru" },
-    ];
-    // Filter out the source language to prompt for the other two target languages
-    const availableOptions = allLangs.filter((item) => item.code !== sourceLangCode);
+    if (tab?.id) {
+      const allLangs = [
+        { label: "ENGLISH", code: "en" },
+        { label: "SWEDISH", code: "sv" },
+        { label: "RUSSIAN", code: "ru" },
+      ];
+      // Filter out the source language to prompt for the other two target languages
+      const availableOptions = allLangs.filter((item) => item.code !== sourceLangCode);
 
-    try {
-      const response = await chrome.tabs.sendMessage(tab.id, {
-        action: "promptTargetLanguageSelection",
-        options: availableOptions,
-      });
+      try {
+        const response = await chrome.tabs.sendMessage(tab.id, {
+          action: "promptTargetLanguageSelection",
+          options: availableOptions,
+        });
 
-      if (!response?.targetLanguage) {
-        return; // User cancelled prompt
+        if (!response?.targetLanguage) {
+          return "User cancelled prompt"; // User cancelled prompt
+        }
+        targetLang = response.targetLanguage;
+      } catch (err) {
+        console.warn("Could not message content script to display target language prompt:", err);
+        return "Could not message content script to display target language prompt:";
       }
-      targetLang = response.targetLanguage;
-    } catch (err) {
-      console.warn("Could not message content script to display target language prompt:", err);
-      return;
+    } else {
+      // Fallback target language when no tab context is available
+      targetLang = sourceLangCode === "en" ? "sv" : "en";
     }
   }
 
-  // Show status loading toast
-  chrome.tabs
-    .sendMessage(tab.id, {
-      action: "showNotification",
-      toastType: "loading",
-      text: `TRANSLATING "${rawText.substring(0, 20)}${rawText.length > 20 ? "..." : ""}"...`,
-      duration: 5000,
-    })
-    .catch(() => { });
+  // Show status loading toast if tab exists
+  if (tab?.id) {
+    chrome.tabs
+      .sendMessage(tab.id, {
+        action: "showNotification",
+        toastType: "loading",
+        text: `TRANSLATING "${rawText.substring(0, 20)}${rawText.length > 20 ? "..." : ""}"...`,
+        duration: 5000,
+      })
+      .catch(() => { });
+  }
 
   try {
     const translatedText = await googleTranslatorModel.Translate(
@@ -562,28 +645,34 @@ async function TranslateWithGoogle(text: string, tab?: chrome.tabs.Tab): Promise
       targetLang,
     );
 
-    // Successfully translated
-    chrome.tabs
-      .sendMessage(tab.id, {
-        action: "showTranslation",
-        originalText: rawText,
-        translatedText: translatedText,
-        fromLanguage: sourceLangCode,
-        toLanguage: targetLang,
-      })
-      .catch((err) => {
-        console.warn("Could not send translation result to tab:", err);
-      });
+    // Send translation notification if tab exists
+    if (tab?.id) {
+      chrome.tabs
+        .sendMessage(tab.id, {
+          action: "showTranslation",
+          originalText: rawText,
+          translatedText: translatedText,
+          fromLanguage: sourceLangCode,
+          toLanguage: targetLang,
+        })
+        .catch((err) => {
+          console.warn("Could not send translation result to tab:", err);
+        });
+    }
+    return translatedText;
   } catch (err: any) {
     console.error("Google Translation failed:", err);
-    chrome.tabs
-      .sendMessage(tab.id, {
-        action: "showNotification",
-        toastType: "error",
-        text: "TRANSLATION FAILED",
-        duration: 3000,
-      })
-      .catch(() => { });
+    if (tab?.id) {
+      chrome.tabs
+        .sendMessage(tab.id, {
+          action: "showNotification",
+          toastType: "error",
+          text: "TRANSLATION FAILED",
+          duration: 3000,
+        })
+        .catch(() => { });
+    }
+    return "Google Translation failed for the selected text";
   }
 }
 
@@ -597,11 +686,11 @@ async function TranslateWithGoogle(text: string, tab?: chrome.tabs.Tab): Promise
  * @param tab - Active browser tab.
  */
 async function SaveWordToVocabulary(
-  info: chrome.contextMenus.OnClickData,
+  selectionText: string,
   tab?: chrome.tabs.Tab,
 ): Promise<void> {
-  if (info.selectionText) {
-    const rawWord = info.selectionText.trim();
+  if (selectionText) {
+    const rawWord = selectionText.trim();
     const determinedCategory = await IdentifiyLanguage(rawWord, tab);
     const langCategory = determinedCategory || "unknown";
     const langCode = LANGUAGE_CODES[langCategory] || "en";
@@ -611,13 +700,15 @@ async function SaveWordToVocabulary(
     let pageUrl = `https://${langCode}.wiktionary.org/wiki/${word}`;
 
     if (langCategory === "russian") {
-      const data = await getRussianWordFromFreeDictAPI(langCode, word);
+      const data = await getRussianWordFromFreeDictAPI(langCode, word, tab);
       if (data && data.definition) {
         definition = data.definition;
         if (data.url) pageUrl = data.url;
       }
-    } else if (langCategory !== "unknown") {
-      const data = await getWordFromFreeDictAPI(langCode, word);
+    }
+    else if (langCategory !== "unknown") {
+      const data = await getWordFromFreeDictAPI(langCode, word, tab);
+
       if (data && data.definition) {
         definition = data.definition;
         if (data.url) pageUrl = data.url;
