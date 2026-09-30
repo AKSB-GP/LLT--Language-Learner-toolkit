@@ -33800,32 +33800,49 @@ Try the option "splitPunct" to split the text by punctuation.`);
   chrome.runtime.onInstalled.addListener(() => {
     CreateContextMenus();
   });
+  async function getSelectedTextFromTab(tabId) {
+    try {
+      const response = await chrome.tabs.sendMessage(tabId, { action: "getSelectedText" });
+      return response?.text || "";
+    } catch (err) {
+      console.warn("Could not get selected text from tab via message:", err);
+      return "";
+    }
+  }
+  async function handleAction(actionId, selectionText, tab) {
+    const cleanText = selectionText.trim();
+    if (!cleanText)
+      return;
+    if (actionId === "pronounce-with-piper-tts") {
+      PiperTTS(cleanText, tab);
+    } else if (actionId === "pronounce-with-google-tts") {
+      GoogleTTS(cleanText);
+    } else if (actionId === "open-wikitionary-of-word") {
+      OpenWordWikiByWord(cleanText, tab);
+    } else if (actionId === "open-youglish-of-word") {
+      OpenWordYouglishByWord(cleanText, tab);
+    } else if (actionId === "get-definition-of-word") {
+      getDefinitionOfWord(cleanText, tab);
+    } else if (actionId === "save-word-to-vocabulary") {
+      SaveWordToVocabulary(cleanText, tab);
+    } else if (actionId === "translate-with-google") {
+      TranslateWithGoogle(cleanText, tab);
+    }
+  }
   chrome.contextMenus.onClicked.addListener((info2, tab) => {
-    if (info2.menuItemId === "pronounce-with-piper-tts") {
-      PiperTTS(info2, tab);
-    } else if (info2.menuItemId === "pronounce-with-google-tts") {
-      GoogleTTS(info2);
-    } else if (info2.menuItemId === "open-wikitionary-of-word") {
-      OpenWordWikiByWord(info2, tab);
-    } else if (info2.menuItemId === "open-youglish-of-word") {
-      OpenWordYouglishByWord(info2, tab);
-    } else if (info2.menuItemId === "get-definition-of-word") {
-      getDefinitionOfWord(info2, tab);
-    } else if (info2.menuItemId === "save-word-to-vocabulary") {
-      SaveWordToVocabulary(info2, tab);
-    } else if (info2.menuItemId === "translate-with-google") {
-      TranslateWithGoogle(info2.selectionText, tab);
+    if (info2.selectionText) {
+      handleAction(info2.menuItemId, info2.selectionText, tab);
     }
   });
-  function GoogleTTS(info2) {
-    if (info2.selectionText) {
+  function GoogleTTS(selectionText) {
+    if (selectionText) {
       chrome.storage.sync.get(
         {
           googleLanguage: DEFAULT_SETTINGS.googleLanguage,
           googleRate: DEFAULT_SETTINGS.googleRate
         },
         (settings) => {
-          chrome.tts.speak(info2.selectionText, {
+          chrome.tts.speak(selectionText, {
             lang: settings.googleLanguage,
             rate: settings.googleRate
           });
@@ -33833,11 +33850,11 @@ Try the option "splitPunct" to split the text by punctuation.`);
       );
     }
   }
-  function PiperTTS(info2, tab) {
-    if (info2.selectionText && tab?.id) {
+  function PiperTTS(selectionText, tab) {
+    if (selectionText && tab?.id) {
       chrome.tabs.sendMessage(tab.id, {
         action: "speakSelection",
-        text: info2.selectionText
+        text: selectionText
       }).catch((err) => {
         console.warn(
           "Could not send message to tab. Content script might not be loaded yet.",
@@ -33846,6 +33863,15 @@ Try the option "splitPunct" to split the text by punctuation.`);
       });
     }
   }
+  chrome.commands.onCommand.addListener(async (command, tab) => {
+    console.log(`Command "${command}" triggered`);
+    if (tab?.id) {
+      const selectionText = await getSelectedTextFromTab(tab.id);
+      if (selectionText) {
+        handleAction(command, selectionText, tab);
+      }
+    }
+  });
   function classifyLatinWord(word) {
     const result = eld.detect(word);
     return result.language === "sv" ? "swedish" : "english";
@@ -33906,7 +33932,7 @@ Try the option "splitPunct" to split the text by punctuation.`);
         const responseData = await response.json();
         const entry = responseData.entries?.[0];
         const pageUrl = responseData.source?.url || getWordOnWiktionary(langCode, wordLowerCase);
-        const definition = entry?.senses?.[0]?.definition || "Not found";
+        const definition = entry?.senses?.[0]?.definition || "Definition not found";
         const wordcategory = entry?.partOfSpeech || "not found";
         const data = {
           url: pageUrl,
@@ -34036,9 +34062,9 @@ Try the option "splitPunct" to split the text by punctuation.`);
       }
     }
   }
-  async function getDefinitionOfWord(info2, tab) {
-    if (info2.selectionText && tab?.id) {
-      const rawWord = info2.selectionText.trim();
+  async function getDefinitionOfWord(selectionText, tab) {
+    if (selectionText && tab?.id) {
+      const rawWord = selectionText.trim();
       const determinedCategory = await IdentifiyLanguage(rawWord, tab);
       if (!determinedCategory) {
         return;
@@ -34095,26 +34121,26 @@ Try the option "splitPunct" to split the text by punctuation.`);
       }
     }
   }
-  async function OpenWordWikiByWord(info2, tab) {
-    if (info2.selectionText) {
-      const determinedCategory = await IdentifiyLanguage(info2.selectionText, tab);
+  async function OpenWordWikiByWord(selectionText, tab) {
+    if (selectionText) {
+      const determinedCategory = await IdentifiyLanguage(selectionText, tab);
       if (!determinedCategory) {
         return;
       }
       const langCode = LANGUAGE_CODES[determinedCategory] || "en";
-      const word = encodeURIComponent(info2.selectionText.trim().toLowerCase());
+      const word = encodeURIComponent(selectionText.trim().toLowerCase());
       chrome.tabs.create({
         url: `https://${langCode}.wiktionary.org/wiki/${word}`
       });
     }
   }
-  async function OpenWordYouglishByWord(info2, tab) {
-    if (info2.selectionText) {
-      const determinedCategory = await IdentifiyLanguage(info2.selectionText, tab);
+  async function OpenWordYouglishByWord(selectionText, tab) {
+    if (selectionText) {
+      const determinedCategory = await IdentifiyLanguage(selectionText, tab);
       if (!determinedCategory) {
         return;
       }
-      const word = encodeURIComponent(info2.selectionText.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
+      const word = encodeURIComponent(selectionText.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
       chrome.tabs.create({
         url: `https://youglish.com/pronounce/${word}/${determinedCategory}`
       });
@@ -34207,9 +34233,9 @@ Try the option "splitPunct" to split the text by punctuation.`);
       return "Google Translation failed for the selected text";
     }
   }
-  async function SaveWordToVocabulary(info2, tab) {
-    if (info2.selectionText) {
-      const rawWord = info2.selectionText.trim();
+  async function SaveWordToVocabulary(selectionText, tab) {
+    if (selectionText) {
+      const rawWord = selectionText.trim();
       const determinedCategory = await IdentifiyLanguage(rawWord, tab);
       const langCategory = determinedCategory || "unknown";
       const langCode = LANGUAGE_CODES[langCategory] || "en";

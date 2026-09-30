@@ -68,6 +68,15 @@ export class TTSController {
           message.text,
           message.duration || 4000,
         );
+      } else if (message.action === "getSelectedText") {
+        let text = window.getSelection()?.toString() || "";
+        if (!text && document.activeElement) {
+          const el = document.activeElement as HTMLInputElement | HTMLTextAreaElement;
+          if ((el.tagName === "INPUT" || el.tagName === "TEXTAREA") && typeof el.selectionStart === "number") {
+            text = el.value.substring(el.selectionStart, el.selectionEnd || el.selectionStart);
+          }
+        }
+        sendResponse({ text: text.trim() });
       }
     });
   }

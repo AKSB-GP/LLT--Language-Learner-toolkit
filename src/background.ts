@@ -39,41 +39,71 @@ chrome.runtime.onInstalled.addListener(() => {
   CreateContextMenus();
 });
 
+//
+
+
+/**
+ * Fetches selected text from active tab via content script message.
+ */
+async function getSelectedTextFromTab(tabId: number): Promise<string> {
+  try {
+    const response = await chrome.tabs.sendMessage(tabId, { action: "getSelectedText" });
+    return response?.text || "";
+  } catch (err) {
+    console.warn("Could not get selected text from tab via message:", err);
+    return "";
+  }
+}
+
+/**
+ * Dispatches an action (from context menu or command hotkey) to its target handler.
+ */
+async function handleAction(
+  actionId: string,
+  selectionText: string,
+  tab?: chrome.tabs.Tab,
+): Promise<void> {
+  const cleanText = selectionText.trim();
+  if (!cleanText) return;
+
+  if (actionId === "pronounce-with-piper-tts") {
+    PiperTTS(cleanText, tab);
+  } else if (actionId === "pronounce-with-google-tts") {
+    GoogleTTS(cleanText);
+  } else if (actionId === "open-wikitionary-of-word") {
+    OpenWordWikiByWord(cleanText, tab);
+  } else if (actionId === "open-youglish-of-word") {
+    OpenWordYouglishByWord(cleanText, tab);
+  } else if (actionId === "get-definition-of-word") {
+    getDefinitionOfWord(cleanText, tab);
+  } else if (actionId === "save-word-to-vocabulary") {
+    SaveWordToVocabulary(cleanText, tab);
+  } else if (actionId === "translate-with-google") {
+    TranslateWithGoogle(cleanText, tab);
+  }
+}
+
 /**
  * Listener to route context menu click actions to their corresponding handlers.
  */
 chrome.contextMenus.onClicked.addListener((info, tab) => {
-  if (info.menuItemId === "pronounce-with-piper-tts") {
-    PiperTTS(info, tab);
-  } else if (info.menuItemId === "pronounce-with-google-tts") {
-    GoogleTTS(info);
-  } else if (info.menuItemId === "open-wikitionary-of-word") {
-    OpenWordWikiByWord(info, tab);
-  } else if (info.menuItemId === "open-youglish-of-word") {
-    OpenWordYouglishByWord(info, tab);
-  } else if (info.menuItemId === "get-definition-of-word") {
-    getDefinitionOfWord(info, tab);
-  } else if (info.menuItemId === "save-word-to-vocabulary") {
-    SaveWordToVocabulary(info, tab);
-  } else if (info.menuItemId === "translate-with-google") {
-    TranslateWithGoogle(info.selectionText!, tab);
+  if (info.selectionText) {
+    handleAction(info.menuItemId as string, info.selectionText, tab);
   }
 });
 
 /**
  * Triggers Google TTS speech synthesis for the selected text.
- *
- * @param info - The context menu click event data containing selected text.
  */
-function GoogleTTS(info: chrome.contextMenus.OnClickData): void {
-  if (info.selectionText) {
+function GoogleTTS(selectionText: string): void {
+  if (selectionText) {
     chrome.storage.sync.get(
       {
         googleLanguage: DEFAULT_SETTINGS.googleLanguage,
         googleRate: DEFAULT_SETTINGS.googleRate,
       },
       (settings) => {
-        chrome.tts.speak(info.selectionText!, {
+        chrome.tts.speak(selectionText, {
           lang: settings.googleLanguage,
           rate: settings.googleRate,
         });
@@ -84,19 +114,16 @@ function GoogleTTS(info: chrome.contextMenus.OnClickData): void {
 
 /**
  * Sends a message to the active tab to perform Piper offline TTS synthesis.
- *
- * @param info - Context menu event data with selection text.
- * @param tab - Active browser tab where the content script is loaded.
  */
 function PiperTTS(
-  info: chrome.contextMenus.OnClickData,
+  selectionText: string,
   tab?: chrome.tabs.Tab,
 ): void {
-  if (info.selectionText && tab?.id) {
+  if (selectionText && tab?.id) {
     chrome.tabs
       .sendMessage(tab.id, {
         action: "speakSelection",
-        text: info.selectionText,
+        text: selectionText,
       })
       .catch((err) => {
         console.warn(
@@ -106,6 +133,19 @@ function PiperTTS(
       });
   }
 }
+
+/**
+ * Listener for keyboard commands defined in manifest.json.
+ */
+chrome.commands.onCommand.addListener(async (command, tab) => {
+  console.log(`Command "${command}" triggered`);
+  if (tab?.id) {
+    const selectionText = await getSelectedTextFromTab(tab.id);
+    if (selectionText) {
+      handleAction(command, selectionText, tab);
+    }
+  }
+});
 
 /**
  * Classifies a Latin-script word as English or Swedish using ELD language detector.
@@ -398,11 +438,11 @@ async function getRussianWordFromFreeDictAPI(
  * @param tab - Active browser tab.
  */
 async function getDefinitionOfWord(
-  info: chrome.contextMenus.OnClickData,
+  selectionText: string,
   tab?: chrome.tabs.Tab,
 ): Promise<void> {
-  if (info.selectionText && tab?.id) {
-    const rawWord = info.selectionText.trim();
+  if (selectionText && tab?.id) {
+    const rawWord = selectionText.trim();
     const determinedCategory = await IdentifiyLanguage(rawWord, tab);
     if (!determinedCategory) {
       return;
@@ -481,17 +521,17 @@ async function getDefinitionOfWord(
  * @param tab - Active browser tab.
  */
 async function OpenWordWikiByWord(
-  info: chrome.contextMenus.OnClickData,
+  selectionText: string,
   tab?: chrome.tabs.Tab,
 ): Promise<void> {
-  if (info.selectionText) {
-    const determinedCategory = await IdentifiyLanguage(info.selectionText, tab);
+  if (selectionText) {
+    const determinedCategory = await IdentifiyLanguage(selectionText, tab);
     if (!determinedCategory) {
       return;
     }
     //fallback to english
     const langCode = LANGUAGE_CODES[determinedCategory] || "en";
-    const word = encodeURIComponent(info.selectionText.trim().toLowerCase());
+    const word = encodeURIComponent(selectionText.trim().toLowerCase());
     chrome.tabs.create({
       url: `https://${langCode}.wiktionary.org/wiki/${word}`,
     });
@@ -506,15 +546,15 @@ async function OpenWordWikiByWord(
  * @param tab - Active browser tab.
  */
 async function OpenWordYouglishByWord(
-  info: chrome.contextMenus.OnClickData,
+  selectionText: string,
   tab?: chrome.tabs.Tab,
 ): Promise<void> {
-  if (info.selectionText) {
-    const determinedCategory = await IdentifiyLanguage(info.selectionText, tab);
+  if (selectionText) {
+    const determinedCategory = await IdentifiyLanguage(selectionText, tab);
     if (!determinedCategory) {
       return;
     }
-    const word = encodeURIComponent(info.selectionText.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
+    const word = encodeURIComponent(selectionText.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
     chrome.tabs.create({
       url: `https://youglish.com/pronounce/${word}/${determinedCategory}`,
     });
@@ -646,11 +686,11 @@ async function TranslateWithGoogle(text: string, tab?: chrome.tabs.Tab): Promise
  * @param tab - Active browser tab.
  */
 async function SaveWordToVocabulary(
-  info: chrome.contextMenus.OnClickData,
+  selectionText: string,
   tab?: chrome.tabs.Tab,
 ): Promise<void> {
-  if (info.selectionText) {
-    const rawWord = info.selectionText.trim();
+  if (selectionText) {
+    const rawWord = selectionText.trim();
     const determinedCategory = await IdentifiyLanguage(rawWord, tab);
     const langCategory = determinedCategory || "unknown";
     const langCode = LANGUAGE_CODES[langCategory] || "en";
