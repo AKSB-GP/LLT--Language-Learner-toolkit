@@ -30,10 +30,10 @@ export function QueryChromeTab(queryInfo: chrome.tabs.QueryInfo): Promise<chrome
   googleLanguage: "ru-RU",
   googleRate: 1.0,
 */
-export function TTS(text: string, settings: any) {
+export function GoogleTTS(text: string, settings?: { googleLanguage?: string; googleRate?: number }) {
     chrome.tts.speak(text, {
-        lang: DEFAULT_SETTINGS.googleLanguage,
-        rate: DEFAULT_SETTINGS.googleRate,
+        lang: settings?.googleLanguage || DEFAULT_SETTINGS.googleLanguage,
+        rate: settings?.googleRate ?? DEFAULT_SETTINGS.googleRate,
     });
 }
 

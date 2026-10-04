@@ -14,7 +14,7 @@ import {
     RUSSIAN_NUMBER_LIST,
 } from "../const";
 import { eld } from "eld/extrasmall";
-import { SendChromeMessage, CreateChromeTabMessage, ChromeAddListenerForOnInstall, ChromeONClickedContextMenu } from "./chrome";
+import { SendChromeMessage, CreateChromeTabMessage, ChromeAddListenerForOnInstall, ChromeONClickedContextMenu, GoogleTTS as GoogleTTSChrome } from "./chrome";
 import { GoogleTranslatorModel } from "../model/GoogleTranslatorModel";
 import { DatabaseModel } from "../model/DatabaseModel";
 
@@ -97,10 +97,7 @@ export function GoogleTTS(selectionText: string): void {
                 googleRate: DEFAULT_SETTINGS.googleRate,
             },
             (settings) => {
-                chrome.tts.speak(selectionText, {
-                    lang: settings.googleLanguage,
-                    rate: settings.googleRate,
-                });
+                GoogleTTSChrome(selectionText, settings);
             },
         );
     }
