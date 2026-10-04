@@ -1,6 +1,6 @@
 import { VOICES_MAP, DEFAULT_SETTINGS } from "./const";
 import { DatabaseModel } from "./model/DatabaseModel";
-
+import { SendChromeMessage, CreateChromeTabMessage } from "./utils/chrome";
 /*add listeners for extension panel */
 document.addEventListener("DOMContentLoaded", () => {
   // Elements
@@ -62,8 +62,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const notifyContentScript = () => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (tabs[0]?.id) {
-        chrome.tabs
-          .sendMessage(tabs[0].id, { action: "settingsChanged" })
+        SendChromeMessage(tabs[0].id, { action: "settingsChanged" })
           .catch(() => { });
       }
     });

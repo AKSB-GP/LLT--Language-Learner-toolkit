@@ -1,0 +1,710 @@
+import {
+    ContextMenu,
+    RussianWordAPIResponse,
+    WordAPIResponse,
+    WordAPIResponseFailed,
+} from "../interfaces";
+import {
+    listOfContextMenus,
+    LANGUAGE_CODES,
+    DEFAULT_SETTINGS,
+    RUSSIAN_GENDER_LIST,
+    RUSSIAN_ANIMACY_LIST,
+    RUSSIAN_CASE_LIST,
+    RUSSIAN_NUMBER_LIST,
+} from "../const";
+import { eld } from "eld/extrasmall";
+import { SendChromeMessage, CreateChromeTabMessage, ChromeAddListenerForOnInstall, ChromeONClickedContextMenu } from "./chrome";
+import { GoogleTranslatorModel } from "../model/GoogleTranslatorModel";
+import { DatabaseModel } from "../model/DatabaseModel";
+
+const googleTranslatorModel = new GoogleTranslatorModel();
+const dbModel = new DatabaseModel();
+
+
+/**
+ * Creates context menu items registered in `listOfContextMenus`.
+ */
+export function CreateContextMenus(listOfContextMenus: ContextMenu[]): void {
+    for (let i = 0; i < listOfContextMenus.length; i++) {
+        chrome.contextMenus.create(listOfContextMenus[i]);
+    }
+}
+
+/**
+ * Fetches selected text from active tab via content script message.
+ */
+export async function getSelectedTextFromTab(tabId: number): Promise<string> {
+    try {
+        const response = await SendChromeMessage(tabId, { action: "getSelectedText" });
+        return response?.text || "";
+    } catch (err) {
+        console.warn("Could not get selected text from tab via message:", err);
+        return "";
+    }
+}
+
+/**
+ * Dispatches an action (from context menu or command hotkey) to its target handler.
+ */
+export async function handleAction(
+    actionId: string,
+    selectionText: string,
+    tab?: chrome.tabs.Tab,
+): Promise<void> {
+    const cleanText = selectionText.trim();
+    if (!cleanText) return;
+
+    switch (actionId) {
+        case "pronounce-with-piper-tts":
+            PiperTTS(cleanText, tab);
+            break;
+        case "pronounce-with-google-tts":
+            GoogleTTS(cleanText);
+            break;
+        case "open-wikitionary-of-word":
+            OpenWordWikiByWord(cleanText, tab);
+            break;
+        case "open-youglish-of-word":
+            OpenWordYouglishByWord(cleanText, tab);
+            break;
+        case "get-definition-of-word":
+            getDefinitionOfWord(cleanText, tab);
+            break;
+        case "save-word-to-vocabulary":
+            SaveWordToVocabulary(cleanText, tab);
+            break;
+        case "translate-with-google":
+            TranslateWithGoogle(cleanText, tab);
+            break;
+        //incase no ids match
+        default:
+            break;
+    }
+
+
+}
+
+
+/**
+ * Triggers Google TTS speech synthesis for the selected text.
+ */
+export function GoogleTTS(selectionText: string): void {
+    if (selectionText) {
+        chrome.storage.sync.get(
+            {
+                googleLanguage: DEFAULT_SETTINGS.googleLanguage,
+                googleRate: DEFAULT_SETTINGS.googleRate,
+            },
+            (settings) => {
+                chrome.tts.speak(selectionText, {
+                    lang: settings.googleLanguage,
+                    rate: settings.googleRate,
+                });
+            },
+        );
+    }
+}
+
+/**
+ * Sends a message to the active tab to perform Piper offline TTS synthesis.
+ */
+export function PiperTTS(
+    selectionText: string,
+    tab?: chrome.tabs.Tab,
+): void {
+    if (selectionText && tab?.id) {
+        SendChromeMessage(tab.id, {
+            action: "speakSelection",
+            text: selectionText,
+        }, true, "Could not send message to tab. Content script might not be loaded yet.");
+    }
+}
+
+/**
+ * Classifies a Latin-script word as English or Swedish using ELD language detector.
+ *
+ * @param word - The word to classify.
+ * @returns strings 'english' or 'swedish'.
+ */
+export function classifyLatinWord(word: string): "english" | "swedish" {
+    const result = eld.detect(word);
+    return result.language === "sv" ? "swedish" : "english";
+}
+
+/**
+ * Identifies the language category of a word (Russian, English, or Swedish).
+ * Uses script detection for Russian, then lookup mode setting (classifier vs manual prompt).
+ *
+ * @param word - Input word to detect.
+ * @param tab - Active tab reference for manual language prompt dialogs.
+ * @returns The language name as a string ('russian' | 'english' | 'swedish') or null if undetermined.
+ */
+async function IdentifiyLanguage(
+    word: string,
+    tab?: chrome.tabs.Tab,
+): Promise<string | null> {
+    const cleanWord = word.trim();
+
+    // Cyrillic letters? If yes, it's Russian.
+    const isCyrillic = /[а-яёА-ЯЁ]/.test(cleanWord);
+    if (isCyrillic) {
+        return "russian";
+    }
+
+    // check if  user using manual or ELD classification
+    const settings = await new Promise<{ lookupMethod: string }>((resolve) => {
+        chrome.storage.sync.get(
+            {
+                lookupMethod: DEFAULT_SETTINGS.lookupMethod,
+            },
+            (items) => {
+                resolve(items as { lookupMethod: string });
+            },
+        );
+    });
+
+    const mode = settings.lookupMethod || DEFAULT_SETTINGS.lookupMethod;
+
+    if (mode === "classifier") {
+        // Auto decide using ELD classifier
+        return classifyLatinWord(cleanWord);
+    } else {
+        // Manual selection popup
+        // Swedish letters? If yes --> it's Swedish.
+        const isSwedish = /[åäöÅÄÖ]/.test(cleanWord);
+        if (isSwedish) {
+            return "swedish";
+        }
+
+        // Otherwise, prompt the user with UI in the active tab to choose.
+        if (tab?.id) {
+            try {
+                const response = await SendChromeMessage(tab.id, {
+                    action: "promptLanguageSelection",
+                    word: cleanWord,
+                });
+                return response?.language || null;
+            } catch (err) {
+                console.warn(
+                    "Could not message active tab content script to display prompt dialog:",
+                    err,
+                );
+                return null;
+            }
+        }
+    }
+
+    return null;
+}
+
+/**
+ * Generates a Wiktionary page URL for a given language code and word.
+ *
+ * @param langCode - Two-letter language code ('ru', 'en', 'sv').
+ * @param word - Target word.
+ * @returns Full Wiktionary URL string.
+ */
+function getWordOnWiktionary(langCode: string, word: string): string {
+    return `https://${langCode}.wiktionary.org/wiki/${word.toLocaleLowerCase()}`;
+}
+
+/**
+ * Fetches definition and part-of-speech metadata for English or Swedish words from Free Dictionary API.
+ *
+ * @param langCode - Language code string ('en' or 'sv').
+ * @param word - Word string to look up .
+ * @param tab - Optional active browser tab.
+ * @returns Dictionary response or failed response fallback.
+ */
+export async function getWordFromFreeDictAPI(
+    langCode: string,
+    word: string,
+    tab?: chrome.tabs.Tab,
+): Promise<WordAPIResponse | WordAPIResponseFailed> {
+    const cleanWord = decodeURIComponent(word).trim();
+    const wordLowerCase = cleanWord.toLowerCase();
+    try {
+        const response = await fetch(
+            `https://freedictionaryapi.com/api/v1/entries/${langCode}/${encodeURIComponent(wordLowerCase)}`,
+        );
+        if (response.ok) {
+            const responseData = await response.json();
+            const entry = responseData.entries?.[0];
+            const pageUrl =
+                responseData.source?.url ||
+                getWordOnWiktionary(langCode, wordLowerCase);
+            const definition = entry?.senses?.[0]?.definition || "Definition not found";
+            const wordcategory = entry?.partOfSpeech || "not found";
+
+            const data: WordAPIResponse = {
+                url: pageUrl,
+                definition: definition,
+                wordtype: wordcategory,
+            };
+            return data;
+        } else {
+            // Use google translate if word not found on freedict
+            const translatedText = await TranslateWithGoogle(cleanWord, tab);
+            return {
+                url: "Not found, google translate used for meaning",
+                definition: translatedText,
+                wordtype: "Not found",
+            };
+        }
+    } catch (err: any) {
+        try {
+            const translatedText = await TranslateWithGoogle(cleanWord, tab);
+            return {
+                url: "Not found, google translate used for meaning",
+                definition: translatedText,
+                wordtype: "Not found",
+                error: err.message,
+            };
+        } catch {
+            return {
+                url: getWordOnWiktionary(langCode, wordLowerCase),
+                definition: "Not found on Freedict or google translate, try again later",
+                wordtype: "Not found",
+                error: err.message,
+            };
+        }
+    }
+}
+
+/**
+ * Fetches Russian word definition, gender, animacy, and case inflections from Free Dictionary API.
+ *
+ * @param langCode - Language code ('ru').
+ * @param word - Russian word to look up.
+ * @param tab - Optional active browser tab.
+ * @returns RussianWordAPIResponse or failed response payload.
+ */
+export async function getRussianWordFromFreeDictAPI(
+    langCode: string,
+    word: string,
+    tab?: chrome.tabs.Tab,
+): Promise<RussianWordAPIResponse | WordAPIResponseFailed> {
+    const cleanWord = decodeURIComponent(word).trim();
+    try {
+        const response = await fetch(
+            `https://freedictionaryapi.com/api/v1/entries/${langCode}/${encodeURIComponent(cleanWord)}`,
+        );
+        if (response.ok) {
+            const responseData = await response.json();
+            const entry = responseData.entries?.[0];
+            const pageUrl =
+                responseData.source?.url || getWordOnWiktionary(langCode, cleanWord);
+            const definition = entry?.senses?.[0]?.definition || "Not found";
+            const wordcategory = entry?.partOfSpeech || "not found";
+            //set stating values for gender, animacy and case
+            let gender = "not found";
+            let animacy = "not found";
+            let caseName = "";
+            // normalize the word for comparison since some sites use word stress markings
+            //"за́мок" becomes "замок for instance
+            const cleanInput = cleanWord
+                .toLowerCase()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "");
+
+            for (const form of entry?.forms || []) {
+                //clean tags to lowercase for comparision
+                const tags = (form.tags || []).map((t: string) => t.toLowerCase());
+                //gender check, check if gender
+                if (gender === "not found") {
+                    const foundG = tags.find((t: string) =>
+                        (RUSSIAN_GENDER_LIST as readonly string[]).includes(t),
+                    );
+                    if (foundG) gender = foundG;
+                }
+                //animacy check
+                if (animacy === "not found") {
+                    const foundA = tags.find((t: string) =>
+                        (RUSSIAN_ANIMACY_LIST as readonly string[]).includes(t),
+                    );
+                    if (foundA) animacy = foundA;
+                }
+                //normalize word for comparision, sanity check
+                const cleanFormWord = (form.word || "")
+                    .toLowerCase()
+                    .normalize("NFD")
+                    .replace(/[\u0300-\u036f]/g, "");
+
+                if (cleanFormWord === cleanInput && !caseName) {
+                    // join tags with /
+                    const foundCase = tags
+                        .filter((t: string) =>
+                            (RUSSIAN_CASE_LIST as readonly string[]).includes(t),
+                        )
+                        .join("/");
+                    const foundNum = tags
+                        .filter((t: string) =>
+                            (RUSSIAN_NUMBER_LIST as readonly string[]).includes(t),
+                        )
+                        .join("/");
+                    if (foundCase) {
+                        //If a case was found, combines case and number (e.g. "genitive singular") into caseName.
+                        caseName = foundNum ? `${foundCase} ${foundNum}` : foundCase;
+                    }
+                }
+            }
+            //look for "singular, "plural" constructions in api
+            if (!caseName) {
+                const inflectionMatch = definition.match(
+                    /((?:[a-z\/]+\s+)*(?:singular|plural))\s+of/i,
+                );
+                if (inflectionMatch) {
+                    caseName = inflectionMatch[1].trim();
+                }
+            }
+            //build api response
+            const data: RussianWordAPIResponse = {
+                url: pageUrl,
+                definition: definition,
+                wordtype: wordcategory,
+                gender: gender,
+                animate: animacy,
+                case: caseName || "Case not identified",
+            };
+            return data;
+        }
+        // use google translate if word not found on freedict
+        else {
+            const wordTranslated = await TranslateWithGoogle(cleanWord, tab);
+            return {
+                url: "No URL found, definition received from google translate",
+                definition: wordTranslated,
+                wordtype: "Not found",
+                gender: "not found",
+                animate: "not found",
+                case: "",
+            };
+        }
+    } catch (err: any) {
+        try {
+            const wordTranslated = await TranslateWithGoogle(cleanWord, tab);
+            return {
+                url: "No URL found, definition received from google translate",
+                definition: wordTranslated,
+                wordtype: "Not found",
+                gender: "not found",
+                animate: "not found",
+                case: "",
+                error: err.message,
+            };
+        } catch {
+            return {
+                url: getWordOnWiktionary(langCode, cleanWord),
+                definition: "Not found",
+                wordtype: "Not found",
+                error: err.message,
+            };
+        }
+    }
+}
+
+/**
+ * Handles context menu click for "Get definition of word".
+ * Detects word language, fetches definition from API, and sends definition payload to tab content script.
+ *
+ * @param info - Context menu click data.
+ * @param tab - Active browser tab.
+ */
+export async function getDefinitionOfWord(
+    selectionText: string,
+    tab?: chrome.tabs.Tab,
+): Promise<void> {
+    if (selectionText && tab?.id) {
+        const rawWord = selectionText.trim();
+        const determinedCategory = await IdentifiyLanguage(rawWord, tab);
+        if (!determinedCategory) {
+            return;
+        }
+        const langCode = LANGUAGE_CODES[determinedCategory] || "en";
+        const word = encodeURIComponent(rawWord.toLowerCase());
+
+        /*russian words require more processing */
+        if (determinedCategory === "russian") {
+            const data = await getRussianWordFromFreeDictAPI(langCode, word, tab);
+            if (data) {
+                const lines: string[] = [];
+                //check if gender, animacy and case is present in data response and add to toast if so
+                if ("gender" in data && data.gender !== "not found") {
+                    const grammar: string[] = [];
+                    if (data.gender && data.gender !== "not found")
+                        grammar.push(`Gender: ${data.gender}`);
+                    if (data.animate && data.animate !== "not found")
+                        grammar.push(`Animacy: ${data.animate}`);
+                    if (data.case) grammar.push(`Case: ${data.case}`);
+                    if (grammar.length > 0) {
+                        lines.push(`[${grammar.join(" | ")}]`);
+                    }
+                }
+                lines.push(data.definition);
+                //send to toast
+                chrome.tabs
+                    .sendMessage(tab.id, {
+                        action: "showDefinition",
+                        word: rawWord,
+                        definition: lines,
+                        pageUrl:
+                            data.url || `https://${langCode}.wikipedia.org/wiki/${word}`,
+                        language: determinedCategory,
+                    })
+                    .catch((err) =>
+                        console.warn("Failed to send definition to content script:", err),
+                    );
+                return;
+            }
+        }
+
+        /* english or swedish word */
+        else {
+            const data = await getWordFromFreeDictAPI(langCode, word, tab);
+            if (data) {
+                const lines: string[] = [];
+                if (data.wordtype && data.wordtype !== "Not found") {
+                    lines.push(`[Type: ${data.wordtype}]`);
+                }
+                lines.push(data.definition);
+                //send to toast
+                chrome.tabs
+                    .sendMessage(tab.id, {
+                        action: "showDefinition",
+                        word: rawWord,
+                        definition: lines,
+                        pageUrl:
+                            data.url || `https://${langCode}.wikipedia.org/wiki/${word}`,
+                        language: determinedCategory,
+                    })
+                    .catch((err) =>
+                        console.warn("Failed to send definition to content script:", err),
+                    );
+                return;
+            }
+        }
+    }
+}
+
+/**
+ * Handles context menu click for "Open Wiktionary of word".
+ * Detects word language and opens corresponding Wiktionary URL in a new browser tab.
+ *
+ * @param info - Context menu click data.
+ * @param tab - Active browser tab.
+ */
+export async function OpenWordWikiByWord(
+    selectionText: string,
+    tab?: chrome.tabs.Tab,
+): Promise<void> {
+    if (selectionText) {
+        const determinedCategory = await IdentifiyLanguage(selectionText, tab);
+        if (!determinedCategory) {
+            return;
+        }
+        //fallback to english
+        const langCode = LANGUAGE_CODES[determinedCategory] || "en";
+        const word = encodeURIComponent(selectionText.trim().toLowerCase());
+        CreateChromeTabMessage({
+            url: `https://${langCode}.wiktionary.org/wiki/${word}`,
+        });
+    }
+}
+
+/**
+ * Handles context menu click for "Open YouGlish of word".
+ * Detects word language and opens corresponding YouGlish URL in a new browser tab.
+ *
+ * @param info - Context menu click data.
+ * @param tab - Active browser tab.
+ */
+export async function OpenWordYouglishByWord(
+    selectionText: string,
+    tab?: chrome.tabs.Tab,
+): Promise<void> {
+    if (selectionText) {
+        const determinedCategory = await IdentifiyLanguage(selectionText, tab);
+        if (!determinedCategory) {
+            return;
+        }
+        const word = encodeURIComponent(selectionText.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
+        CreateChromeTabMessage({
+            url: `https://youglish.com/pronounce/${word}/${determinedCategory}`,
+        });
+    }
+}
+
+
+/**
+ * Handles explicit context menu click for "translate with google".
+ * Detects word language, invokes GoogleTranslatorModel, and sends translation payload to tab content script.
+ * if fromlanguage to target language is the same, the user is prompted to selecte target langauge.
+ * @param text - Selected text to translate.
+ * @param tab - Active browser tab.
+ */
+export async function TranslateWithGoogle(text: string, tab?: chrome.tabs.Tab): Promise<string> {
+    if (!text) return "Text is not present";
+    const rawText = text.trim();
+    if (!rawText) return "Could not Translate selected text due to strange text format";
+
+    // Detect source language ISO code
+    const isCyrillic = /[а-яёА-ЯЁ]/.test(rawText);
+    const isSwedish = /[åäöÅÄÖ]/.test(rawText);
+
+    let sourceLangCode = "en";
+    if (isCyrillic) {
+        sourceLangCode = "ru";
+    } else if (isSwedish) {
+        sourceLangCode = "sv";
+    }
+
+    // Fetch user preferred target language setting from storage
+    const settings = await new Promise<{ googleTranslateTargetLanguage: string }>((resolve) => {
+        chrome.storage.sync.get(
+            { googleTranslateTargetLanguage: DEFAULT_SETTINGS.googleTranslateTargetLanguage },
+            (items) => resolve(items as { googleTranslateTargetLanguage: string }),
+        );
+    });
+
+    let targetLang = settings.googleTranslateTargetLanguage;
+
+    // If source language and user settings target language match (e.g. ru to ru, sv to sv, en to en)
+    if (sourceLangCode === targetLang) {
+        if (tab?.id) {
+            const allLangs = [
+                { label: "ENGLISH", code: "en" },
+                { label: "SWEDISH", code: "sv" },
+                { label: "RUSSIAN", code: "ru" },
+            ];
+            // Filter out the source language to prompt for the other two target languages
+            const availableOptions = allLangs.filter((item) => item.code !== sourceLangCode);
+
+            try {
+                const response = await chrome.tabs.sendMessage(tab.id, {
+                    action: "promptTargetLanguageSelection",
+                    options: availableOptions,
+                });
+
+                if (!response?.targetLanguage) {
+                    return "User cancelled prompt"; // User cancelled prompt
+                }
+                targetLang = response.targetLanguage;
+            } catch (err) {
+                console.warn("Could not message content script to display target language prompt:", err);
+                return "Could not message content script to display target language prompt:";
+            }
+        } else {
+            // Fallback target language when no tab context is available
+            targetLang = sourceLangCode === "en" ? "sv" : "en";
+        }
+    }
+
+    // Show status loading toast if tab exists
+    if (tab?.id) {
+        chrome.tabs
+            .sendMessage(tab.id, {
+                action: "showNotification",
+                toastType: "loading",
+                text: `TRANSLATING "${rawText.substring(0, 20)}${rawText.length > 20 ? "..." : ""}"...`,
+                duration: 5000,
+            })
+            .catch(() => { });
+    }
+
+    try {
+        const translatedText = await googleTranslatorModel.Translate(
+            rawText,
+            sourceLangCode,
+            targetLang,
+        );
+
+        // Send translation notification if tab exists
+        if (tab?.id) {
+            chrome.tabs
+                .sendMessage(tab.id, {
+                    action: "showTranslation",
+                    originalText: rawText,
+                    translatedText: translatedText,
+                    fromLanguage: sourceLangCode,
+                    toLanguage: targetLang,
+                })
+                .catch((err) => {
+                    console.warn("Could not send translation result to tab:", err);
+                });
+        }
+        return translatedText;
+    } catch (err: any) {
+        console.error("Google Translation failed:", err);
+        if (tab?.id) {
+            chrome.tabs
+                .sendMessage(tab.id, {
+                    action: "showNotification",
+                    toastType: "error",
+                    text: "TRANSLATION FAILED",
+                    duration: 3000,
+                })
+                .catch(() => { });
+        }
+        return "Google Translation failed for the selected text";
+    }
+}
+
+
+
+/**
+ * Handles explicit context menu click for "save word to vocabulary".
+ * Fetches word details and stores them in IndexedDB vocabulary database.
+ *
+ * @param info - Context menu click data.
+ * @param tab - Active browser tab.
+ */
+async function SaveWordToVocabulary(
+    selectionText: string,
+    tab?: chrome.tabs.Tab
+): Promise<void> {
+    if (selectionText) {
+        const rawWord = selectionText.trim();
+        const determinedCategory = await IdentifiyLanguage(rawWord, tab);
+        const langCategory = determinedCategory || "unknown";
+        const langCode = LANGUAGE_CODES[langCategory] || "en";
+        const word = encodeURIComponent(rawWord.toLowerCase());
+
+        let definition = "Saved from context menu";
+        let pageUrl = `https://${langCode}.wiktionary.org/wiki/${word}`;
+
+        if (langCategory === "russian") {
+            const data = await getRussianWordFromFreeDictAPI(langCode, word, tab);
+            if (data && data.definition) {
+                definition = data.definition;
+                if (data.url) pageUrl = data.url;
+            }
+        }
+        else if (langCategory !== "unknown") {
+            const data = await getWordFromFreeDictAPI(langCode, word, tab);
+
+            if (data && data.definition) {
+                definition = data.definition;
+                if (data.url) pageUrl = data.url;
+            }
+        }
+
+        await dbModel.saveVocabulary({
+            word: rawWord,
+            language: langCategory,
+            definition: definition,
+            pageUrl: pageUrl,
+        });
+
+        if (tab?.id) {
+            chrome.tabs
+                .sendMessage(tab.id, {
+                    action: "showNotification",
+                    toastType: "PLAYING",
+                    text: `SAVED "${rawWord.toUpperCase()}" TO VOCABULARY`,
+                    duration: 3000,
+                })
+                .catch(() => { });
+        }
+    }
+}

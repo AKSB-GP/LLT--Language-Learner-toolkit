@@ -504,6 +504,19 @@
     }
   };
 
+  // src/utils/chrome.ts
+  function SendChromeMessage(tabId, message, catchError, errorMessage) {
+    if (catchError) {
+      return chrome.tabs.sendMessage(tabId, message).catch((err) => {
+        console.warn(
+          errorMessage || "",
+          err
+        );
+      });
+    }
+    return chrome.tabs.sendMessage(tabId, message);
+  }
+
   // src/popup.ts
   document.addEventListener("DOMContentLoaded", () => {
     const languageCategory = document.getElementById(
@@ -555,7 +568,7 @@
     const notifyContentScript = () => {
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         if (tabs[0]?.id) {
-          chrome.tabs.sendMessage(tabs[0].id, { action: "settingsChanged" }).catch(() => {
+          SendChromeMessage(tabs[0].id, { action: "settingsChanged" }).catch(() => {
           });
         }
       });
