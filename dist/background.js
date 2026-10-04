@@ -33313,6 +33313,59 @@ Try the option "splitPunct" to split the text by punctuation.`);
   // node_modules/eld/src/entries/static.extrasmall.js
   setNgrams(ngramsData);
 
+  // src/utils/chrome.ts
+  function SendChromeMessage(tabId, message, catchError, errorMessage) {
+    if (catchError) {
+      return chrome.tabs.sendMessage(tabId, message).catch((err) => {
+        console.warn(
+          errorMessage || "",
+          err
+        );
+      });
+    }
+    return chrome.tabs.sendMessage(tabId, message);
+  }
+  function CreateChromeTabMessage(Message) {
+    return chrome.tabs.create(Message);
+  }
+  function GoogleTTS(text, settings) {
+    chrome.tts.speak(text, {
+      lang: settings?.googleLanguage || DEFAULT_SETTINGS.googleLanguage,
+      rate: settings?.googleRate ?? DEFAULT_SETTINGS.googleRate
+    });
+  }
+  function ChromeONClickedContextMenu(callback) {
+    return chrome.contextMenus.onClicked.addListener(callback);
+  }
+  function ChromeAddListenerForOnInstall(callback) {
+    return chrome.runtime.onInstalled.addListener(callback);
+  }
+
+  // src/model/GoogleTranslatorModel.ts
+  var import_translators = __toESM(require_translators());
+  var import_Scheduler = __toESM(require_Scheduler());
+  var GoogleTranslatorModel = class {
+    translator = new import_translators.GoogleTranslator();
+    scheduler = new import_Scheduler.Scheduler(this.translator, { translatePoolDelay: 100 });
+    /**
+     * Translates input text using GoogleTranslator via anylang scheduler.
+     *
+     * @param textToTranslate - The text/phrase to translate.
+     * @param fromLang - ISO language code or category name (e.g. 'ru', 'sv', 'en', 'russian', 'auto').
+     * @param targetLang - Two-letter target language code (e.g. 'en', 'sv', 'ru').
+     * @returns Translated string.
+     */
+    async Translate(textToTranslate, fromLang, targetLang) {
+      const sourceLang = fromLang && LANGUAGE_CODES[fromLang] ? LANGUAGE_CODES[fromLang] : fromLang || "auto";
+      const toLang = targetLang || DEFAULT_SETTINGS.googleTranslateTargetLanguage;
+      return await this.scheduler.translate(
+        textToTranslate,
+        sourceLang,
+        toLang
+      );
+    }
+  };
+
   // src/model/DatabaseModel.ts
   var DatabaseModel = class {
     dbName = "LLT_Database";
@@ -33763,46 +33816,17 @@ Try the option "splitPunct" to split the text by punctuation.`);
     }
   };
 
-  // src/model/GoogleTranslatorModel.ts
-  var import_translators = __toESM(require_translators());
-  var import_Scheduler = __toESM(require_Scheduler());
-  var GoogleTranslatorModel = class {
-    translator = new import_translators.GoogleTranslator();
-    scheduler = new import_Scheduler.Scheduler(this.translator, { translatePoolDelay: 100 });
-    /**
-     * Translates input text using GoogleTranslator via anylang scheduler.
-     *
-     * @param textToTranslate - The text/phrase to translate.
-     * @param fromLang - ISO language code or category name (e.g. 'ru', 'sv', 'en', 'russian', 'auto').
-     * @param targetLang - Two-letter target language code (e.g. 'en', 'sv', 'ru').
-     * @returns Translated string.
-     */
-    async Translate(textToTranslate, fromLang, targetLang) {
-      const sourceLang = fromLang && LANGUAGE_CODES[fromLang] ? LANGUAGE_CODES[fromLang] : fromLang || "auto";
-      const toLang = targetLang || DEFAULT_SETTINGS.googleTranslateTargetLanguage;
-      return await this.scheduler.translate(
-        textToTranslate,
-        sourceLang,
-        toLang
-      );
-    }
-  };
-
-  // src/background.ts
-  var dbModel = new DatabaseModel();
+  // src/utils/lltFunctions.ts
   var googleTranslatorModel = new GoogleTranslatorModel();
-  eld.setLanguageSubset(["en", "sv"]);
-  function CreateContextMenus() {
-    for (let i = 0; i < listOfContextMenus.length; i++) {
-      chrome.contextMenus.create(listOfContextMenus[i]);
+  var dbModel = new DatabaseModel();
+  function CreateContextMenus(listOfContextMenus3) {
+    for (let i = 0; i < listOfContextMenus3.length; i++) {
+      chrome.contextMenus.create(listOfContextMenus3[i]);
     }
   }
-  chrome.runtime.onInstalled.addListener(() => {
-    CreateContextMenus();
-  });
   async function getSelectedTextFromTab(tabId) {
     try {
-      const response = await chrome.tabs.sendMessage(tabId, { action: "getSelectedText" });
+      const response = await SendChromeMessage(tabId, { action: "getSelectedText" });
       return response?.text || "";
     } catch (err) {
       console.warn("Could not get selected text from tab via message:", err);
@@ -33813,28 +33837,33 @@ Try the option "splitPunct" to split the text by punctuation.`);
     const cleanText = selectionText.trim();
     if (!cleanText)
       return;
-    if (actionId === "pronounce-with-piper-tts") {
-      PiperTTS(cleanText, tab);
-    } else if (actionId === "pronounce-with-google-tts") {
-      GoogleTTS(cleanText);
-    } else if (actionId === "open-wikitionary-of-word") {
-      OpenWordWikiByWord(cleanText, tab);
-    } else if (actionId === "open-youglish-of-word") {
-      OpenWordYouglishByWord(cleanText, tab);
-    } else if (actionId === "get-definition-of-word") {
-      getDefinitionOfWord(cleanText, tab);
-    } else if (actionId === "save-word-to-vocabulary") {
-      SaveWordToVocabulary(cleanText, tab);
-    } else if (actionId === "translate-with-google") {
-      TranslateWithGoogle(cleanText, tab);
+    switch (actionId) {
+      case "pronounce-with-piper-tts":
+        PiperTTS(cleanText, tab);
+        break;
+      case "pronounce-with-google-tts":
+        GoogleTTS2(cleanText);
+        break;
+      case "open-wikitionary-of-word":
+        OpenWordWikiByWord(cleanText, tab);
+        break;
+      case "open-youglish-of-word":
+        OpenWordYouglishByWord(cleanText, tab);
+        break;
+      case "get-definition-of-word":
+        getDefinitionOfWord(cleanText, tab);
+        break;
+      case "save-word-to-vocabulary":
+        SaveWordToVocabulary(cleanText, tab);
+        break;
+      case "translate-with-google":
+        TranslateWithGoogle(cleanText, tab);
+        break;
+      default:
+        break;
     }
   }
-  chrome.contextMenus.onClicked.addListener((info2, tab) => {
-    if (info2.selectionText) {
-      handleAction(info2.menuItemId, info2.selectionText, tab);
-    }
-  });
-  function GoogleTTS(selectionText) {
+  function GoogleTTS2(selectionText) {
     if (selectionText) {
       chrome.storage.sync.get(
         {
@@ -33842,36 +33871,19 @@ Try the option "splitPunct" to split the text by punctuation.`);
           googleRate: DEFAULT_SETTINGS.googleRate
         },
         (settings) => {
-          chrome.tts.speak(selectionText, {
-            lang: settings.googleLanguage,
-            rate: settings.googleRate
-          });
+          GoogleTTS(selectionText, settings);
         }
       );
     }
   }
   function PiperTTS(selectionText, tab) {
     if (selectionText && tab?.id) {
-      chrome.tabs.sendMessage(tab.id, {
+      SendChromeMessage(tab.id, {
         action: "speakSelection",
         text: selectionText
-      }).catch((err) => {
-        console.warn(
-          "Could not send message to tab. Content script might not be loaded yet.",
-          err
-        );
-      });
+      }, true, "Could not send message to tab. Content script might not be loaded yet.");
     }
   }
-  chrome.commands.onCommand.addListener(async (command, tab) => {
-    console.log(`Command "${command}" triggered`);
-    if (tab?.id) {
-      const selectionText = await getSelectedTextFromTab(tab.id);
-      if (selectionText) {
-        handleAction(command, selectionText, tab);
-      }
-    }
-  });
   function classifyLatinWord(word) {
     const result = eld.detect(word);
     return result.language === "sv" ? "swedish" : "english";
@@ -33902,7 +33914,7 @@ Try the option "splitPunct" to split the text by punctuation.`);
       }
       if (tab?.id) {
         try {
-          const response = await chrome.tabs.sendMessage(tab.id, {
+          const response = await SendChromeMessage(tab.id, {
             action: "promptLanguageSelection",
             word: cleanWord
           });
@@ -34129,7 +34141,7 @@ Try the option "splitPunct" to split the text by punctuation.`);
       }
       const langCode = LANGUAGE_CODES[determinedCategory] || "en";
       const word = encodeURIComponent(selectionText.trim().toLowerCase());
-      chrome.tabs.create({
+      CreateChromeTabMessage({
         url: `https://${langCode}.wiktionary.org/wiki/${word}`
       });
     }
@@ -34141,7 +34153,7 @@ Try the option "splitPunct" to split the text by punctuation.`);
         return;
       }
       const word = encodeURIComponent(selectionText.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
-      chrome.tabs.create({
+      CreateChromeTabMessage({
         url: `https://youglish.com/pronounce/${word}/${determinedCategory}`
       });
     }
@@ -34274,5 +34286,25 @@ Try the option "splitPunct" to split the text by punctuation.`);
       }
     }
   }
+
+  // src/background.ts
+  eld.setLanguageSubset(["en", "sv"]);
+  ChromeAddListenerForOnInstall(() => {
+    CreateContextMenus(listOfContextMenus);
+  });
+  ChromeONClickedContextMenu((info2, tab) => {
+    if (info2.selectionText) {
+      handleAction(info2.menuItemId, info2.selectionText, tab);
+    }
+  });
+  chrome.commands.onCommand.addListener(async (command, tab) => {
+    console.log(`Command "${command}" triggered`);
+    if (tab?.id) {
+      const selectionText = await getSelectedTextFromTab(tab.id);
+      if (selectionText) {
+        handleAction(command, selectionText, tab);
+      }
+    }
+  });
 })();
 //# sourceMappingURL=background.js.map
