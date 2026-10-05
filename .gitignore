@@ -1,2 +1,4 @@
 node_modules/
 dist/*.map
+PROJECT_ARCHITECTURE_AND_TECHSTACK.md
+*.zip

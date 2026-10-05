@@ -16,28 +16,28 @@
     "pronounce-with-piper-tts": {
       "suggested_key": {
         "default": "Alt+Shift+S",
-        "mac": "Option+Shift+S"
+        "mac": "Alt+Shift+S"
       },
       "description": "Pronounce highlighted word with Natural AI TTS"
     },
     "translate-with-google": {
       "suggested_key": {
         "default": "Alt+Shift+E",
-        "mac": "Option+Shift+E"
+        "mac": "Alt+Shift+E"
       },
       "description": "Translate highlighted word with google translate"
     },
     "get-definition-of-word": {
       "suggested_key": {
         "default": "Alt+Shift+D",
-        "mac": "Option+Shift+D"
+        "mac": "Alt+Shift+D"
       },
       "description": "Get definition of highlighted word"
     },
     "open-youglish-of-word": {
       "suggested_key": {
         "default": "Alt+Shift+A",
-        "mac": "Option+Shift+A"
+        "mac": "Alt+Shift+A"
       },
       "description": "Open Youglish of highlighted word"
     },
@@ -54,6 +54,9 @@
   "icons": {
     "32": "icons/LLT_icon_32.png"
   },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  },
   "action": {
     "default_popup": "popup.html",
     "default_title": "App settings"
@@ -62,15 +65,25 @@
     {
       "resources": [
         "models/*",
-        "lib/*"
+        "lib/*",
+        "dist/sql-wasm.wasm"
       ],
       "matches": [
         "<all_urls>"
       ]
     }
   ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "llt-toolkit@language-learner.org",
+      "strict_min_version": "109.0"
+    }
+  },
   "background": {
-    "service_worker": "dist/background.js"
+    "service_worker": "dist/background.js",
+    "scripts": [
+      "dist/background.js"
+    ]
   },
   "content_scripts": [
     {

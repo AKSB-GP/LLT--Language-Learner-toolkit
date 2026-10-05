@@ -6,11 +6,20 @@
   var __getOwnPropNames = Object.getOwnPropertyNames;
   var __getProtoOf = Object.getPrototypeOf;
   var __hasOwnProp = Object.prototype.hasOwnProperty;
-  var __esm = (fn2, res) => function __init() {
-    return fn2 && (res = (0, fn2[__getOwnPropNames(fn2)[0]])(fn2 = 0)), res;
+  var __esm = (fn2, res, err) => function __init() {
+    if (err) throw err[0];
+    try {
+      return fn2 && (res = (0, fn2[__getOwnPropNames(fn2)[0]])(fn2 = 0)), res;
+    } catch (e) {
+      throw err = [e], e;
+    }
   };
   var __commonJS = (cb, mod) => function __require() {
-    return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+    try {
+      return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+    } catch (e) {
+      throw mod = 0, e;
+    }
   };
   var __export = (target, all) => {
     for (var name2 in all)
@@ -39,21 +48,21 @@
     "node_modules/whatwg-fetch/dist/fetch.umd.js"(exports, module) {
       (function(global2, factory) {
         typeof exports === "object" && typeof module !== "undefined" ? factory(exports) : typeof define === "function" && define.amd ? define(["exports"], factory) : factory(global2.WHATWGFetch = {});
-      })(exports, function(exports2) {
+      })(exports, (function(exports2) {
         "use strict";
         var g = typeof globalThis !== "undefined" && globalThis || typeof self !== "undefined" && self || // eslint-disable-next-line no-undef
         typeof global !== "undefined" && global || {};
         var support = {
           searchParams: "URLSearchParams" in g,
           iterable: "Symbol" in g && "iterator" in Symbol,
-          blob: "FileReader" in g && "Blob" in g && function() {
+          blob: "FileReader" in g && "Blob" in g && (function() {
             try {
               new Blob();
               return true;
             } catch (e) {
               return false;
             }
-          }(),
+          })(),
           formData: "FormData" in g,
           arrayBuffer: "ArrayBuffer" in g
         };
@@ -175,8 +184,7 @@
           Headers.prototype[Symbol.iterator] = Headers.prototype.entries;
         }
         function consumed(body) {
-          if (body._noBody)
-            return;
+          if (body._noBody) return;
           if (body.bodyUsed) {
             return Promise.reject(new TypeError("Already read"));
           }
@@ -356,12 +364,12 @@
           }
           this.method = normalizeMethod(options.method || this.method || "GET");
           this.mode = options.mode || this.mode || null;
-          this.signal = options.signal || this.signal || function() {
+          this.signal = options.signal || this.signal || (function() {
             if ("AbortController" in g) {
               var ctrl = new AbortController();
               return ctrl.signal;
             }
-          }();
+          })();
           this.referrer = null;
           if ((this.method === "GET" || this.method === "HEAD") && body) {
             throw new TypeError("Body not allowed for GET or HEAD requests");
@@ -568,7 +576,7 @@
         exports2.Response = Response;
         exports2.fetch = fetch2;
         Object.defineProperty(exports2, "__esModule", { value: true });
-      });
+      }));
     }
   });
 
@@ -618,14 +626,10 @@
       };
       var __rest = function(s, e) {
         var t = {};
-        for (var p in s)
-          if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
-            t[p] = s[p];
-        if (s != null && typeof Object.getOwnPropertySymbols === "function")
-          for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
-            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
-              t[p[i]] = s[p[i]];
-          }
+        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0) t[p] = s[p];
+        if (s != null && typeof Object.getOwnPropertySymbols === "function") for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+          if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i])) t[p[i]] = s[p[i]];
+        }
         return t;
       };
       var convertHeadersToMap = (headers) => {
@@ -878,7 +882,7 @@
         Object.defineProperty(_, "name", { value: name2 });
         return _;
       }
-      exports.$brand = Symbol("zod_brand");
+      exports.$brand = /* @__PURE__ */ Symbol("zod_brand");
       var $ZodAsyncError = class extends Error {
         constructor() {
           super(`Encountered Promise during synchronous parse. Use .parseAsync() instead.`);
@@ -1601,9 +1605,8 @@
   var require_errors = __commonJS({
     "node_modules/zod/v4/core/errors.cjs"(exports) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -1611,24 +1614,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -1786,9 +1785,8 @@
   var require_parse = __commonJS({
     "node_modules/zod/v4/core/parse.cjs"(exports) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -1796,24 +1794,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -1928,9 +1922,8 @@
   var require_regexes = __commonJS({
     "node_modules/zod/v4/core/regexes.cjs"(exports) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -1938,24 +1931,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -2074,9 +2063,8 @@
   var require_checks = __commonJS({
     "node_modules/zod/v4/core/checks.cjs"(exports) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -2084,24 +2072,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -2722,9 +2706,8 @@
   var require_schemas = __commonJS({
     "node_modules/zod/v4/core/schemas.cjs"(exports) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -2732,24 +2715,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -4869,9 +4848,8 @@
   var require_ar = __commonJS({
     "node_modules/zod/v4/locales/ar.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -4879,24 +4857,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -5017,9 +4991,8 @@
   var require_az = __commonJS({
     "node_modules/zod/v4/locales/az.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -5027,24 +5000,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -5164,9 +5133,8 @@
   var require_be = __commonJS({
     "node_modules/zod/v4/locales/be.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -5174,24 +5142,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -5362,9 +5326,8 @@
   var require_bg = __commonJS({
     "node_modules/zod/v4/locales/bg.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -5372,24 +5335,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -5524,9 +5483,8 @@
   var require_ca = __commonJS({
     "node_modules/zod/v4/locales/ca.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -5534,24 +5492,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -5653,6 +5607,7 @@
               return `Clau inv\xE0lida a ${issue.origin}`;
             case "invalid_union":
               return "Entrada inv\xE0lida";
+            // Could also be "Tipus d'unió invàlid" but "Entrada invàlida" is more general
             case "invalid_element":
               return `Element inv\xE0lid a ${issue.origin}`;
             default:
@@ -5673,9 +5628,8 @@
   var require_cs = __commonJS({
     "node_modules/zod/v4/locales/cs.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -5683,24 +5637,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -5826,9 +5776,8 @@
   var require_da = __commonJS({
     "node_modules/zod/v4/locales/da.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -5836,24 +5785,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -5983,9 +5928,8 @@
   var require_de = __commonJS({
     "node_modules/zod/v4/locales/de.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -5993,24 +5937,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -6133,9 +6073,8 @@
   var require_el = __commonJS({
     "node_modules/zod/v4/locales/el.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -6143,24 +6082,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -6284,9 +6219,8 @@
   var require_en = __commonJS({
     "node_modules/zod/v4/locales/en.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -6294,24 +6228,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -6438,9 +6368,8 @@
   var require_eo = __commonJS({
     "node_modules/zod/v4/locales/eo.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -6448,24 +6377,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -6589,9 +6514,8 @@
   var require_es = __commonJS({
     "node_modules/zod/v4/locales/es.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -6599,24 +6523,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -6763,9 +6683,8 @@
   var require_fa = __commonJS({
     "node_modules/zod/v4/locales/fa.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -6773,24 +6692,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -6919,9 +6834,8 @@
   var require_fi = __commonJS({
     "node_modules/zod/v4/locales/fi.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -6929,24 +6843,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -7073,9 +6983,8 @@
   var require_fr = __commonJS({
     "node_modules/zod/v4/locales/fr.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -7083,24 +6992,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -7240,9 +7145,8 @@
   var require_fr_CA = __commonJS({
     "node_modules/zod/v4/locales/fr-CA.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -7250,24 +7154,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -7389,9 +7289,8 @@
   var require_he = __commonJS({
     "node_modules/zod/v4/locales/he.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -7399,24 +7298,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -7625,9 +7520,8 @@
   var require_hr = __commonJS({
     "node_modules/zod/v4/locales/hr.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -7635,24 +7529,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -7789,9 +7679,8 @@
   var require_hu = __commonJS({
     "node_modules/zod/v4/locales/hu.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -7799,24 +7688,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -7939,9 +7824,8 @@
   var require_hy = __commonJS({
     "node_modules/zod/v4/locales/hy.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -7949,24 +7833,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -8128,9 +8008,8 @@
   var require_id = __commonJS({
     "node_modules/zod/v4/locales/id.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -8138,24 +8017,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -8276,9 +8151,8 @@
   var require_is = __commonJS({
     "node_modules/zod/v4/locales/is.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -8286,24 +8160,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -8427,9 +8297,8 @@
   var require_it = __commonJS({
     "node_modules/zod/v4/locales/it.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -8437,24 +8306,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -8577,9 +8442,8 @@
   var require_ja = __commonJS({
     "node_modules/zod/v4/locales/ja.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -8587,24 +8451,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -8726,9 +8586,8 @@
   var require_ka = __commonJS({
     "node_modules/zod/v4/locales/ka.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -8736,24 +8595,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -8880,9 +8735,8 @@
   var require_km = __commonJS({
     "node_modules/zod/v4/locales/km.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -8890,24 +8744,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -9049,9 +8899,8 @@
   var require_ko = __commonJS({
     "node_modules/zod/v4/locales/ko.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -9059,24 +8908,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -9202,9 +9047,8 @@
   var require_lt = __commonJS({
     "node_modules/zod/v4/locales/lt.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -9212,24 +9056,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -9447,9 +9287,8 @@
   var require_mk = __commonJS({
     "node_modules/zod/v4/locales/mk.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -9457,24 +9296,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -9598,9 +9433,8 @@
   var require_ms = __commonJS({
     "node_modules/zod/v4/locales/ms.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -9608,24 +9442,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -9747,9 +9577,8 @@
   var require_nl = __commonJS({
     "node_modules/zod/v4/locales/nl.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -9757,24 +9586,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -9899,9 +9724,8 @@
   var require_no = __commonJS({
     "node_modules/zod/v4/locales/no.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -9909,24 +9733,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -10049,9 +9869,8 @@
   var require_ota = __commonJS({
     "node_modules/zod/v4/locales/ota.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -10059,24 +9878,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -10200,9 +10015,8 @@
   var require_ps = __commonJS({
     "node_modules/zod/v4/locales/ps.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -10210,24 +10024,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -10356,9 +10166,8 @@
   var require_pl = __commonJS({
     "node_modules/zod/v4/locales/pl.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -10366,24 +10175,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -10507,9 +10312,8 @@
   var require_pt = __commonJS({
     "node_modules/zod/v4/locales/pt.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -10517,24 +10321,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -10657,9 +10457,8 @@
   var require_ro = __commonJS({
     "node_modules/zod/v4/locales/ro.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -10667,24 +10466,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -10818,9 +10613,8 @@
   var require_ru = __commonJS({
     "node_modules/zod/v4/locales/ru.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -10828,24 +10622,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -11016,9 +10806,8 @@
   var require_sl = __commonJS({
     "node_modules/zod/v4/locales/sl.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -11026,24 +10815,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -11167,9 +10952,8 @@
   var require_sv = __commonJS({
     "node_modules/zod/v4/locales/sv.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -11177,24 +10961,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -11319,9 +11099,8 @@
   var require_ta = __commonJS({
     "node_modules/zod/v4/locales/ta.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -11329,24 +11108,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -11471,9 +11246,8 @@
   var require_th = __commonJS({
     "node_modules/zod/v4/locales/th.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -11481,24 +11255,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -11623,9 +11393,8 @@
   var require_tr = __commonJS({
     "node_modules/zod/v4/locales/tr.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -11633,24 +11402,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -11770,9 +11535,8 @@
   var require_uk = __commonJS({
     "node_modules/zod/v4/locales/uk.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -11780,24 +11544,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -11937,9 +11697,8 @@
   var require_ur = __commonJS({
     "node_modules/zod/v4/locales/ur.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -11947,24 +11706,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -12089,9 +11844,8 @@
   var require_uz = __commonJS({
     "node_modules/zod/v4/locales/uz.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -12099,24 +11853,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -12241,9 +11991,8 @@
   var require_vi = __commonJS({
     "node_modules/zod/v4/locales/vi.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -12251,24 +12000,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -12391,9 +12136,8 @@
   var require_zh_CN = __commonJS({
     "node_modules/zod/v4/locales/zh-CN.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -12401,24 +12145,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -12542,9 +12282,8 @@
   var require_zh_TW = __commonJS({
     "node_modules/zod/v4/locales/zh-TW.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -12552,24 +12291,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -12691,9 +12426,8 @@
   var require_yo = __commonJS({
     "node_modules/zod/v4/locales/yo.cjs"(exports, module) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -12701,24 +12435,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -13065,8 +12795,8 @@
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.globalRegistry = exports.$ZodRegistry = exports.$input = exports.$output = void 0;
       exports.registry = registry;
-      exports.$output = Symbol("ZodOutput");
-      exports.$input = Symbol("ZodInput");
+      exports.$output = /* @__PURE__ */ Symbol("ZodOutput");
+      exports.$input = /* @__PURE__ */ Symbol("ZodInput");
       var $ZodRegistry = class {
         constructor() {
           this._map = /* @__PURE__ */ new WeakMap();
@@ -13120,9 +12850,8 @@
   var require_api = __commonJS({
     "node_modules/zod/v4/core/api.cjs"(exports) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -13130,24 +12859,20 @@
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -14267,7 +13992,7 @@
           type: "pipe",
           in: stringSchema,
           out: booleanSchema,
-          transform: (input, payload) => {
+          transform: ((input, payload) => {
             let data = input;
             if (params.case !== "sensitive")
               data = data.toLowerCase();
@@ -14286,14 +14011,14 @@
               });
               return {};
             }
-          },
-          reverseTransform: (input, _payload) => {
+          }),
+          reverseTransform: ((input, _payload) => {
             if (input === true) {
               return truthyArray[0] || "true";
             } else {
               return falsyArray[0] || "false";
             }
-          },
+          }),
           error: params.error
         });
         return codec;
@@ -15381,9 +15106,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
   var require_core2 = __commonJS({
     "node_modules/zod/v4/core/index.cjs"(exports) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -15391,29 +15115,23 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __exportStar = exports && exports.__exportStar || function(m, exports2) {
-        for (var p in m)
-          if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports2, p))
-            __createBinding(exports2, m, p);
+        for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports2, p)) __createBinding(exports2, m, p);
       };
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -15546,9 +15264,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
   var require_iso = __commonJS({
     "node_modules/zod/v4/classic/iso.cjs"(exports) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -15556,24 +15273,20 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -15621,9 +15334,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
   var require_errors2 = __commonJS({
     "node_modules/zod/v4/classic/errors.cjs"(exports) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -15631,24 +15343,20 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -15703,9 +15411,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
   var require_parse2 = __commonJS({
     "node_modules/zod/v4/classic/parse.cjs"(exports) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -15713,24 +15420,20 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -15758,9 +15461,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
   var require_schemas2 = __commonJS({
     "node_modules/zod/v4/classic/schemas.cjs"(exports) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -15768,24 +15470,20 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -17191,9 +16889,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
   var require_compat = __commonJS({
     "node_modules/zod/v4/classic/compat.cjs"(exports) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -17201,24 +16898,20 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -17266,9 +16959,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
   var require_from_json_schema = __commonJS({
     "node_modules/zod/v4/classic/from-json-schema.cjs"(exports) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -17276,24 +16968,20 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -17789,9 +17477,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
   var require_coerce = __commonJS({
     "node_modules/zod/v4/classic/coerce.cjs"(exports) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -17799,24 +17486,20 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
@@ -17851,9 +17534,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
   var require_external = __commonJS({
     "node_modules/zod/v4/classic/external.cjs"(exports) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -17861,32 +17543,26 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
       };
       var __exportStar = exports && exports.__exportStar || function(m, exports2) {
-        for (var p in m)
-          if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports2, p))
-            __createBinding(exports2, m, p);
+        for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports2, p)) __createBinding(exports2, m, p);
       };
       var __importDefault = exports && exports.__importDefault || function(mod) {
         return mod && mod.__esModule ? mod : { "default": mod };
@@ -17979,9 +17655,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
   var require_zod = __commonJS({
     "node_modules/zod/index.cjs"(exports) {
       "use strict";
-      var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         var desc = Object.getOwnPropertyDescriptor(m, k);
         if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
           desc = { enumerable: true, get: function() {
@@ -17989,32 +17664,26 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
           } };
         }
         Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
         o[k2] = m[k];
-      });
-      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? function(o, v) {
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
         Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
+      }) : function(o, v) {
         o["default"] = v;
       });
       var __importStar = exports && exports.__importStar || function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
+        if (mod && mod.__esModule) return mod;
         var result = {};
         if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding(result, mod, k);
+          for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         }
         __setModuleDefault(result, mod);
         return result;
       };
       var __exportStar = exports && exports.__exportStar || function(m, exports2) {
-        for (var p in m)
-          if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports2, p))
-            __createBinding(exports2, m, p);
+        for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports2, p)) __createBinding(exports2, m, p);
       };
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.z = void 0;
@@ -18065,13 +17734,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
         get(language) {
           var _a, _b;
           const mappedLanguage = this.getMappedLanguage(language);
-          if (mappedLanguage)
-            return mappedLanguage;
+          if (mappedLanguage) return mappedLanguage;
           const languageAliases = this.languagesMaps.normal[language];
-          if (languageAliases)
-            return (_a = this.getMappedLanguage(languageAliases[0])) !== null && _a !== void 0 ? _a : languageAliases[0];
-          if (this.simpleLanguages.has(language))
-            return (_b = this.getMappedLanguage(language)) !== null && _b !== void 0 ? _b : language;
+          if (languageAliases) return (_a = this.getMappedLanguage(languageAliases[0])) !== null && _a !== void 0 ? _a : languageAliases[0];
+          if (this.simpleLanguages.has(language)) return (_b = this.getMappedLanguage(language)) !== null && _b !== void 0 ? _b : language;
           return null;
         }
         getMappedLanguage(language) {
@@ -18167,10 +17833,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
           return __awaiter(this, void 0, void 0, function* () {
             const sourceLanguage = from === "auto" ? "auto" : supportedLanguagesMap.get(from);
             const targetLanguage = supportedLanguagesMap.get(to);
-            if (!sourceLanguage)
-              throw new TypeError(`Unsupported source language ${from}`);
-            if (!targetLanguage)
-              throw new TypeError(`Unsupported source language ${to}`);
+            if (!sourceLanguage) throw new TypeError(`Unsupported source language ${from}`);
+            if (!targetLanguage) throw new TypeError(`Unsupported source language ${to}`);
             const token2 = yield this.getToken();
             const url = "https://api-edge.cognitive.microsofttranslator.com/translate?" + // Omit `from` parameter for auto detection of language
             (sourceLanguage !== "auto" ? `from=${encodeURIComponent(sourceLanguage)}&` : "") + `to=${encodeURIComponent(targetLanguage)}&api-version=3.0&includeSentenceLength=true`;
@@ -18209,8 +17873,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
         getToken() {
           return __awaiter(this, void 0, void 0, function* () {
             var _a;
-            if (this.token instanceof Promise)
-              return this.token;
+            if (this.token instanceof Promise) return this.token;
             const tokenLifetime = (_a = this.options.tokenLifetime) !== null && _a !== void 0 ? _a : 3e4;
             if (!this.token || Date.now() - this.token.issuedAt > tokenLifetime) {
               this.token = this.fetch("https://edge.microsoft.com/translate/auth", {
@@ -18235,8 +17898,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
                 status,
                 ok
               }) => {
-                if (!ok)
-                  throw new Error(statusText || `Unknown error with status ${status}`);
+                if (!ok) throw new Error(statusText || `Unknown error with status ${status}`);
                 this.token = {
                   value: token2,
                   issuedAt: Date.now()
@@ -18259,29 +17921,81 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
   });
 
   // node_modules/decode-uri-component/index.js
-  function decodeComponents(components, split) {
-    try {
-      return [decodeURIComponent(components.join(""))];
-    } catch {
+  function parsePercentByte(input, position) {
+    if (input.codePointAt(position) !== 37 || position + 3 > input.length) {
+      return;
     }
-    if (components.length === 1) {
-      return components;
+    const digits = input.slice(position + 1, position + 3);
+    if (!hexPair.test(digits)) {
+      return;
     }
-    split = split || 1;
-    const left = components.slice(0, split);
-    const right = components.slice(split);
-    return Array.prototype.concat.call([], decodeComponents(left), decodeComponents(right));
+    return { byte: Number.parseInt(digits, 16), next: position + 3 };
+  }
+  function utf8SequenceLength(byte) {
+    if (byte <= 127) {
+      return 1;
+    }
+    if (byte >= 194 && byte <= 223) {
+      return 2;
+    }
+    if (byte >= 224 && byte <= 239) {
+      return 3;
+    }
+    if (byte >= 240 && byte <= 244) {
+      return 4;
+    }
+    return 0;
+  }
+  function isContinuationByte(byte) {
+    return byte >= 128 && byte <= 191;
   }
   function decode(input) {
     try {
       return decodeURIComponent(input);
     } catch {
-      let tokens = input.match(singleMatcher) || [];
-      for (let i = 1; i < tokens.length; i++) {
-        input = decodeComponents(tokens, i).join("");
-        tokens = input.match(singleMatcher) || [];
+      let output = "";
+      let position = 0;
+      while (position < input.length) {
+        if (input.codePointAt(position) !== 37) {
+          output += input.charAt(position);
+          position++;
+          continue;
+        }
+        const firstByte = parsePercentByte(input, position);
+        if (!firstByte) {
+          output += input.charAt(position);
+          position++;
+          continue;
+        }
+        const sequenceLength = utf8SequenceLength(firstByte.byte);
+        if (sequenceLength === 0) {
+          output += input.slice(position, position + 3);
+          position += 3;
+          continue;
+        }
+        let end = firstByte.next;
+        let validSequence = true;
+        for (let index = 1; index < sequenceLength; index++) {
+          const nextByte = parsePercentByte(input, end);
+          if (!nextByte || !isContinuationByte(nextByte.byte)) {
+            validSequence = false;
+            break;
+          }
+          end = nextByte.next;
+        }
+        if (validSequence) {
+          const encodedSequence = input.slice(position, end);
+          try {
+            output += decodeURIComponent(encodedSequence);
+            position = end;
+            continue;
+          } catch {
+          }
+        }
+        output += input.slice(position, position + 3);
+        position += 3;
       }
-      return input;
+      return output;
     }
   }
   function customDecodeURIComponent(input) {
@@ -18310,7 +18024,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
   }
   function decodeUriComponent(encodedURI) {
     if (typeof encodedURI !== "string") {
-      throw new TypeError("Expected `encodedURI` to be of type `string`, got `" + typeof encodedURI + "`");
+      throw new TypeError(`Expected \`encodedURI\` to be of type \`string\`, got \`${typeof encodedURI}\``);
     }
     try {
       return decodeURIComponent(encodedURI);
@@ -18318,12 +18032,12 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
       return customDecodeURIComponent(encodedURI);
     }
   }
-  var token, singleMatcher, multiMatcher;
+  var token, multiMatcher, hexPair;
   var init_decode_uri_component = __esm({
     "node_modules/decode-uri-component/index.js"() {
       token = "%[a-f0-9]{2}";
-      singleMatcher = new RegExp("(" + token + ")|([^%]+?)", "gi");
-      multiMatcher = new RegExp("(" + token + ")+", "gi");
+      multiMatcher = new RegExp(`(${token})+`, "gi");
+      hexPair = /^[a-f\d]{2}$/i;
     }
   });
 
@@ -18668,8 +18382,15 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
     if (!query) {
       return returnValue;
     }
+    if (/^&+$/.test(query)) {
+      return returnValue;
+    }
     let parameterStart = 0;
-    for (let index = 0; index <= query.length; index++) {
+    let firstSeparator = query.indexOf("&");
+    if (firstSeparator === -1) {
+      firstSeparator = query.length;
+    }
+    for (let index = firstSeparator; index <= query.length; index++) {
       if (index < query.length && query[index] !== "&") {
         continue;
       }
@@ -18678,7 +18399,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
         continue;
       }
       const parameter = query.slice(parameterStart, index);
-      parameterStart = index + 1;
       const parameter_ = options.decode ? parameter.replaceAll("+", " ") : parameter;
       let [key, value] = splitOnFirst(parameter_, "=");
       if (key === void 0) {
@@ -18686,6 +18406,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
       }
       value = value === void 0 ? null : ["comma", "separator", "bracket-separator"].includes(options.arrayFormat) ? value : decode2(value, options);
       formatter(decode2(key, options), value, returnValue);
+      parameterStart = index + 1;
     }
     for (const [key, value] of Object.entries(returnValue)) {
       if (typeof value === "object" && value !== null && options.types[key] !== "string") {
@@ -18796,9 +18517,12 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
     queryString &&= `?${queryString}`;
     let hash = getHash(object.url);
     if (typeof object.fragmentIdentifier === "string") {
-      const urlObjectForFragmentEncode = new URL(url, "https://query-string.invalid");
-      urlObjectForFragmentEncode.hash = object.fragmentIdentifier;
-      hash = options[encodeFragmentIdentifier] ? urlObjectForFragmentEncode.hash : `#${object.fragmentIdentifier}`;
+      hash = `#${object.fragmentIdentifier}`;
+      if (options[encodeFragmentIdentifier]) {
+        const throwawayUrl = new URL("https://query-string.invalid");
+        throwawayUrl.hash = hash;
+        hash = throwawayUrl.hash;
+      }
     }
     return `${url}${queryString}${hash}`;
   }
@@ -18830,7 +18554,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
       init_split_on_first();
       isNullOrUndefined = (value) => value === null || value === void 0;
       strictUriEncode = (string) => encodeURIComponent(string).replaceAll(/[!'()*]/g, (x) => `%${x.charCodeAt(0).toString(16).toUpperCase()}`);
-      encodeFragmentIdentifier = Symbol("encodeFragmentIdentifier");
+      encodeFragmentIdentifier = /* @__PURE__ */ Symbol("encodeFragmentIdentifier");
     }
   });
 
@@ -20660,23 +20384,22 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
               } else {
                 st = [findRoot(xpc.contextNode)];
               }
-              outer:
-                while (st.length > 0) {
-                  for (var m = st.pop(); m != null; ) {
-                    if (m == xpc.contextNode) {
-                      break outer;
-                    }
-                    if (step.nodeTest.matches(m, xpc)) {
-                      newNodes.unshift(m);
-                    }
-                    if (m.firstChild != null) {
-                      st.push(m.nextSibling);
-                      m = m.firstChild;
-                    } else {
-                      m = m.nextSibling;
-                    }
+              outer: while (st.length > 0) {
+                for (var m = st.pop(); m != null; ) {
+                  if (m == xpc.contextNode) {
+                    break outer;
+                  }
+                  if (step.nodeTest.matches(m, xpc)) {
+                    newNodes.unshift(m);
+                  }
+                  if (m.firstChild != null) {
+                    st.push(m.nextSibling);
+                    m = m.firstChild;
+                  } else {
+                    m = m.nextSibling;
                   }
                 }
+              }
               break;
             case Step.PRECEDINGSIBLING:
               if (xpc.contextNode === xpc.virtualRoot) {
@@ -22312,7 +22035,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
           }
           return null;
         };
-        var XPathException = function() {
+        var XPathException = (function() {
           function getMessage(code, exception) {
             var msg = exception ? ": " + exception.toString() : "";
             switch (code) {
@@ -22341,7 +22064,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
           XPathException2.INVALID_EXPRESSION_ERR = 51;
           XPathException2.TYPE_ERR = 52;
           return XPathException2;
-        }();
+        })();
         XPathExpression.prototype = {};
         XPathExpression.prototype.constructor = XPathExpression;
         XPathExpression.superclass = Object.prototype;
@@ -23080,8 +22803,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
           this.message = messageOrCode;
           this.name = endsWithError(nameOrMessage) ? nameOrMessage : DOMExceptionName.Error;
         }
-        if (Error.captureStackTrace)
-          Error.captureStackTrace(this, DOMException);
+        if (Error.captureStackTrace) Error.captureStackTrace(this, DOMException);
       }
       extendError(DOMException, true);
       Object.defineProperties(DOMException.prototype, {
@@ -23089,8 +22811,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
           enumerable: true,
           get: function() {
             var code = DOMExceptionNames.indexOf(this.name);
-            if (isValidDomExceptionCode(code))
-              return code;
+            if (isValidDomExceptionCode(code)) return code;
             return 0;
           }
         }
@@ -23129,11 +22850,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
       }
       var key;
       var i;
-      function ParseError(message, locator) {
+      function ParseError(message, locator, cause) {
         this.message = message;
         this.locator = locator;
-        if (Error.captureStackTrace)
-          Error.captureStackTrace(this, ParseError);
+        this.cause = cause;
+        if (Error.captureStackTrace) Error.captureStackTrace(this, ParseError);
       }
       extendError(ParseError);
       exports.DOMException = DOMException;
@@ -23190,7 +22911,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
             }
             return isStr ? part : part.source;
           }).join(""),
-          UNICODE_SUPPORT ? "mu" : "m"
+          UNICODE_SUPPORT ? "u" : ""
         );
       }
       function regg(args) {
@@ -23216,6 +22937,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
       var NameStartChar_s = chars(NameStartChar);
       var NameChar = reg("[", NameStartChar_s, chars(/[-.0-9\xB7]/), chars(/[\u0300-\u036F\u203F-\u2040]/), "]");
       var Name = reg(NameStartChar, NameChar, "*");
+      var Name_exact = reg("^", Name, "$");
       var Nmtoken = reg(NameChar, "+");
       var EntityRef = reg("&", Name, ";");
       var CharRef = regg(/&#[0-9]+;|&#x[0-9a-fA-F]+;/);
@@ -23230,11 +22952,12 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
       var NCNameStartChar = chars_without(NameStartChar, ":");
       var NCNameChar = chars_without(NameChar, ":");
       var NCName = reg(NCNameStartChar, NCNameChar, "*");
+      var NCName_exact = reg("^", NCName, "$");
       var QName = reg(NCName, regg(":", NCName), "?");
       var QName_exact = reg("^", QName, "$");
       var QName_group = reg("(", QName, ")");
       var SystemLiteral = regg(/"[^"]*"|'[^']*'/);
-      var PI = reg(/^<\?/, "(", Name, ")", regg(S, "(", Char, "*?)"), "?", /\?>/);
+      var PI = reg(/^<\?/, "(", Name, ")", regg(S, "(?!", _SChar, ")(", Char, "*?)"), "?", /\?>/);
       var PubidChar = /[\x20\x0D\x0Aa-zA-Z0-9-'()+,./:=?;!*#@$_%]/;
       var PubidLiteral = regg('"', PubidChar, '*"', "|", "'", chars_without(PubidChar, "'"), "*'");
       var COMMENT_START = "<!--";
@@ -23323,6 +23046,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
       exports.ExternalID = ExternalID;
       exports.ExternalID_match = ExternalID_match;
       exports.Name = Name;
+      exports.Name_exact = Name_exact;
+      exports.NCName_exact = NCName_exact;
       exports.NotationDecl = NotationDecl;
       exports.Reference = Reference;
       exports.PEReference = PEReference;
@@ -23359,7 +23084,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
       var isHTMLVoidElement = conventions.isHTMLVoidElement;
       var MIME_TYPE = conventions.MIME_TYPE;
       var NAMESPACE = conventions.NAMESPACE;
-      var PDC = Symbol();
+      var PDC = /* @__PURE__ */ Symbol();
       var errors = require_errors3();
       var DOMException = errors.DOMException;
       var DOMExceptionName = errors.DOMExceptionName;
@@ -23382,8 +23107,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
         return current;
       }
       function toOrderedSet(input) {
-        if (!input)
-          return [];
+        if (!input) return [];
         var list = splitOnASCIIWhitespace(input);
         return Object.keys(list.reduce(orderedSetReducer, {}));
       }
@@ -23473,19 +23197,16 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
         DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC: 32
       });
       function commonAncestor(a, b) {
-        if (b.length < a.length)
-          return commonAncestor(b, a);
+        if (b.length < a.length) return commonAncestor(b, a);
         var c = null;
         for (var n in a) {
-          if (a[n] !== b[n])
-            return c;
+          if (a[n] !== b[n]) return c;
           c = a[n];
         }
         return c;
       }
       function docGUID(doc) {
-        if (!doc.guid)
-          doc.guid = Math.random();
+        if (!doc.guid) doc.guid = Math.random();
         return doc.guid;
       }
       function NodeList() {
@@ -23618,6 +23339,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
       };
       _extends(LiveNodeList, NodeList);
       function NamedNodeMap() {
+        this._nsIndex = /* @__PURE__ */ Object.create(null);
+        this._noNsIndex = /* @__PURE__ */ Object.create(null);
       }
       function _findNodeIndex(list, node) {
         var i = 0;
@@ -23628,6 +23351,30 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
           i++;
         }
       }
+      function _nnmBucket(map, namespaceURI, create) {
+        if (!namespaceURI) {
+          return map._noNsIndex;
+        }
+        var bucket = map._nsIndex[namespaceURI];
+        if (!bucket && create) {
+          bucket = map._nsIndex[namespaceURI] = /* @__PURE__ */ Object.create(null);
+        }
+        return bucket;
+      }
+      function _nnmIndexFind(map, namespaceURI, localName) {
+        var bucket = _nnmBucket(map, namespaceURI, false);
+        var found = bucket && bucket[localName];
+        return found ? found : null;
+      }
+      function _nnmIndexAdd(map, attr) {
+        _nnmBucket(map, attr.namespaceURI, true)[attr.localName] = attr;
+      }
+      function _nnmIndexRemove(map, attr) {
+        var bucket = _nnmBucket(map, attr.namespaceURI, false);
+        if (bucket) {
+          delete bucket[attr.localName];
+        }
+      }
       function _addNamedNode(el, list, newAttr, oldAttr) {
         if (oldAttr) {
           list[_findNodeIndex(list, oldAttr)] = newAttr;
@@ -23635,6 +23382,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
           list[list.length] = newAttr;
           list.length++;
         }
+        _nnmIndexAdd(list, newAttr);
         if (el) {
           newAttr.ownerElement = el;
           var doc = el.ownerDocument;
@@ -23652,6 +23400,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
             list[i] = list[++i];
           }
           list.length = lastIndex;
+          _nnmIndexRemove(list, attr);
           if (el) {
             var doc = el.ownerDocument;
             if (doc) {
@@ -23707,7 +23456,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
           if (el && el !== this._ownerElement) {
             throw new DOMException(DOMException.INUSE_ATTRIBUTE_ERR);
           }
-          var oldAttr = this.getNamedItemNS(attr.namespaceURI, attr.localName);
+          var oldAttr = _nnmIndexFind(this, attr.namespaceURI, attr.localName);
           if (oldAttr === attr) {
             return attr;
           }
@@ -24144,12 +23893,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
          * @see https://dom.spec.whatwg.org/#dom-node-contains
          */
         contains: function(other) {
-          if (!other)
-            return false;
+          if (!other) return false;
           var parent = other;
           do {
-            if (this === parent)
-              return true;
+            if (this === parent) return true;
             parent = parent.parentNode;
           } while (parent);
           return false;
@@ -24193,62 +23940,46 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
          * @see ../docs/walk-dom.md.
          */
         isEqualNode: function(otherNode) {
-          if (!otherNode)
-            return false;
+          if (!otherNode) return false;
           var stack = [{ node: this, other: otherNode }];
           while (stack.length > 0) {
             var pair = stack.pop();
             var node = pair.node;
             var other = pair.other;
-            if (node.nodeType !== other.nodeType)
-              return false;
+            if (node.nodeType !== other.nodeType) return false;
             switch (node.nodeType) {
               case node.DOCUMENT_TYPE_NODE:
-                if (node.name !== other.name)
-                  return false;
-                if (node.publicId !== other.publicId)
-                  return false;
-                if (node.systemId !== other.systemId)
-                  return false;
+                if (node.name !== other.name) return false;
+                if (node.publicId !== other.publicId) return false;
+                if (node.systemId !== other.systemId) return false;
                 break;
               case node.ELEMENT_NODE:
-                if (node.namespaceURI !== other.namespaceURI)
-                  return false;
-                if (node.prefix !== other.prefix)
-                  return false;
-                if (node.localName !== other.localName)
-                  return false;
-                if (node.attributes.length !== other.attributes.length)
-                  return false;
+                if (node.namespaceURI !== other.namespaceURI) return false;
+                if (node.prefix !== other.prefix) return false;
+                if (node.localName !== other.localName) return false;
+                if (node.attributes.length !== other.attributes.length) return false;
                 for (var i = 0; i < node.attributes.length; i++) {
                   var attr = node.attributes.item(i);
                   var otherAttr = other.getAttributeNodeNS(attr.namespaceURI, attr.localName);
-                  if (!otherAttr)
-                    return false;
+                  if (!otherAttr) return false;
                   stack.push({ node: attr, other: otherAttr });
                 }
                 break;
               case node.ATTRIBUTE_NODE:
-                if (node.namespaceURI !== other.namespaceURI)
-                  return false;
-                if (node.localName !== other.localName)
-                  return false;
-                if (node.value !== other.value)
-                  return false;
+                if (node.namespaceURI !== other.namespaceURI) return false;
+                if (node.localName !== other.localName) return false;
+                if (node.value !== other.value) return false;
                 break;
               case node.PROCESSING_INSTRUCTION_NODE:
-                if (node.target !== other.target || node.data !== other.data)
-                  return false;
+                if (node.target !== other.target || node.data !== other.data) return false;
                 break;
               case node.TEXT_NODE:
               case node.CDATA_SECTION_NODE:
               case node.COMMENT_NODE:
-                if (node.data !== other.data)
-                  return false;
+                if (node.data !== other.data) return false;
                 break;
             }
-            if (node.childNodes.length !== other.childNodes.length)
-              return false;
+            if (node.childNodes.length !== other.childNodes.length) return false;
             for (var i = node.childNodes.length - 1; i >= 0; i--) {
               stack.push({ node: node.childNodes[i], other: other.childNodes[i] });
             }
@@ -24387,8 +24118,29 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
               while (child) {
                 var next = child.nextSibling;
                 if (next !== null && next.nodeType === TEXT_NODE && child.nodeType === TEXT_NODE) {
-                  node.removeChild(next);
-                  child.appendData(next.data);
+                  var tail = [];
+                  var sibling = next;
+                  while (sibling !== null && sibling.nodeType === TEXT_NODE) {
+                    tail.push(sibling.data);
+                    sibling = sibling.nextSibling;
+                  }
+                  var removed = child.nextSibling;
+                  while (removed !== sibling) {
+                    var following = removed.nextSibling;
+                    removed.parentNode = null;
+                    removed.previousSibling = null;
+                    removed.nextSibling = null;
+                    removed = following;
+                  }
+                  child.nextSibling = sibling;
+                  if (sibling !== null) {
+                    sibling.previousSibling = child;
+                  } else {
+                    node.lastChild = child;
+                  }
+                  child.appendData(tail.join(""));
+                  _onUpdateChild(node.ownerDocument, node);
+                  child = sibling;
                 } else {
                   child = next;
                 }
@@ -24518,8 +24270,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
          * @see https://dom.spec.whatwg.org/#dom-node-comparedocumentposition
          */
         compareDocumentPosition: function(other) {
-          if (this === other)
-            return 0;
+          if (this === other) return 0;
           var node1 = other;
           var node2 = this;
           var attr1 = null;
@@ -24572,14 +24323,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
           var ca = commonAncestor(chain1, chain2);
           for (var n in ca.childNodes) {
             var child = ca.childNodes[n];
-            if (child === node2)
-              return DocumentPosition.DOCUMENT_POSITION_FOLLOWING;
-            if (child === node1)
-              return DocumentPosition.DOCUMENT_POSITION_PRECEDING;
-            if (chain2.indexOf(child) >= 0)
-              return DocumentPosition.DOCUMENT_POSITION_FOLLOWING;
-            if (chain1.indexOf(child) >= 0)
-              return DocumentPosition.DOCUMENT_POSITION_PRECEDING;
+            if (child === node2) return DocumentPosition.DOCUMENT_POSITION_FOLLOWING;
+            if (child === node1) return DocumentPosition.DOCUMENT_POSITION_PRECEDING;
+            if (chain2.indexOf(child) >= 0) return DocumentPosition.DOCUMENT_POSITION_FOLLOWING;
+            if (chain1.indexOf(child) >= 0) return DocumentPosition.DOCUMENT_POSITION_PRECEDING;
           }
           return 0;
         }
@@ -24623,7 +24370,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
           }
         }
       }
-      walkDOM.STOP = Symbol("walkDOM.STOP");
+      walkDOM.STOP = /* @__PURE__ */ Symbol("walkDOM.STOP");
       walkDOM.ENTER = 0;
       walkDOM.EXIT = 1;
       function Document(symbol, options) {
@@ -25031,10 +24778,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
          * "InvalidCharacterError".
          *
          * Note: When the resulting document is serialized with `requireWellFormed: true`, the
-         * serializer throws `InvalidStateError` if `.target` contains `:` or is an ASCII
-         * case-insensitive match for `"xml"`, or if `.data` contains `?>` or characters outside the
-         * XML Char production (W3C DOM Parsing §3.2.1.7). Without that option the data is emitted
-         * verbatim.
+         * serializer throws `InvalidStateError` if `.target` is not a valid XML `NCName` (a `Name`
+         * with no colon) or is an ASCII case-insensitive match for `"xml"`, or if `.data` contains
+         * `?>` or characters outside the XML Char production (W3C DOM Parsing §3.2.1.7). Without that
+         * option the target and data are emitted verbatim.
          *
          * @param {string} target
          * @param {string} data
@@ -25089,19 +24836,29 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
          * The current implementation does not fill the `childNodes` with those of the corresponding
          * `Entity`
          *
+         * The `name` is validated against the XML `Name` production at creation time; an invalid name
+         * throws `InvalidCharacterError`. When the resulting node is serialized with
+         * `requireWellFormed: true`, the serializer re-validates `nodeName` against the XML `Name`
+         * production and throws `InvalidStateError` if a later `nodeName` mutation made it invalid;
+         * without that option the name is emitted verbatim.
+         *
+         * __This implementation differs from the specification:__ xmldom does not expand entities —
+         * the parser resolves entity references inline and never constructs `EntityReference` nodes,
+         * so this method is the only producer.
+         *
          * @deprecated
          * In DOM Level 4.
          * @param {string} name
          * The name of the entity to reference. No namespace well-formedness checks are performed.
          * @returns {EntityReference}
          * @throws {DOMException}
-         * With code `INVALID_CHARACTER_ERR` when `name` is not valid.
+         * With code `INVALID_CHARACTER_ERR` when `name` is not a valid XML `Name`.
          * @throws {DOMException}
          * with code `NOT_SUPPORTED_ERR` when the document is of type `html`
          * @see https://www.w3.org/TR/DOM-Level-3-Core/core.html#ID-392B75AE
          */
         createEntityReference: function(name2) {
-          if (!g.Name.test(name2)) {
+          if (!g.Name_exact.test(name2)) {
             throw new DOMException(DOMException.INVALID_CHARACTER_ERR, 'not a valid xml name "' + name2 + '"');
           }
           if (this.type === "html") {
@@ -25539,7 +25296,13 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
         }
         return true;
       }
-      function addSerializedAttribute(buf, qualifiedName, value) {
+      function addSerializedAttribute(buf, qualifiedName, value, requireWellFormed) {
+        if (requireWellFormed && !g.QName_exact.test(qualifiedName)) {
+          throw new DOMException(
+            'The attribute name "' + qualifiedName + '" is not a valid XML QName',
+            DOMExceptionName.InvalidStateError
+          );
+        }
         buf.push(" ", qualifiedName, '="', value.replace(/[<>&"\t\n\r]/g, _xmlEncoder), '"');
       }
       function serializeToString(node, buf, visibleNamespaces, opts) {
@@ -25603,6 +25366,12 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
                       }
                     }
                   }
+                  if (requireWellFormed && !g.QName_exact.test(prefixedNodeName)) {
+                    throw new DOMException(
+                      'The element name "' + prefixedNodeName + '" is not a valid XML QName',
+                      DOMExceptionName.InvalidStateError
+                    );
+                  }
                   buf.push("<", prefixedNodeName);
                   var childNamespaces = namespaces.slice();
                   for (var i = 0; i < len; i++) {
@@ -25621,7 +25390,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
                     if (needNamespaceDefine(attr, isHTML, childNamespaces)) {
                       var attrPrefix = attr.prefix || "";
                       var uri = attr.namespaceURI;
-                      addSerializedAttribute(buf, attrPrefix ? "xmlns:" + attrPrefix : "xmlns", uri);
+                      addSerializedAttribute(buf, attrPrefix ? "xmlns:" + attrPrefix : "xmlns", uri, requireWellFormed);
                       childNamespaces.push({ prefix: attrPrefix, namespace: uri });
                     }
                     var filteredAttr = nodeFilter ? nodeFilter(attr) : attr;
@@ -25629,14 +25398,14 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
                       if (typeof filteredAttr === "string") {
                         buf.push(filteredAttr);
                       } else {
-                        addSerializedAttribute(buf, filteredAttr.name, filteredAttr.value);
+                        addSerializedAttribute(buf, filteredAttr.name, filteredAttr.value, requireWellFormed);
                       }
                     }
                   }
                   if (nodeName === prefixedNodeName && needNamespaceDefine(n, isHTML, childNamespaces)) {
                     var nodePrefix = n.prefix || "";
                     var uri = n.namespaceURI;
-                    addSerializedAttribute(buf, nodePrefix ? "xmlns:" + nodePrefix : "xmlns", uri);
+                    addSerializedAttribute(buf, nodePrefix ? "xmlns:" + nodePrefix : "xmlns", uri, requireWellFormed);
                     childNamespaces.push({ prefix: nodePrefix, namespace: uri });
                   }
                   var canCloseTag = !n.firstChild;
@@ -25669,7 +25438,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
                   }
                   return { ns: namespaces };
                 case ATTRIBUTE_NODE:
-                  addSerializedAttribute(buf, n.name, n.value);
+                  addSerializedAttribute(buf, n.name, n.value, requireWellFormed);
                   return null;
                 case TEXT_NODE:
                   if (requireWellFormed && g.InvalidChar.test(n.data)) {
@@ -25711,6 +25480,12 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
                   var pubid = n.publicId;
                   var sysid = n.systemId;
                   if (requireWellFormed) {
+                    if (!g.Name_exact.test(n.name)) {
+                      throw new DOMException(
+                        'The doctype name "' + n.name + '" is not a valid XML Name',
+                        DOMExceptionName.InvalidStateError
+                      );
+                    }
                     if (pubid && !g.PubidLiteral_match.test(pubid)) {
                       throw new DOMException("DocumentType publicId is not a valid PubidLiteral", DOMExceptionName.InvalidStateError);
                     }
@@ -25737,8 +25512,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
                   return null;
                 case PROCESSING_INSTRUCTION_NODE:
                   if (requireWellFormed) {
-                    if (n.target.indexOf(":") !== -1 || n.target.toLowerCase() === "xml") {
-                      throw new DOMException("The ProcessingInstruction target is not well-formed", DOMExceptionName.InvalidStateError);
+                    if (!g.NCName_exact.test(n.target) || n.target.toLowerCase() === "xml") {
+                      throw new DOMException(
+                        'The processing instruction target "' + n.target + '" is not a valid XML NCName or is reserved',
+                        DOMExceptionName.InvalidStateError
+                      );
                     }
                     if (g.InvalidChar.test(n.data)) {
                       throw new DOMException(
@@ -25753,8 +25531,16 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
                   buf.push("<?", n.target, " ", n.data, "?>");
                   return null;
                 case ENTITY_REFERENCE_NODE:
+                  if (requireWellFormed && !g.Name_exact.test(n.nodeName)) {
+                    throw new DOMException(
+                      'The entity reference name "' + n.nodeName + '" is not a valid XML Name',
+                      DOMExceptionName.InvalidStateError
+                    );
+                  }
                   buf.push("&", n.nodeName, ";");
                   return null;
+                //case ENTITY_NODE:
+                //case NOTATION_NODE:
                 default:
                   buf.push("??", n.nodeName);
                   return null;
@@ -25887,6 +25673,25 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
                   this.nodeValue = data;
               }
             }
+          });
+          Object.defineProperty(CharacterData.prototype, "data", {
+            get: function() {
+              return this._data != null ? this._data : "";
+            },
+            set: function(v) {
+              this._data = v;
+              this.length = typeof v === "string" ? v.length : 0;
+            }
+          });
+          Object.defineProperty(CharacterData.prototype, "nodeValue", {
+            get: function() {
+              return this.data;
+            },
+            set: function(v) {
+              this.data = v;
+            },
+            enumerable: true,
+            configurable: true
           });
           Object.defineProperty(Element.prototype, "children", {
             get: function() {
@@ -28201,9 +28006,26 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
                 if (!tagNameRaw) {
                   return errorHandler.fatalError("end tag name missing");
                 }
-                var tagNameMatch = end > 0 && g.reg("^", g.QName_group, g.S_OPT, "$").exec(tagNameRaw);
+                var endTagNameStrict = g.reg("^", g.QName_group, g.S_OPT, "$");
+                var tagNameMatch = end > 0 && endTagNameStrict.exec(tagNameRaw);
                 if (!tagNameMatch) {
-                  return errorHandler.fatalError('end tag name contains invalid characters: "' + tagNameRaw + '"');
+                  var leadingTagNameMatch = end > 0 && g.reg("^", g.QName_group).exec(tagNameRaw);
+                  if (isHTML && leadingTagNameMatch) {
+                    errorHandler.warning('end tag name contains invalid trailing characters: "' + tagNameRaw + '"');
+                    tagNameMatch = leadingTagNameMatch;
+                  } else if (
+                    // Backward compatibility, remove this whole `else if` arm in the next breaking release
+                    // (XML then falls through to the `fatalError` below, for a clean mode split: XML fatal,
+                    // HTML warning). A valid end-tag name followed by a line break and trailing content was
+                    // silently accepted while `reg` still used the `m` flag; re-adding `m` here matches exactly
+                    // those inputs, kept recoverable and reported.
+                    leadingTagNameMatch && new RegExp(endTagNameStrict.source, endTagNameStrict.flags + "m").test(tagNameRaw)
+                  ) {
+                    errorHandler.error('end tag name is followed by a line break and trailing content: "' + tagNameRaw + '"');
+                    tagNameMatch = leadingTagNameMatch;
+                  } else {
+                    return errorHandler.fatalError('end tag name contains invalid characters: "' + tagNameRaw + '"');
+                  }
                 }
                 if (!domBuilder.currentElement && !domBuilder.doc.documentElement) {
                   return;
@@ -28228,6 +28050,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
                 }
                 end++;
                 break;
+              // end element
               case "?":
                 locator && position(tagStart);
                 end = parseProcessingInstruction(source, tagStart, domBuilder, errorHandler);
@@ -28276,7 +28099,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
             if (e instanceof ParseError) {
               throw e;
             } else if (e instanceof DOMException) {
-              throw new ParseError(e.name + ": " + e.message, domBuilder.locator, e);
+              return errorHandler.fatalError("Error constructing the DOM: " + e.name + ": " + e.message, e);
             }
             errorHandler.error("element parse error: " + e);
             end = -1;
@@ -28317,6 +28140,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
         var s = S_TAG;
         while (true) {
           var c = source.charAt(p);
+          if (s === S_TAG && c === "<") {
+            throw new Error("unexpected < in tag name: " + source.slice(start, p));
+          }
           switch (c) {
             case "=":
               if (s === S_ATTR) {
@@ -28369,6 +28195,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
                 case S_ATTR_SPACE:
                   el.closed = true;
                   break;
+                //case S_EQ:
                 default:
                   throw new Error("attribute invalid close char('/')");
               }
@@ -28387,7 +28214,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
                 case S_TAG_SPACE:
                 case S_TAG_CLOSE:
                   break;
+                //normal
                 case S_ATTR_NOQUOT_VALUE:
+                //Compatible state
                 case S_ATTR:
                   value = source.slice(start, p);
                   if (value.slice(-1) === "/") {
@@ -28414,6 +28243,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
                   }
               }
               return p;
+            /*xml space '\x20' | #x9 | #xD | #xA; */
             case "\x80":
               c = " ";
             default:
@@ -28437,6 +28267,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
                 }
               } else {
                 switch (s) {
+                  //case S_TAG:void();break;
+                  //case S_ATTR:void();break;
+                  //case S_ATTR_NOQUOT_VALUE:void();break;
                   case S_ATTR_SPACE:
                     if (!isHTML) {
                       errorHandler.warning('attribute "' + attrName + '" missed value!! "' + attrName + '" instead2!!');
@@ -28485,7 +28318,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
           if (nsPrefix !== false) {
             if (localNSMap == null) {
               localNSMap = /* @__PURE__ */ Object.create(null);
-              _copy(currentNSMap, currentNSMap = /* @__PURE__ */ Object.create(null));
+              currentNSMap = Object.create(currentNSMap);
             }
             currentNSMap[nsPrefix] = localNSMap[nsPrefix] = value;
             a.uri = NAMESPACE.XMLNS;
@@ -28532,7 +28365,13 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
       function parseHtmlSpecialContent(source, elStartEnd, tagName, entityReplacer, domBuilder) {
         var isEscapableRaw = isHTMLEscapableRawTextElement(tagName);
         if (isEscapableRaw || isHTMLRawTextElement(tagName)) {
-          var elEndStart = source.indexOf("</" + tagName + ">", elStartEnd);
+          var closeTag = new RegExp("</" + tagName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ">", "ig");
+          closeTag.lastIndex = elStartEnd;
+          var match = closeTag.exec(source);
+          var elEndStart = match ? match.index : -1;
+          if (elEndStart < 0) {
+            return elStartEnd + 1;
+          }
           var text = source.substring(elStartEnd + 1, elEndStart);
           if (isEscapableRaw) {
             text = text.replace(ENTITY_REG, entityReplacer);
@@ -29036,14 +28875,16 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
          *
          * @param {string} message
          * - The message to be used for reporting and throwing the error.
+         * @param {Error} [cause]
+         * The error that caused this fatal error, preserved as the thrown `ParseError`'s `cause`.
          * @returns {never}
          * This function always throws an error and never returns a value.
          * @throws {ParseError}
          * Always throws a ParseError with the provided message.
          */
-        fatalError: function(message) {
+        fatalError: function(message, cause) {
           this.reportError("fatalError", message);
-          throw new ParseError(message, this.locator);
+          throw new ParseError(message, this.locator, cause);
         }
       };
       function _locator(l) {
@@ -29077,8 +28918,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
         }
       }
       function onErrorStopParsing(level) {
-        if (level === "error")
-          throw "onErrorStopParsing";
+        if (level === "error") throw "onErrorStopParsing";
       }
       function onWarningStopParsing() {
         throw "onWarningStopParsing";
@@ -29162,14 +29002,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
           return null;
         }
         const nodesWithTranslation = _xpath.default.select("//pre/*[not(self::i)]", doc);
-        if (!nodesWithTranslation)
-          return null;
-        if (!Array.isArray(nodesWithTranslation))
-          throw new Error("Unexpected XML parsed result");
+        if (!nodesWithTranslation) return null;
+        if (!Array.isArray(nodesWithTranslation)) throw new Error("Unexpected XML parsed result");
         return nodesWithTranslation.map((node) => {
           const textNodes = _xpath.default.select("descendant-or-self::*/text()", node);
-          if (!Array.isArray(textNodes))
-            return "";
+          if (!Array.isArray(textNodes)) return "";
           if (textNodes.length > 1) {
             console.debug("More than one text node found");
           }
@@ -29337,10 +29174,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
                 const isSingleResponseMode = text.length === 1;
                 const result = [];
                 (0, _utils.visitArrayItems)(rawResp, (obj) => {
-                  if (isSingleResponseMode && result.length === 1)
-                    return;
-                  if (typeof obj !== "string")
-                    return;
+                  if (isSingleResponseMode && result.length === 1) return;
+                  if (typeof obj !== "string") return;
                   if (isSingleResponseMode) {
                     const parsedText = (0, _utils.parseXMLResponse)(obj);
                     result.push(parsedText || obj);
@@ -29508,8 +29343,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
               requestBody["source_lang"] = from;
             }
             const stringifiedBody = Object.entries(requestBody).map(([key, value]) => {
-              if (!Array.isArray(value))
-                return `${key}=${encodeURIComponent(value)}`;
+              if (!Array.isArray(value)) return `${key}=${encodeURIComponent(value)}`;
               return value.map((t) => `${key}=` + encodeURIComponent(t)).join("&");
             }).join("&");
             return this.fetch(this.apiHost, {
@@ -31199,10 +31033,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
       });
       var _codes = require_codes();
       Object.keys(_codes).forEach(function(key) {
-        if (key === "default" || key === "__esModule")
-          return;
-        if (key in exports && exports[key] === _codes[key])
-          return;
+        if (key === "default" || key === "__esModule") return;
+        if (key in exports && exports[key] === _codes[key]) return;
         Object.defineProperty(exports, key, {
           enumerable: true,
           get: function() {
@@ -31212,10 +31044,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
       });
       var _LanguageAliases = require_LanguageAliases();
       Object.keys(_LanguageAliases).forEach(function(key) {
-        if (key === "default" || key === "__esModule")
-          return;
-        if (key in exports && exports[key] === _LanguageAliases[key])
-          return;
+        if (key === "default" || key === "__esModule") return;
+        if (key in exports && exports[key] === _LanguageAliases[key]) return;
         Object.defineProperty(exports, key, {
           enumerable: true,
           get: function() {
@@ -31308,8 +31138,7 @@ Here is the JSON array of texts: ${JSON.stringify(text)}`;
                 return validateResult;
               } catch (error) {
                 attempt++;
-                if (attempt >= this.config.retryLimit)
-                  throw error;
+                if (attempt >= this.config.retryLimit) throw error;
               }
             }
           });
@@ -31361,10 +31190,8 @@ Here is the JSON array of texts: ${JSON.stringify(text)}`;
       });
       var _basicFetcher = require_basicFetcher();
       Object.keys(_basicFetcher).forEach(function(key) {
-        if (key === "default" || key === "__esModule")
-          return;
-        if (key in exports && exports[key] === _basicFetcher[key])
-          return;
+        if (key === "default" || key === "__esModule") return;
+        if (key in exports && exports[key] === _basicFetcher[key]) return;
         Object.defineProperty(exports, key, {
           enumerable: true,
           get: function() {
@@ -31374,10 +31201,8 @@ Here is the JSON array of texts: ${JSON.stringify(text)}`;
       });
       var _types = require_types();
       Object.keys(_types).forEach(function(key) {
-        if (key === "default" || key === "__esModule")
-          return;
-        if (key in exports && exports[key] === _types[key])
-          return;
+        if (key === "default" || key === "__esModule") return;
+        if (key in exports && exports[key] === _types[key]) return;
         Object.defineProperty(exports, key, {
           enumerable: true,
           get: function() {
@@ -31418,8 +31243,7 @@ Here is the JSON array of texts: ${JSON.stringify(text)}`;
         };
         const lastIndexOfSpaceOrPunct = (s, left, right) => {
           for (let i = right; i >= left; i--) {
-            if (isSpaceOrPunct(s, i))
-              return i;
+            if (isSpaceOrPunct(s, i)) return i;
           }
           return -1;
         };
@@ -31465,10 +31289,8 @@ Try the option "splitPunct" to split the text by punctuation.`);
       });
       var _splitLongText = require_splitLongText();
       Object.keys(_splitLongText).forEach(function(key) {
-        if (key === "default" || key === "__esModule")
-          return;
-        if (key in exports && exports[key] === _splitLongText[key])
-          return;
+        if (key === "default" || key === "__esModule") return;
+        if (key in exports && exports[key] === _splitLongText[key]) return;
         Object.defineProperty(exports, key, {
           enumerable: true,
           get: function() {
@@ -31557,16 +31379,14 @@ Try the option "splitPunct" to split the text by punctuation.`);
         escape(text) {
           return tokens.reduce((text2, tokenName, index) => {
             const token2 = this.options[tokenName];
-            if (!token2)
-              return text2;
+            if (!token2) return text2;
             return text2.replace(new RegExp((0, _strings.escapeRegExp)(token2), "g"), `&${index + 1}:`);
           }, text);
         }
         unescape(text) {
           return tokens.reduce((text2, tokenName, index) => {
             const token2 = this.options[tokenName];
-            if (!token2)
-              return text2;
+            if (!token2) return text2;
             return text2.replace(new RegExp(`&${index + 1}:`, "g"), token2);
           }, text);
         }
@@ -31728,10 +31548,8 @@ Try the option "splitPunct" to split the text by punctuation.`);
       });
       var _fetcher = require_fetcher();
       Object.keys(_fetcher).forEach(function(key) {
-        if (key === "default" || key === "__esModule")
-          return;
-        if (key in exports && exports[key] === _fetcher[key])
-          return;
+        if (key === "default" || key === "__esModule") return;
+        if (key in exports && exports[key] === _fetcher[key]) return;
         Object.defineProperty(exports, key, {
           enumerable: true,
           get: function() {
@@ -31741,10 +31559,8 @@ Try the option "splitPunct" to split the text by punctuation.`);
       });
       var _cache = require_cache();
       Object.keys(_cache).forEach(function(key) {
-        if (key === "default" || key === "__esModule")
-          return;
-        if (key in exports && exports[key] === _cache[key])
-          return;
+        if (key === "default" || key === "__esModule") return;
+        if (key in exports && exports[key] === _cache[key]) return;
         Object.defineProperty(exports, key, {
           enumerable: true,
           get: function() {
@@ -31754,10 +31570,8 @@ Try the option "splitPunct" to split the text by punctuation.`);
       });
       var _text = require_text();
       Object.keys(_text).forEach(function(key) {
-        if (key === "default" || key === "__esModule")
-          return;
-        if (key in exports && exports[key] === _text[key])
-          return;
+        if (key === "default" || key === "__esModule") return;
+        if (key in exports && exports[key] === _text[key]) return;
         Object.defineProperty(exports, key, {
           enumerable: true,
           get: function() {
@@ -31767,10 +31581,8 @@ Try the option "splitPunct" to split the text by punctuation.`);
       });
       var _Multiplexor = require_Multiplexor();
       Object.keys(_Multiplexor).forEach(function(key) {
-        if (key === "default" || key === "__esModule")
-          return;
-        if (key in exports && exports[key] === _Multiplexor[key])
-          return;
+        if (key === "default" || key === "__esModule") return;
+        if (key in exports && exports[key] === _Multiplexor[key]) return;
         Object.defineProperty(exports, key, {
           enumerable: true,
           get: function() {
@@ -31780,10 +31592,8 @@ Try the option "splitPunct" to split the text by punctuation.`);
       });
       var _Semaphore = require_Semaphore();
       Object.keys(_Semaphore).forEach(function(key) {
-        if (key === "default" || key === "__esModule")
-          return;
-        if (key in exports && exports[key] === _Semaphore[key])
-          return;
+        if (key === "default" || key === "__esModule") return;
+        if (key in exports && exports[key] === _Semaphore[key]) return;
         Object.defineProperty(exports, key, {
           enumerable: true,
           get: function() {
@@ -31793,10 +31603,8 @@ Try the option "splitPunct" to split the text by punctuation.`);
       });
       var _buffers = require_buffers();
       Object.keys(_buffers).forEach(function(key) {
-        if (key === "default" || key === "__esModule")
-          return;
-        if (key in exports && exports[key] === _buffers[key])
-          return;
+        if (key === "default" || key === "__esModule") return;
+        if (key in exports && exports[key] === _buffers[key]) return;
         Object.defineProperty(exports, key, {
           enumerable: true,
           get: function() {
@@ -31806,10 +31614,8 @@ Try the option "splitPunct" to split the text by punctuation.`);
       });
       var _time = require_time();
       Object.keys(_time).forEach(function(key) {
-        if (key === "default" || key === "__esModule")
-          return;
-        if (key in exports && exports[key] === _time[key])
-          return;
+        if (key === "default" || key === "__esModule") return;
+        if (key in exports && exports[key] === _time[key]) return;
         Object.defineProperty(exports, key, {
           enumerable: true,
           get: function() {
@@ -31819,10 +31625,8 @@ Try the option "splitPunct" to split the text by punctuation.`);
       });
       var _strings = require_strings();
       Object.keys(_strings).forEach(function(key) {
-        if (key === "default" || key === "__esModule")
-          return;
-        if (key in exports && exports[key] === _strings[key])
-          return;
+        if (key === "default" || key === "__esModule") return;
+        if (key in exports && exports[key] === _strings[key]) return;
         Object.defineProperty(exports, key, {
           enumerable: true,
           get: function() {
@@ -31832,10 +31636,8 @@ Try the option "splitPunct" to split the text by punctuation.`);
       });
       var _url = require_url();
       Object.keys(_url).forEach(function(key) {
-        if (key === "default" || key === "__esModule")
-          return;
-        if (key in exports && exports[key] === _url[key])
-          return;
+        if (key === "default" || key === "__esModule") return;
+        if (key in exports && exports[key] === _url[key]) return;
         Object.defineProperty(exports, key, {
           enumerable: true,
           get: function() {
@@ -32117,10 +31919,8 @@ Try the option "splitPunct" to split the text by punctuation.`);
       });
       var _ChatGPTLLMTranslator = require_ChatGPTLLMTranslator();
       Object.keys(_ChatGPTLLMTranslator).forEach(function(key) {
-        if (key === "default" || key === "__esModule")
-          return;
-        if (key in exports && exports[key] === _ChatGPTLLMTranslator[key])
-          return;
+        if (key === "default" || key === "__esModule") return;
+        if (key in exports && exports[key] === _ChatGPTLLMTranslator[key]) return;
         Object.defineProperty(exports, key, {
           enumerable: true,
           get: function() {
@@ -32130,10 +31930,8 @@ Try the option "splitPunct" to split the text by punctuation.`);
       });
       var _GeminiLLMTranslator = require_GeminiLLMTranslator();
       Object.keys(_GeminiLLMTranslator).forEach(function(key) {
-        if (key === "default" || key === "__esModule")
-          return;
-        if (key in exports && exports[key] === _GeminiLLMTranslator[key])
-          return;
+        if (key === "default" || key === "__esModule") return;
+        if (key in exports && exports[key] === _GeminiLLMTranslator[key]) return;
         Object.defineProperty(exports, key, {
           enumerable: true,
           get: function() {
@@ -32153,10 +31951,8 @@ Try the option "splitPunct" to split the text by punctuation.`);
       });
       var _BaseTranslator = require_BaseTranslator();
       Object.keys(_BaseTranslator).forEach(function(key) {
-        if (key === "default" || key === "__esModule")
-          return;
-        if (key in exports && exports[key] === _BaseTranslator[key])
-          return;
+        if (key === "default" || key === "__esModule") return;
+        if (key in exports && exports[key] === _BaseTranslator[key]) return;
         Object.defineProperty(exports, key, {
           enumerable: true,
           get: function() {
@@ -32166,10 +31962,8 @@ Try the option "splitPunct" to split the text by punctuation.`);
       });
       var _Translator = require_Translator();
       Object.keys(_Translator).forEach(function(key) {
-        if (key === "default" || key === "__esModule")
-          return;
-        if (key in exports && exports[key] === _Translator[key])
-          return;
+        if (key === "default" || key === "__esModule") return;
+        if (key in exports && exports[key] === _Translator[key]) return;
         Object.defineProperty(exports, key, {
           enumerable: true,
           get: function() {
@@ -32179,10 +31973,8 @@ Try the option "splitPunct" to split the text by punctuation.`);
       });
       var _FakeTranslator = require_FakeTranslator();
       Object.keys(_FakeTranslator).forEach(function(key) {
-        if (key === "default" || key === "__esModule")
-          return;
-        if (key in exports && exports[key] === _FakeTranslator[key])
-          return;
+        if (key === "default" || key === "__esModule") return;
+        if (key in exports && exports[key] === _FakeTranslator[key]) return;
         Object.defineProperty(exports, key, {
           enumerable: true,
           get: function() {
@@ -32192,10 +31984,8 @@ Try the option "splitPunct" to split the text by punctuation.`);
       });
       var _MicrosoftTranslator = require_MicrosoftTranslator();
       Object.keys(_MicrosoftTranslator).forEach(function(key) {
-        if (key === "default" || key === "__esModule")
-          return;
-        if (key in exports && exports[key] === _MicrosoftTranslator[key])
-          return;
+        if (key === "default" || key === "__esModule") return;
+        if (key in exports && exports[key] === _MicrosoftTranslator[key]) return;
         Object.defineProperty(exports, key, {
           enumerable: true,
           get: function() {
@@ -32205,10 +31995,8 @@ Try the option "splitPunct" to split the text by punctuation.`);
       });
       var _GoogleTranslator = require_GoogleTranslator();
       Object.keys(_GoogleTranslator).forEach(function(key) {
-        if (key === "default" || key === "__esModule")
-          return;
-        if (key in exports && exports[key] === _GoogleTranslator[key])
-          return;
+        if (key === "default" || key === "__esModule") return;
+        if (key in exports && exports[key] === _GoogleTranslator[key]) return;
         Object.defineProperty(exports, key, {
           enumerable: true,
           get: function() {
@@ -32218,10 +32006,8 @@ Try the option "splitPunct" to split the text by punctuation.`);
       });
       var _DeepLTranslator = require_DeepLTranslator();
       Object.keys(_DeepLTranslator).forEach(function(key) {
-        if (key === "default" || key === "__esModule")
-          return;
-        if (key in exports && exports[key] === _DeepLTranslator[key])
-          return;
+        if (key === "default" || key === "__esModule") return;
+        if (key in exports && exports[key] === _DeepLTranslator[key]) return;
         Object.defineProperty(exports, key, {
           enumerable: true,
           get: function() {
@@ -32231,10 +32017,8 @@ Try the option "splitPunct" to split the text by punctuation.`);
       });
       var _TartuNLPTranslator = require_TartuNLPTranslator();
       Object.keys(_TartuNLPTranslator).forEach(function(key) {
-        if (key === "default" || key === "__esModule")
-          return;
-        if (key in exports && exports[key] === _TartuNLPTranslator[key])
-          return;
+        if (key === "default" || key === "__esModule") return;
+        if (key in exports && exports[key] === _TartuNLPTranslator[key]) return;
         Object.defineProperty(exports, key, {
           enumerable: true,
           get: function() {
@@ -32244,10 +32028,8 @@ Try the option "splitPunct" to split the text by punctuation.`);
       });
       var _LLMTranslators = require_LLMTranslators();
       Object.keys(_LLMTranslators).forEach(function(key) {
-        if (key === "default" || key === "__esModule")
-          return;
-        if (key in exports && exports[key] === _LLMTranslators[key])
-          return;
+        if (key === "default" || key === "__esModule") return;
+        if (key in exports && exports[key] === _LLMTranslators[key]) return;
         Object.defineProperty(exports, key, {
           enumerable: true,
           get: function() {
@@ -32457,8 +32239,7 @@ Try the option "splitPunct" to split the text by punctuation.`);
           };
           let container = null;
           for (const taskContainer of this.taskContainersStorage) {
-            if (["from", "to", "context", "priority"].some((key) => params[key] !== taskContainer[key]))
-              continue;
+            if (["from", "to", "context", "priority"].some((key) => params[key] !== taskContainer[key])) continue;
             if (this.translator.getLengthLimit() >= taskContainer.length + task.text.length) {
               taskContainer.tasks.push(task);
               taskContainer.length += task.text.length;
@@ -32515,8 +32296,7 @@ Try the option "splitPunct" to split the text by punctuation.`);
               }
               firstIteration = false;
               const iterate = this.getItemFromTranslateQueue();
-              if (iterate.done || iterate.value === null)
-                break;
+              if (iterate.done || iterate.value === null) break;
               const taskContainer = iterate.value;
               const free = yield this.semafor.take();
               const textArray = taskContainer.tasks.map((i) => i.text);
@@ -33059,7 +32839,7 @@ Try the option "splitPunct" to split the text by punctuation.`);
   }
 
   // node_modules/eld/src/saveLanguageSubset.dev.js
-  var saveLanguageSubset = /* @__PURE__ */ function() {
+  var saveLanguageSubset = /* @__PURE__ */ (function() {
     function saveSubset2(langArray, ngrams, defaultLanguages, type) {
       if (!langArray.length) {
         return "No languages found";
@@ -33118,10 +32898,10 @@ Try the option "splitPunct" to split the text by punctuation.`);
     return {
       saveSubset: saveSubset2
     };
-  }();
+  })();
 
   // node_modules/eld/src/languageDetector.js
-  var eld = /* @__PURE__ */ function() {
+  var eld = /* @__PURE__ */ (function() {
     return {
       detect,
       enableTextCleanup,
@@ -33133,15 +32913,13 @@ Try the option "splitPunct" to split the text by punctuation.`);
       saveSubset,
       info
     };
-  }();
+  })();
   var subset = false;
   var doCleanText = false;
   var loadError = "No database loaded, use load()";
   function detect(text) {
-    if (typeof text !== "string")
-      return new LanguageResult("", [], 0, {});
-    if (!languageData.type)
-      throw new Error(loadError);
+    if (typeof text !== "string") return new LanguageResult("", [], 0, {});
+    if (!languageData.type) throw new Error(loadError);
     if (doCleanText) {
       text = getCleanTxt(text);
     }
@@ -33258,8 +33036,7 @@ Try the option "splitPunct" to split the text by punctuation.`);
     return subResults;
   }
   function makeSubset(languages) {
-    if (!languageData.type)
-      throw new Error(loadError);
+    if (!languageData.type) throw new Error(loadError);
     if (languages) {
       subset = [];
       for (let key in languages) {
@@ -33375,8 +33152,7 @@ Try the option "splitPunct" to split the text by punctuation.`);
      * Opens connection to IndexedDB database with schema versioning and lifecycle handlers.
      */
     async open() {
-      if (this.db)
-        return this.db;
+      if (this.db) return this.db;
       return new Promise((resolve, reject) => {
         const request = indexedDB.open(this.dbName, this.version);
         request.onupgradeneeded = (event) => {
@@ -33835,8 +33611,7 @@ Try the option "splitPunct" to split the text by punctuation.`);
   }
   async function handleAction(actionId, selectionText, tab) {
     const cleanText = selectionText.trim();
-    if (!cleanText)
-      return;
+    if (!cleanText) return;
     switch (actionId) {
       case "pronounce-with-piper-tts":
         PiperTTS(cleanText, tab);
@@ -33859,6 +33634,7 @@ Try the option "splitPunct" to split the text by punctuation.`);
       case "translate-with-google":
         TranslateWithGoogle(cleanText, tab);
         break;
+      //incase no ids match
       default:
         break;
     }
@@ -34001,15 +33777,13 @@ Try the option "splitPunct" to split the text by punctuation.`);
             const foundG = tags.find(
               (t) => RUSSIAN_GENDER_LIST.includes(t)
             );
-            if (foundG)
-              gender = foundG;
+            if (foundG) gender = foundG;
           }
           if (animacy === "not found") {
             const foundA = tags.find(
               (t) => RUSSIAN_ANIMACY_LIST.includes(t)
             );
-            if (foundA)
-              animacy = foundA;
+            if (foundA) animacy = foundA;
           }
           const cleanFormWord = (form.word || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
           if (cleanFormWord === cleanInput && !caseName) {
@@ -34093,8 +33867,7 @@ Try the option "splitPunct" to split the text by punctuation.`);
               grammar.push(`Gender: ${data.gender}`);
             if (data.animate && data.animate !== "not found")
               grammar.push(`Animacy: ${data.animate}`);
-            if (data.case)
-              grammar.push(`Case: ${data.case}`);
+            if (data.case) grammar.push(`Case: ${data.case}`);
             if (grammar.length > 0) {
               lines.push(`[${grammar.join(" | ")}]`);
             }
@@ -34159,11 +33932,9 @@ Try the option "splitPunct" to split the text by punctuation.`);
     }
   }
   async function TranslateWithGoogle(text, tab) {
-    if (!text)
-      return "Text is not present";
+    if (!text) return "Text is not present";
     const rawText = text.trim();
-    if (!rawText)
-      return "Could not Translate selected text due to strange text format";
+    if (!rawText) return "Could not Translate selected text due to strange text format";
     const isCyrillic = /[а-яёА-ЯЁ]/.test(rawText);
     const isSwedish = /[åäöÅÄÖ]/.test(rawText);
     let sourceLangCode = "en";
@@ -34258,15 +34029,13 @@ Try the option "splitPunct" to split the text by punctuation.`);
         const data = await getRussianWordFromFreeDictAPI(langCode, word, tab);
         if (data && data.definition) {
           definition = data.definition;
-          if (data.url)
-            pageUrl = data.url;
+          if (data.url) pageUrl = data.url;
         }
       } else if (langCategory !== "unknown") {
         const data = await getWordFromFreeDictAPI(langCode, word, tab);
         if (data && data.definition) {
           definition = data.definition;
-          if (data.url)
-            pageUrl = data.url;
+          if (data.url) pageUrl = data.url;
         }
       }
       await dbModel.saveVocabulary({
@@ -34276,7 +34045,7 @@ Try the option "splitPunct" to split the text by punctuation.`);
         pageUrl
       });
       if (tab?.id) {
-        chrome.tabs.sendMessage(tab.id, {
+        SendChromeMessage(tab.id, {
           action: "showNotification",
           toastType: "PLAYING",
           text: `SAVED "${rawWord.toUpperCase()}" TO VOCABULARY`,

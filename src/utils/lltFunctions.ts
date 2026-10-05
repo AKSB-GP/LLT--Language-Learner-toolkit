@@ -685,7 +685,6 @@ async function SaveWordToVocabulary(
                 if (data.url) pageUrl = data.url;
             }
         }
-
         await dbModel.saveVocabulary({
             word: rawWord,
             language: langCategory,
@@ -694,13 +693,12 @@ async function SaveWordToVocabulary(
         });
 
         if (tab?.id) {
-            chrome.tabs
-                .sendMessage(tab.id, {
-                    action: "showNotification",
-                    toastType: "PLAYING",
-                    text: `SAVED "${rawWord.toUpperCase()}" TO VOCABULARY`,
-                    duration: 3000,
-                })
+            SendChromeMessage(tab.id, {
+                action: "showNotification",
+                toastType: "PLAYING",
+                text: `SAVED "${rawWord.toUpperCase()}" TO VOCABULARY`,
+                duration: 3000,
+            })
                 .catch(() => { });
         }
     }

@@ -1,6 +1,8 @@
-import { VOICES_MAP, DEFAULT_SETTINGS } from "./const";
+import { VOICES_MAP, DEFAULT_SETTINGS, LANGUAGE_CODES } from "./const";
 import { DatabaseModel } from "./model/DatabaseModel";
 import { SendChromeMessage, CreateChromeTabMessage } from "./utils/chrome";
+import initSqlJs from "sql.js";
+import { Package, Deck, Notetype, Note } from "ankipack";
 /*add listeners for extension panel */
 document.addEventListener("DOMContentLoaded", () => {
   // Elements
@@ -216,7 +218,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       // Deduplicate records by normalized word + language key
-      //check so that duplicates arent stord in csv file
       const seen = new Set<string>();
       const uniqueRecords: typeof records = [];
 
@@ -233,32 +234,142 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      const headers = [
-        "Word",
-        "Language",
-        "Definition",
-        "Wiktionary URL",
-        "Date Saved",
+      // Anki import metadata directives & column headers
+      const ankiHeaderDirectives = [
+        "#separator:tab",
+        "#html:true",
+        "#tags column:5",
+        "Word\tDefinition\tAudio\tWiktionary URL\tTags",
       ];
-      const rows = uniqueRecords.map((r) => [
-        `"${r.word.replace(/"/g, '""')}"`,
-        `"${r.language}"`,
-        `"${r.definition.replace(/"/g, '""')}"`,
-        `"${r.pageUrl || ""}"`,
-        `"${new Date(r.createdAt).toISOString().split("T")[0]}"`,
-      ]);
 
-      const csvContent = [
-        headers.join(","),
-        ...rows.map((row) => row.join(",")),
-      ].join("\n");
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const rows = uniqueRecords.map((r) => {
+        const cleanWord = r.word.trim();
+        const langCategory = (r.language || "english").toLowerCase();
+        const langCode = (LANGUAGE_CODES as Record<string, string>)[langCategory] || "en";
+        const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(cleanWord)}&tl=${langCode}&client=tw-ob`;
+        const audioTag = `[sound:${audioUrl}]`;
+        const tag = `LLT_Vocabulary LLT_${langCategory}`;
+        const definition = (r.definition || "").replace(/\t/g, " ").replace(/\n/g, "<br>");
+        const pageUrl = r.pageUrl || "";
+
+        return `${cleanWord}\t${definition}\t${audioTag}\t${pageUrl}\t${tag}`;
+      });
+
+      const csvContent = [...ankiHeaderDirectives, ...rows].join("\n");
+      const blob = new Blob([csvContent], { type: "text/tab-separated-values;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `LLT_Vocabulary_${new Date().toISOString().split("T")[0]}.csv`;
+      a.download = `LLT_Anki_Vocabulary_${new Date().toISOString().split("T")[0]}.txt`;
       a.click();
       URL.revokeObjectURL(url);
+    });
+  }
+
+  const exportApkgBtn = document.getElementById(
+    "export-apkg-btn",
+  ) as HTMLButtonElement | null;
+  if (exportApkgBtn) {
+    exportApkgBtn.addEventListener("click", async () => {
+      const dbModel = new DatabaseModel();
+      const records = await dbModel.getAllVocabulary();
+      if (!records || records.length === 0) {
+        alert("No vocabulary words saved yet.");
+        return;
+      }
+
+      // Deduplicate records by normalized word + language key
+      const seen = new Set<string>();
+      const uniqueRecords: typeof records = [];
+
+      for (const r of records) {
+        const key = `${r.word.trim().toLowerCase()}_${r.language.trim().toLowerCase()}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          uniqueRecords.push(r);
+        }
+      }
+
+      if (uniqueRecords.length === 0) {
+        alert("No vocabulary words saved yet.");
+        return;
+      }
+
+      try {
+        if (toastStatus) {
+          toastStatus.textContent = "GENERATING DECK...";
+          toastStatus.classList.add("show");
+        }
+
+        // Initialize sql.js with local WASM binary from extension dist
+        const wasmUrl = chrome.runtime.getURL("dist/sql-wasm.wasm");
+        const SQL = await initSqlJs({
+          locateFile: () => wasmUrl,
+        });
+
+        const notetype = Notetype.basic({
+          name: "LLT Vocabulary Note",
+        });
+        //          id: 1728000000000,
+
+        const deck = new Deck({
+          name: "LLT_exported_deck_" + Date.now().toString(),
+          id: Date.now(),
+          description: "Saved vocabulary deck exported from LLT extension",
+        });
+
+        for (const r of uniqueRecords) {
+          const cleanWord = r.word.trim();
+          const langCategory = (r.language || "english").toLowerCase();
+          const langCode = (LANGUAGE_CODES as Record<string, string>)[langCategory] || "en";
+          const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(cleanWord)}&tl=${langCode}&client=tw-ob`;
+          const definition = (r.definition || "").replace(/\n/g, "<br>");
+          const pageUrl = r.pageUrl || "";
+
+          const frontHtml = `<div style="font-size: 1.4em; font-weight: bold; text-align: center;">${cleanWord}</div>`;
+          const backHtml = `
+            <div style="font-size: 1.1em; margin-bottom: 8px;">${definition}</div>
+            <div style="margin-top: 10px;">[sound:${audioUrl}]</div>
+            ${pageUrl ? `<div style="margin-top: 10px; font-size: 0.85em;"><a href="${pageUrl}">View Wiktionary</a></div>` : ""}
+          `;
+
+          // Generate stable deterministic GUID per word + language
+          const itemKey = `llt_${cleanWord.toLowerCase()}_${langCategory}`;
+          const safeGuid = itemKey.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 255);
+
+          deck.addNote(
+            new Note({
+              guid: safeGuid,
+              notetype,
+              fields: [frontHtml, backHtml],
+              tags: ["LLT", `LLT_${langCategory}`],
+            })
+          );
+        }
+
+        const pkg = new Package();
+        pkg.addDeck(deck);
+
+        const bytes = await pkg.toUint8Array(SQL);
+        const blob = new Blob([bytes.buffer as ArrayBuffer], { type: "application/apkg" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `LLT_Vocabulary_${new Date().toISOString().split("T")[0]}.apkg`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        if (toastStatus) {
+          toastStatus.textContent = "SAVED";
+          triggerSaveToast();
+        }
+      } catch (err: any) {
+        console.error("Failed to generate Anki .apkg deck:", err);
+        alert(`Could not generate .apkg deck: ${err?.message || err}`);
+        if (toastStatus) {
+          toastStatus.classList.remove("show");
+        }
+      }
     });
   }
 

@@ -2,8 +2,13 @@
 (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropNames = Object.getOwnPropertyNames;
-  var __esm = (fn, res) => function __init() {
-    return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+  var __esm = (fn, res, err) => function __init() {
+    if (err) throw err[0];
+    try {
+      return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+    } catch (e) {
+      throw err = [e], e;
+    }
   };
   var __export = (target, all) => {
     for (var name in all)
@@ -27,8 +32,7 @@
          * Opens connection to IndexedDB database with schema versioning and lifecycle handlers.
          */
         async open() {
-          if (this.db)
-            return this.db;
+          if (this.db) return this.db;
           return new Promise((resolve, reject) => {
             const request = indexedDB.open(this.dbName, this.version);
             request.onupgradeneeded = (event) => {
@@ -556,8 +560,7 @@
         while (this.engineLoading) {
           await new Promise((r) => setTimeout(r, 100));
         }
-        if (this.session && this.loadedVoiceFile === voiceFile)
-          return;
+        if (this.session && this.loadedVoiceFile === voiceFile) return;
       }
       this.engineLoading = true;
       try {
@@ -777,8 +780,7 @@
       }
       toastLeft = Math.max(window.scrollX + 8, toastLeft);
       const maxLeft = window.scrollX + window.innerWidth - toastWidth - 8;
-      if (toastLeft > maxLeft)
-        toastLeft = maxLeft;
+      if (toastLeft > maxLeft) toastLeft = maxLeft;
       toast.style.top = `${toastTop}px`;
       toast.style.left = `${toastLeft}px`;
     }
@@ -788,8 +790,7 @@
         this.activeToast.className = `tts-toast tts-toast-${type} tts-toast-visible`;
         this.activeToastType = type;
         const textElem = this.activeToast.querySelector(".tts-toast-text");
-        if (textElem)
-          textElem.textContent = message;
+        if (textElem) textElem.textContent = message;
         if (duration) {
           setTimeout(() => this.dismiss(this.activeToast), duration);
         }
@@ -1095,8 +1096,7 @@
       titleElem.style.cssText = "font-size:13px;font-weight:700;letter-spacing:-0.02em;color:#111111";
       titleContainer.appendChild(titleElem);
       const formatLangCode = (lang) => {
-        if (!lang || lang === "auto")
-          return "AUTO";
+        if (!lang || lang === "auto") return "AUTO";
         const map = {
           russian: "RU",
           english: "EN",
