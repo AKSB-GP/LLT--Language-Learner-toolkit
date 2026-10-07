@@ -4,7 +4,7 @@
   "description": "Highlight Russian words and play them via Piper TTS",
   "main": "dist/contentScript.js",
   "scripts": {
-    "build": "esbuild src/contentScript.ts src/background.ts src/popup.ts --bundle --outdir=dist --target=chrome100 --sourcemap --external:node:fs/promises --external:node:crypto --external:node:path --external:node:stream && node -e \"require('fs').copyFileSync('node_modules/sql.js/dist/sql-wasm.wasm', 'dist/sql-wasm.wasm')\"",
+    "build": "esbuild src/contentScript.ts src/background.ts src/popup.ts --bundle --loader:.css=text --outdir=dist --target=chrome100 --sourcemap --external:node:fs/promises --external:node:crypto --external:node:path --external:node:stream && node -e \"require('fs').copyFileSync('node_modules/sql.js/dist/sql-wasm.wasm', 'dist/sql-wasm.wasm')\"",
     "package": "npm run build && node scripts/package.js",
     "type-check": "tsc --noEmit"
   },

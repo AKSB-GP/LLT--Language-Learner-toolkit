@@ -1,8 +1,10 @@
 import { VOICES_MAP, DEFAULT_SETTINGS, LANGUAGE_CODES } from "./const";
 import { DatabaseModel } from "./model/DatabaseModel";
+import { GoogleTranslatorModel } from "./model/GoogleTranslatorModel";
 import { SendChromeMessage, CreateChromeTabMessage } from "./utils/chrome";
 import initSqlJs from "sql.js";
 import { Package, Deck, Notetype, Note } from "ankipack";
+import ankiCss from "../Anki.css";
 /*add listeners for extension panel */
 document.addEventListener("DOMContentLoaded", () => {
   // Elements
@@ -242,18 +244,33 @@ document.addEventListener("DOMContentLoaded", () => {
         "Word\tDefinition\tAudio\tWiktionary URL\tTags",
       ];
 
-      const rows = uniqueRecords.map((r) => {
+      const translatorModel = new GoogleTranslatorModel();
+      const rowPromises = uniqueRecords.map(async (r) => {
         const cleanWord = r.word.trim();
         const langCategory = (r.language || "english").toLowerCase();
         const langCode = (LANGUAGE_CODES as Record<string, string>)[langCategory] || "en";
         const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(cleanWord)}&tl=${langCode}&client=tw-ob`;
-        const audioTag = `[sound:${audioUrl}]`;
+        const audioTag = `[audio:${audioUrl}]`;
         const tag = `LLT_Vocabulary LLT_${langCategory}`;
-        const definition = (r.definition || "").replace(/\t/g, " ").replace(/\n/g, "<br>");
+        let definition = (r.definition || "").replace(/\t/g, " ").replace(/\n/g, "<br>");
+        if (!definition || definition === "Saved from context menu" || definition === "Not found") {
+          try {
+            definition = await translatorModel.Translate(cleanWord, langCode);
+          } catch { }
+        } else if (!definition.includes("Google Translation")) {
+          try {
+            const translation = await translatorModel.Translate(cleanWord, langCode);
+            if (translation && !definition.includes(translation)) {
+              definition = `${definition}<br>Google Translation: ${translation}`;
+            }
+          } catch { }
+        }
         const pageUrl = r.pageUrl || "";
 
         return `${cleanWord}\t${definition}\t${audioTag}\t${pageUrl}\t${tag}`;
       });
+
+      const rows = await Promise.all(rowPromises);
 
       const csvContent = [...ankiHeaderDirectives, ...rows].join("\n");
       const blob = new Blob([csvContent], { type: "text/tab-separated-values;charset=utf-8;" });
@@ -309,8 +326,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const notetype = Notetype.basic({
           name: "LLT Vocabulary Note",
+          css: ankiCss,
         });
-        //          id: 1728000000000,
 
         const deck = new Deck({
           name: "LLT_exported_deck_" + Date.now().toString(),
@@ -318,24 +335,56 @@ document.addEventListener("DOMContentLoaded", () => {
           description: "Saved vocabulary deck exported from LLT extension",
         });
 
+        const pkg = new Package();
+        const translatorModel = new GoogleTranslatorModel();
+
         for (const r of uniqueRecords) {
           const cleanWord = r.word.trim();
           const langCategory = (r.language || "english").toLowerCase();
           const langCode = (LANGUAGE_CODES as Record<string, string>)[langCategory] || "en";
-          const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(cleanWord)}&tl=${langCode}&client=tw-ob`;
-          const definition = (r.definition || "").replace(/\n/g, "<br>");
-          const pageUrl = r.pageUrl || "";
 
-          const frontHtml = `<div style="font-size: 1.4em; font-weight: bold; text-align: center;">${cleanWord}</div>`;
+          let definition = (r.definition || "").replace(/\n/g, "<br>");
+          //if word is not found on freedictapi then use google translate to get a defintiion, 
+          // not perfect but better than nothing
+          if (!definition || definition === "Saved from context menu" || definition === "Not found") {
+            try {
+              definition = await translatorModel.Translate(cleanWord, langCode);
+            } catch { }
+          } else if (!definition.includes("Google Translation")) {
+            try {
+              const translation = await translatorModel.Translate(cleanWord, langCode);
+              if (translation && !definition.includes(translation)) {
+                definition = `${definition}<br>Google Translation: ${translation}`;
+              }
+            } catch { }
+          }
+
+          const pageUrl = r.pageUrl || "";
+          let soundTag = "";
+
+          try {
+            const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(cleanWord)}&tl=${langCode}&client=tw-ob`;
+            const audioRes = await fetch(audioUrl);
+            if (audioRes.ok) {
+              const audioBuffer = await audioRes.arrayBuffer();
+              const audioBytes = new Uint8Array(audioBuffer);
+              const safeAudioName = `llt_${langCode}_${encodeURIComponent(cleanWord.toLowerCase()).replace(/%/g, "_")}.mp3`;
+              pkg.addMedia(safeAudioName, audioBytes);
+              soundTag = `[sound:${safeAudioName}]`;
+            }
+          } catch (audioErr) {
+            console.warn(`Could not fetch Anki audio for ${cleanWord}:`, audioErr);
+          }
+
+          const frontHtml = `<div class="front-word">${cleanWord}</div>`;
           const backHtml = `
-            <div style="font-size: 1.1em; margin-bottom: 8px;">${definition}</div>
-            <div style="margin-top: 10px;">[sound:${audioUrl}]</div>
-            ${pageUrl ? `<div style="margin-top: 10px; font-size: 0.85em;"><a href="${pageUrl}">View Wiktionary</a></div>` : ""}
+            <div class="back-word">${definition}</div>
+            ${soundTag ? `<div class="anki-sound">${soundTag}</div>` : ""}
+            ${pageUrl ? `<div class="wiktionary-link"><a href="${pageUrl}">View Wiktionary</a></div>` : ""}
           `;
 
-          // Generate stable deterministic GUID per word + language
-          const itemKey = `llt_${cleanWord.toLowerCase()}_${langCategory}`;
-          const safeGuid = itemKey.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 255);
+          // Generate stable deterministic GUID per word + language (URL-encoded to prevent non-ASCII collision)
+          const safeGuid = `llt_${encodeURIComponent(cleanWord.toLowerCase()).replace(/%/g, "_")}_${langCategory}`.slice(0, 255);
 
           deck.addNote(
             new Note({
@@ -347,7 +396,6 @@ document.addEventListener("DOMContentLoaded", () => {
           );
         }
 
-        const pkg = new Package();
         pkg.addDeck(deck);
 
         const bytes = await pkg.toUint8Array(SQL);
@@ -378,7 +426,7 @@ document.addEventListener("DOMContentLoaded", () => {
   ) as HTMLButtonElement | null;
   if (clearAudioCacheBtn) {
     clearAudioCacheBtn.addEventListener("click", async () => {
-      if (confirm("Are you sure you want to clear the cached audio recordings?")) {
+      if (confirm("Are you sure you want to clear the cached audio recordings? This cannot be undone.")) {
         const dbModel = new DatabaseModel();
         await dbModel.clearAudioCache();
         triggerSaveToast();

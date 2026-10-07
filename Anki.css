@@ -1,0 +1,44 @@
+.body {
+    font-family:
+        "Akkurat",
+        "Akkurat LL",
+        "Akkurat Pro",
+        -apple-system,
+        BlinkMacSystemFont,
+        "SF Pro Display",
+        "Helvetica Neue",
+        sans-serif;
+}
+
+.front-word {
+    font-size: 48px;
+    font-weight: bold;
+    text-align: center;
+    color: #111111;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    font-family: inherit;
+
+}
+
+.back-word {
+    font-size: 32px;
+    color: #111111;
+    font-weight: bold;
+    text-align: center;
+    letter-spacing: 0.02em;
+    text-align: center;
+
+}
+
+.anki-sound {
+    margin-top: 10px;
+    text-align: center;
+}
+
+.wiktionary-link {
+    font-size: 16px;
+    margin-top: 10px;
+    text-align: center;
+
+}

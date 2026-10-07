@@ -33720,8 +33720,12 @@ Try the option "splitPunct" to split the text by punctuation.`);
         const responseData = await response.json();
         const entry = responseData.entries?.[0];
         const pageUrl = responseData.source?.url || getWordOnWiktionary(langCode, wordLowerCase);
-        const definition = entry?.senses?.[0]?.definition || "Definition not found";
+        const rawDefinition = entry?.senses?.[0]?.definition;
         const wordcategory = entry?.partOfSpeech || "not found";
+        let definition = rawDefinition;
+        if (!definition || definition === "Definition not found" || definition === "Not found") {
+          definition = await TranslateWithGoogle(cleanWord, tab);
+        }
         const data = {
           url: pageUrl,
           definition,
@@ -33765,8 +33769,12 @@ Try the option "splitPunct" to split the text by punctuation.`);
         const responseData = await response.json();
         const entry = responseData.entries?.[0];
         const pageUrl = responseData.source?.url || getWordOnWiktionary(langCode, cleanWord);
-        const definition = entry?.senses?.[0]?.definition || "Not found";
+        const rawDefinition = entry?.senses?.[0]?.definition;
         const wordcategory = entry?.partOfSpeech || "not found";
+        let definition = rawDefinition;
+        if (!definition || definition === "Not found" || definition === "Definition not found") {
+          definition = await TranslateWithGoogle(cleanWord, tab);
+        }
         let gender = "not found";
         let animacy = "not found";
         let caseName = "";
@@ -34023,20 +34031,33 @@ Try the option "splitPunct" to split the text by punctuation.`);
       const langCategory = determinedCategory || "unknown";
       const langCode = LANGUAGE_CODES[langCategory] || "en";
       const word = encodeURIComponent(rawWord.toLowerCase());
-      let definition = "Saved from context menu";
+      let dictDefinition = "";
       let pageUrl = `https://${langCode}.wiktionary.org/wiki/${word}`;
       if (langCategory === "russian") {
         const data = await getRussianWordFromFreeDictAPI(langCode, word, tab);
         if (data && data.definition) {
-          definition = data.definition;
+          dictDefinition = data.definition;
           if (data.url) pageUrl = data.url;
         }
       } else if (langCategory !== "unknown") {
         const data = await getWordFromFreeDictAPI(langCode, word, tab);
         if (data && data.definition) {
-          definition = data.definition;
+          dictDefinition = data.definition;
           if (data.url) pageUrl = data.url;
         }
+      }
+      let googleTranslation = "";
+      try {
+        googleTranslation = await TranslateWithGoogle(rawWord, tab);
+      } catch {
+      }
+      let definition = "Saved from context menu";
+      if (dictDefinition && googleTranslation && !dictDefinition.includes(googleTranslation)) {
+        definition = `${dictDefinition}<br>[Google Translate]: ${googleTranslation}`;
+      } else if (dictDefinition) {
+        definition = dictDefinition;
+      } else if (googleTranslation) {
+        definition = googleTranslation;
       }
       await dbModel.saveVocabulary({
         word: rawWord,
