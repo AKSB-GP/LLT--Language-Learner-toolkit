@@ -236,7 +236,7 @@ export async function getWordFromFreeDictAPI(
             //use googletranslate if definition is not found 
             let definition = rawDefinition;
             if (!definition || definition === "Definition not found" || definition === "Not found") {
-                definition = await TranslateWithGoogle(cleanWord, tab);
+                definition = await translateTextSilently(cleanWord, langCode);
             }
 
             const data: WordAPIResponse = {
@@ -247,7 +247,7 @@ export async function getWordFromFreeDictAPI(
             return data;
         } else {
             // Use google translate if word not found on freedict
-            const translatedText = await TranslateWithGoogle(cleanWord, tab);
+            const translatedText = await translateTextSilently(cleanWord, langCode);
             return {
                 url: "Not found, google translate used for meaning",
                 definition: translatedText,
@@ -256,7 +256,7 @@ export async function getWordFromFreeDictAPI(
         }
     } catch (err: any) {
         try {
-            const translatedText = await TranslateWithGoogle(cleanWord, tab);
+            const translatedText = await translateTextSilently(cleanWord, langCode);
             return {
                 url: "Not found, google translate used for meaning",
                 definition: translatedText,
@@ -302,7 +302,7 @@ export async function getRussianWordFromFreeDictAPI(
 
             let definition = rawDefinition;
             if (!definition || definition === "Not found" || definition === "Definition not found") {
-                definition = await TranslateWithGoogle(cleanWord, tab);
+                definition = await translateTextSilently(cleanWord, langCode);
             }
             //set stating values for gender, animacy and case
             let gender = "not found";
@@ -378,7 +378,7 @@ export async function getRussianWordFromFreeDictAPI(
         }
         // use google translate if word not found on freedict
         else {
-            const wordTranslated = await TranslateWithGoogle(cleanWord, tab);
+            const wordTranslated = await translateTextSilently(cleanWord, langCode);
             return {
                 url: "No URL found, definition received from google translate",
                 definition: wordTranslated,
@@ -390,7 +390,7 @@ export async function getRussianWordFromFreeDictAPI(
         }
     } catch (err: any) {
         try {
-            const wordTranslated = await TranslateWithGoogle(cleanWord, tab);
+            const wordTranslated = await translateTextSilently(cleanWord, langCode);
             return {
                 url: "No URL found, definition received from google translate",
                 definition: wordTranslated,
@@ -542,6 +542,41 @@ export async function OpenWordYouglishByWord(
     }
 }
 
+
+/**
+ * Silently translates input text using GoogleTranslatorModel without triggering tab toasts or language selection dialogs.
+ */
+export async function translateTextSilently(text: string, sourceLangCode?: string): Promise<string> {
+    if (!text) return "";
+    const rawText = text.trim();
+    if (!rawText) return "";
+
+    let srcLang = sourceLangCode;
+    if (!srcLang) {
+        const isCyrillic = /[а-яёА-ЯЁ]/.test(rawText);
+        const isSwedish = /[åäöÅÄÖ]/.test(rawText);
+        srcLang = isCyrillic ? "ru" : (isSwedish ? "sv" : "en");
+    }
+
+    const settings = await new Promise<{ googleTranslateTargetLanguage: string }>((resolve) => {
+        chrome.storage.sync.get(
+            { googleTranslateTargetLanguage: DEFAULT_SETTINGS.googleTranslateTargetLanguage },
+            (items) => resolve(items as { googleTranslateTargetLanguage: string }),
+        );
+    });
+
+    let targetLang = settings.googleTranslateTargetLanguage || "en";
+    if (srcLang === targetLang) {
+        targetLang = srcLang === "en" ? "sv" : "en";
+    }
+
+    try {
+        return await googleTranslatorModel.Translate(rawText, srcLang, targetLang);
+    } catch (err) {
+        console.warn("Silent Google Translation failed:", err);
+        return "";
+    }
+}
 
 /**
  * Handles explicit context menu click for "translate with google".
@@ -697,12 +732,12 @@ async function SaveWordToVocabulary(
 
         let googleTranslation = "";
         try {
-            googleTranslation = await TranslateWithGoogle(rawWord, tab);
+            googleTranslation = await translateTextSilently(rawWord, langCode);
         } catch { }
 
         let definition = "Saved from context menu";
         if (dictDefinition && googleTranslation && !dictDefinition.includes(googleTranslation)) {
-            definition = `${dictDefinition}<br>[Google Translate]: ${googleTranslation}`;
+            definition = `${dictDefinition}<br>Google Translation: ${googleTranslation}`;
         } else if (dictDefinition) {
             definition = dictDefinition;
         } else if (googleTranslation) {

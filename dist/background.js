@@ -33724,7 +33724,7 @@ Try the option "splitPunct" to split the text by punctuation.`);
         const wordcategory = entry?.partOfSpeech || "not found";
         let definition = rawDefinition;
         if (!definition || definition === "Definition not found" || definition === "Not found") {
-          definition = await TranslateWithGoogle(cleanWord, tab);
+          definition = await translateTextSilently(cleanWord, langCode);
         }
         const data = {
           url: pageUrl,
@@ -33733,7 +33733,7 @@ Try the option "splitPunct" to split the text by punctuation.`);
         };
         return data;
       } else {
-        const translatedText = await TranslateWithGoogle(cleanWord, tab);
+        const translatedText = await translateTextSilently(cleanWord, langCode);
         return {
           url: "Not found, google translate used for meaning",
           definition: translatedText,
@@ -33742,7 +33742,7 @@ Try the option "splitPunct" to split the text by punctuation.`);
       }
     } catch (err) {
       try {
-        const translatedText = await TranslateWithGoogle(cleanWord, tab);
+        const translatedText = await translateTextSilently(cleanWord, langCode);
         return {
           url: "Not found, google translate used for meaning",
           definition: translatedText,
@@ -33773,7 +33773,7 @@ Try the option "splitPunct" to split the text by punctuation.`);
         const wordcategory = entry?.partOfSpeech || "not found";
         let definition = rawDefinition;
         if (!definition || definition === "Not found" || definition === "Definition not found") {
-          definition = await TranslateWithGoogle(cleanWord, tab);
+          definition = await translateTextSilently(cleanWord, langCode);
         }
         let gender = "not found";
         let animacy = "not found";
@@ -33824,7 +33824,7 @@ Try the option "splitPunct" to split the text by punctuation.`);
         };
         return data;
       } else {
-        const wordTranslated = await TranslateWithGoogle(cleanWord, tab);
+        const wordTranslated = await translateTextSilently(cleanWord, langCode);
         return {
           url: "No URL found, definition received from google translate",
           definition: wordTranslated,
@@ -33836,7 +33836,7 @@ Try the option "splitPunct" to split the text by punctuation.`);
       }
     } catch (err) {
       try {
-        const wordTranslated = await TranslateWithGoogle(cleanWord, tab);
+        const wordTranslated = await translateTextSilently(cleanWord, langCode);
         return {
           url: "No URL found, definition received from google translate",
           definition: wordTranslated,
@@ -33937,6 +33937,33 @@ Try the option "splitPunct" to split the text by punctuation.`);
       CreateChromeTabMessage({
         url: `https://youglish.com/pronounce/${word}/${determinedCategory}`
       });
+    }
+  }
+  async function translateTextSilently(text, sourceLangCode) {
+    if (!text) return "";
+    const rawText = text.trim();
+    if (!rawText) return "";
+    let srcLang = sourceLangCode;
+    if (!srcLang) {
+      const isCyrillic = /[а-яёА-ЯЁ]/.test(rawText);
+      const isSwedish = /[åäöÅÄÖ]/.test(rawText);
+      srcLang = isCyrillic ? "ru" : isSwedish ? "sv" : "en";
+    }
+    const settings = await new Promise((resolve) => {
+      chrome.storage.sync.get(
+        { googleTranslateTargetLanguage: DEFAULT_SETTINGS.googleTranslateTargetLanguage },
+        (items) => resolve(items)
+      );
+    });
+    let targetLang = settings.googleTranslateTargetLanguage || "en";
+    if (srcLang === targetLang) {
+      targetLang = srcLang === "en" ? "sv" : "en";
+    }
+    try {
+      return await googleTranslatorModel.Translate(rawText, srcLang, targetLang);
+    } catch (err) {
+      console.warn("Silent Google Translation failed:", err);
+      return "";
     }
   }
   async function TranslateWithGoogle(text, tab) {
@@ -34048,12 +34075,12 @@ Try the option "splitPunct" to split the text by punctuation.`);
       }
       let googleTranslation = "";
       try {
-        googleTranslation = await TranslateWithGoogle(rawWord, tab);
+        googleTranslation = await translateTextSilently(rawWord, langCode);
       } catch {
       }
       let definition = "Saved from context menu";
       if (dictDefinition && googleTranslation && !dictDefinition.includes(googleTranslation)) {
-        definition = `${dictDefinition}<br>[Google Translate]: ${googleTranslation}`;
+        definition = `${dictDefinition}<br>Google Translation: ${googleTranslation}`;
       } else if (dictDefinition) {
         definition = dictDefinition;
       } else if (googleTranslation) {

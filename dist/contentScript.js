@@ -1005,7 +1005,20 @@
       content.appendChild(divider);
       const defElem = document.createElement("div");
       defElem.style.cssText = "font-size:12px;line-height:1.45;color:#111111;max-height:140px;overflow-y:auto;white-space:pre-wrap;width:100%";
-      defElem.textContent = Array.isArray(definition) ? definition.join("\n") : definition;
+      const rawLines = Array.isArray(definition) ? definition : (definition || "").split("\n");
+      const formattedLines = rawLines.map((line) => {
+        const safeLine = line.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        let formatted = safeLine.replace(
+          /^(\[[^\]]+\])/g,
+          '<strong style="font-weight:700;color:#111111">$1</strong>'
+        );
+        formatted = formatted.replace(
+          /(Google Translation:)/g,
+          '<strong style="font-weight:700;color:#111111">$1</strong>'
+        );
+        return formatted;
+      });
+      defElem.innerHTML = formattedLines.join("<br>");
       content.appendChild(defElem);
       const actionRow = document.createElement("div");
       actionRow.style.cssText = "display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:6px;gap:8px";
