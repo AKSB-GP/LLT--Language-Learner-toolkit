@@ -94,34 +94,30 @@ document.addEventListener("DOMContentLoaded", () => {
       piperVoice.value = selectedVoiceId;
     }
   };
-  // Save active voice and corresponding filename prefix
+  // Save export language filter preference
   const saveExportSelectionSetting = () => {
-    const exportLanguageSelectionSetting = exportLanguageSelect.value;
-
     chrome.storage.sync.set(
       {
-        exportLanguageSelectionSetting: exportLanguageSelectionSetting,
+        savedWordSetting: exportLanguageSelect.value,
       },
       () => {
         triggerSaveToast();
         notifyContentScript();
       },
     );
-  }
+  };
 
   const saveExportTargetLanguageSetting = () => {
-    const exportTargetLanguageSetting = exportTargetLanguageSelect.value;
     chrome.storage.sync.set(
       {
-        exportTargetLanguageSetting: exportTargetLanguageSetting,
+        savedWordExportTranslationTarget: exportTargetLanguageSelect.value,
       },
       () => {
         triggerSaveToast();
         notifyContentScript();
       },
     );
-  }
-
+  };
 
   exportLanguageSelect.addEventListener("change", () => {
     saveExportSelectionSetting();
@@ -166,8 +162,8 @@ document.addEventListener("DOMContentLoaded", () => {
       googleLanguage: DEFAULT_SETTINGS.googleLanguage,
       googleTranslateTargetLanguage: DEFAULT_SETTINGS.googleTranslateTargetLanguage,
       googleRate: DEFAULT_SETTINGS.googleRate,
-      exportLanguageSetSetting: DEFAULT_SETTINGS.savedWordSetting,
-      exportTargetLanguage: DEFAULT_SETTINGS.savedWordExportTranslationTarget,
+      savedWordSetting: DEFAULT_SETTINGS.savedWordSetting,
+      savedWordExportTranslationTarget: DEFAULT_SETTINGS.savedWordExportTranslationTarget,
       //      lookupMethod: DEFAULT_SETTINGS.lookupMethod,
     },
     (items) => {
@@ -185,10 +181,10 @@ document.addEventListener("DOMContentLoaded", () => {
       googleRate.value = items.googleRate.toString();
       //set exportlanguagesettings
       if (exportLanguageSelect) {
-        exportLanguageSelect.value = items.exportLanguageSelectionSetting || DEFAULT_SETTINGS.savedWordSetting;
+        exportLanguageSelect.value = items.savedWordSetting || DEFAULT_SETTINGS.savedWordSetting;
       }
       if (exportTargetLanguageSelect) {
-        exportTargetLanguageSelect.value = items.exportTargetLanguageSetting || DEFAULT_SETTINGS.savedWordExportTranslationTarget;
+        exportTargetLanguageSelect.value = items.savedWordExportTranslationTarget || DEFAULT_SETTINGS.savedWordExportTranslationTarget;
       }
       // Set label text
       piperSpeedVal.textContent = `${parseFloat(items.piperSpeed).toFixed(1)}x`;
@@ -208,10 +204,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   piperVoice.addEventListener("change", () => {
     saveVoicePreference();
-  });
-
-  exportLanguageSelect.addEventListener("change", () => {
-    saveExportTargetLanguageSetting();
   });
 
 
@@ -300,7 +292,7 @@ document.addEventListener("DOMContentLoaded", () => {
         "#separator:tab",
         "#html:true",
         "#tags column:5",
-        "Word\tDefinition\tAudio\tWiktionary URL\tTags",
+        "Word\tDefinition\tAudio\tTags",
       ];
 
       const exportLanguageSelect = document.getElementById(
@@ -327,12 +319,14 @@ document.addEventListener("DOMContentLoaded", () => {
         recordsByLang.get(lang)!.push(r);
       }
 
-      const settings = await new Promise<{ googleTranslateTargetLanguage: string }>((resolve) => {
+      const settings = await new Promise<{ savedWordExportTranslationTarget: string }>((resolve) => {
         chrome.storage.sync.get(
-          { googleTranslateTargetLanguage: DEFAULT_SETTINGS.googleTranslateTargetLanguage },
-          (items) => resolve(items as { googleTranslateTargetLanguage: string }),
+          { savedWordExportTranslationTarget: DEFAULT_SETTINGS.savedWordExportTranslationTarget },
+          (items) => resolve(items as { savedWordExportTranslationTarget: string }),
         );
       });
+
+      const targetLangSetting = exportTargetLanguageSelect?.value || settings.savedWordExportTranslationTarget || "en";
 
       const langCodeToName: Record<string, string> = {
         en: "ENGLISH",
@@ -348,29 +342,39 @@ document.addEventListener("DOMContentLoaded", () => {
 
       for (const [langCategory, langRecords] of recordsByLang.entries()) {
         const fromLang = langCategory.toUpperCase();
-        let toLang = (langCodeToName[settings.googleTranslateTargetLanguage] || settings.googleTranslateTargetLanguage || "ENGLISH").toUpperCase();
+        const langCode = (LANGUAGE_CODES as Record<string, string>)[langCategory] || "en";
+
+        let targetLangCode = targetLangSetting;
+        let toLang = (langCodeToName[targetLangCode] || targetLangCode).toUpperCase();
         if (fromLang === toLang) {
           toLang = fromLang === "ENGLISH" ? "SWEDISH" : "ENGLISH";
+          targetLangCode = fromLang === "ENGLISH" ? "sv" : "en";
         }
 
         const rowPromises = langRecords.map(async (r) => {
           const cleanWord = r.word.trim();
-          const langCode = (LANGUAGE_CODES as Record<string, string>)[langCategory] || "en";
           const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(cleanWord)}&tl=${langCode}&client=tw-ob`;
           const audioTag = `[audio:${audioUrl}]`;
-          const tag = `LLT_Vocabulary LLT_${langCategory}`;
+          const safeTagLang = `LLT_${langCategory}`.replace(/\s+/g, "_");
+          const tag = `LLT_Vocabulary ${safeTagLang}`;
           let definition = (r.definition || "").replace(/\t/g, " ").replace(/\n/g, "<br>");
-          if (!definition || definition === "Saved from context menu" || definition === "Not found") {
-            try {
-              definition = await translatorModel.Translate(cleanWord, langCode);
-            } catch { }
-          } else if (!definition.includes("Google Translation")) {
-            try {
-              const translation = await translatorModel.Translate(cleanWord, langCode);
-              if (translation && !definition.includes(translation)) {
-                definition = `${definition}<br>Google Translation: ${translation}`;
-              }
-            } catch { }
+
+          let targetTranslation = "";
+          try {
+            targetTranslation = await translatorModel.Translate(cleanWord, langCode, targetLangCode);
+          } catch { }
+
+          const googleRegex = /(?:Google Translation|\[Google Translate\]|Translation\s*(?:\([^)]*\))?)\s*:[^<]*/i;
+          if (targetTranslation) {
+            if (googleRegex.test(definition)) {
+              definition = definition.replace(googleRegex, `Google Translation: ${targetTranslation}`);
+            } else if (!definition || definition === "Saved from context menu" || definition === "Not found") {
+              definition = `Google Translation: ${targetTranslation}`;
+            } else {
+              definition = `${definition}<br>Google Translation: ${targetTranslation}`;
+            }
+          } else if (!definition || definition === "Saved from context menu" || definition === "Not found") {
+            definition = "";
           }
           const pageUrl = r.pageUrl || "";
 
@@ -460,12 +464,14 @@ document.addEventListener("DOMContentLoaded", () => {
           recordsByLang.get(lang)!.push(r);
         }
 
-        const settings = await new Promise<{ googleTranslateTargetLanguage: string }>((resolve) => {
+        const settings = await new Promise<{ savedWordExportTranslationTarget: string }>((resolve) => {
           chrome.storage.sync.get(
-            { googleTranslateTargetLanguage: DEFAULT_SETTINGS.googleTranslateTargetLanguage },
-            (items) => resolve(items as { googleTranslateTargetLanguage: string }),
+            { savedWordExportTranslationTarget: DEFAULT_SETTINGS.savedWordExportTranslationTarget },
+            (items) => resolve(items as { savedWordExportTranslationTarget: string }),
           );
         });
+
+        const targetLangSetting = exportTargetLanguageSelect?.value || settings.savedWordExportTranslationTarget || "en";
 
         const langCodeToName: Record<string, string> = {
           en: "ENGLISH",
@@ -474,6 +480,7 @@ document.addEventListener("DOMContentLoaded", () => {
         };
 
         const pkg = new Package();
+        const addedMediaFiles = new Set<string>();
         const translatorModel = new GoogleTranslatorModel();
         let langIndex = 0;
 
@@ -484,9 +491,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
         for (const [langCategory, langRecords] of recordsByLang.entries()) {
           const fromLang = langCategory.toUpperCase();
-          let toLang = (langCodeToName[settings.googleTranslateTargetLanguage] || settings.googleTranslateTargetLanguage || "ENGLISH").toUpperCase();
+          const langCode = (LANGUAGE_CODES as Record<string, string>)[langCategory] || "en";
+
+          let targetLangCode = targetLangSetting;
+          let toLang = (langCodeToName[targetLangCode] || targetLangCode).toUpperCase();
           if (fromLang === toLang) {
             toLang = fromLang === "ENGLISH" ? "SWEDISH" : "ENGLISH";
+            targetLangCode = fromLang === "ENGLISH" ? "sv" : "en";
           }
 
           const deckName = `LLT_${fromLang}_${toLang}_${dateTimeStr}`;
@@ -500,20 +511,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
           for (const r of langRecords) {
             const cleanWord = r.word.trim();
-            const langCode = (LANGUAGE_CODES as Record<string, string>)[langCategory] || "en";
 
             let definition = (r.definition || "").replace(/\n/g, "<br>");
-            if (!definition || definition === "Saved from context menu" || definition === "Not found") {
-              try {
-                definition = await translatorModel.Translate(cleanWord, langCode);
-              } catch { }
-            } else if (!definition.includes("Google Translation")) {
-              try {
-                const translation = await translatorModel.Translate(cleanWord, langCode);
-                if (translation && !definition.includes(translation)) {
-                  definition = `${definition}<br>Google Translation: ${translation}`;
-                }
-              } catch { }
+            let targetTranslation = "";
+            try {
+              targetTranslation = await translatorModel.Translate(cleanWord, langCode, targetLangCode);
+            } catch { }
+
+            const googleRegex = /(?:Google Translation|\[Google Translate\]|Translation\s*(?:\([^)]*\))?)\s*:[^<]*/i;
+            if (targetTranslation) {
+              if (googleRegex.test(definition)) {
+                definition = definition.replace(googleRegex, `Google Translation: ${targetTranslation}`);
+              } else if (!definition || definition === "Saved from context menu" || definition === "Not found") {
+                definition = `Google Translation: ${targetTranslation}`;
+              } else {
+                definition = `${definition}<br>Google Translation: ${targetTranslation}`;
+              }
+            } else if (!definition || definition === "Saved from context menu" || definition === "Not found") {
+              definition = "";
             }
 
             const pageUrl = r.pageUrl || "";
@@ -525,8 +540,12 @@ document.addEventListener("DOMContentLoaded", () => {
               if (audioRes.ok) {
                 const audioBuffer = await audioRes.arrayBuffer();
                 const audioBytes = new Uint8Array(audioBuffer);
-                const safeAudioName = `llt_${langCode}_${encodeURIComponent(cleanWord.toLowerCase()).replace(/%/g, "_")}.mp3`;
-                pkg.addMedia(safeAudioName, audioBytes);
+                const wordSlug = encodeURIComponent(cleanWord.toLowerCase()).replace(/%/g, "_").slice(0, 40);
+                const safeAudioName = `llt_${langCode}_${wordSlug}.mp3`;
+                if (!addedMediaFiles.has(safeAudioName)) {
+                  pkg.addMedia(safeAudioName, audioBytes);
+                  addedMediaFiles.add(safeAudioName);
+                }
                 soundTag = `[sound:${safeAudioName}]`;
               }
             } catch (audioErr) {
@@ -537,18 +556,18 @@ document.addEventListener("DOMContentLoaded", () => {
             const backHtml = `
               <div class="back-word">${definition}</div>
               ${soundTag ? `<div class="anki-sound">${soundTag}</div>` : ""}
-              ${pageUrl ? `<div class="wiktionary-link"><a href="${pageUrl}">View Wiktionary</a></div>` : ""}
             `;
 
             // Generate stable deterministic GUID per word + language (URL-encoded to prevent non-ASCII collision)
-            const safeGuid = `llt_${encodeURIComponent(cleanWord.toLowerCase()).replace(/%/g, "_")}_${langCategory}`.slice(0, 255);
+            const safeGuid = `llt_${encodeURIComponent(cleanWord.toLowerCase()).replace(/%/g, "_").slice(0, 50)}_${langCategory}`.slice(0, 255);
+            const safeTagLang = `LLT_${langCategory}`.replace(/\s+/g, "_");
 
             deck.addNote(
               new Note({
                 guid: safeGuid,
                 notetype,
                 fields: [frontHtml, backHtml],
-                tags: ["LLT", `LLT_${langCategory}`],
+                tags: ["LLT", safeTagLang],
               })
             );
           }
@@ -561,7 +580,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `LLT_Vocabulary_${new Date().toISOString().split("T")[0]}.apkg`;
+        a.download = `LLT_Vocabulary_${dateStr}_${timeStr}.apkg`;
         a.click();
         URL.revokeObjectURL(url);
 

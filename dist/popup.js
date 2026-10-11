@@ -41549,10 +41549,9 @@ CREATE UNIQUE INDEX idx_decks_name ON decks (name);
       }
     };
     const saveExportSelectionSetting = () => {
-      const exportLanguageSelectionSetting = exportLanguageSelect.value;
       chrome.storage.sync.set(
         {
-          exportLanguageSelectionSetting
+          savedWordSetting: exportLanguageSelect.value
         },
         () => {
           triggerSaveToast();
@@ -41561,10 +41560,9 @@ CREATE UNIQUE INDEX idx_decks_name ON decks (name);
       );
     };
     const saveExportTargetLanguageSetting = () => {
-      const exportTargetLanguageSetting = exportTargetLanguageSelect.value;
       chrome.storage.sync.set(
         {
-          exportTargetLanguageSetting
+          savedWordExportTranslationTarget: exportTargetLanguageSelect.value
         },
         () => {
           triggerSaveToast();
@@ -41607,8 +41605,8 @@ CREATE UNIQUE INDEX idx_decks_name ON decks (name);
         googleLanguage: DEFAULT_SETTINGS.googleLanguage,
         googleTranslateTargetLanguage: DEFAULT_SETTINGS.googleTranslateTargetLanguage,
         googleRate: DEFAULT_SETTINGS.googleRate,
-        exportLanguageSetSetting: DEFAULT_SETTINGS.savedWordSetting,
-        exportTargetLanguage: DEFAULT_SETTINGS.savedWordExportTranslationTarget
+        savedWordSetting: DEFAULT_SETTINGS.savedWordSetting,
+        savedWordExportTranslationTarget: DEFAULT_SETTINGS.savedWordExportTranslationTarget
         //      lookupMethod: DEFAULT_SETTINGS.lookupMethod,
       },
       (items) => {
@@ -41623,10 +41621,10 @@ CREATE UNIQUE INDEX idx_decks_name ON decks (name);
         }
         googleRate.value = items.googleRate.toString();
         if (exportLanguageSelect) {
-          exportLanguageSelect.value = items.exportLanguageSelectionSetting || DEFAULT_SETTINGS.savedWordSetting;
+          exportLanguageSelect.value = items.savedWordSetting || DEFAULT_SETTINGS.savedWordSetting;
         }
         if (exportTargetLanguageSelect) {
-          exportTargetLanguageSelect.value = items.exportTargetLanguageSetting || DEFAULT_SETTINGS.savedWordExportTranslationTarget;
+          exportTargetLanguageSelect.value = items.savedWordExportTranslationTarget || DEFAULT_SETTINGS.savedWordExportTranslationTarget;
         }
         piperSpeedVal.textContent = `${parseFloat(items.piperSpeed).toFixed(1)}x`;
         piperNoiseScaleVal.textContent = parseFloat(
@@ -41642,9 +41640,6 @@ CREATE UNIQUE INDEX idx_decks_name ON decks (name);
     });
     piperVoice.addEventListener("change", () => {
       saveVoicePreference();
-    });
-    exportLanguageSelect.addEventListener("change", () => {
-      saveExportTargetLanguageSetting();
     });
     piperSpeed.addEventListener("input", (e) => {
       const target = e.target;
@@ -41712,7 +41707,7 @@ CREATE UNIQUE INDEX idx_decks_name ON decks (name);
           "#separator:tab",
           "#html:true",
           "#tags column:5",
-          "Word	Definition	Audio	Wiktionary URL	Tags"
+          "Word	Definition	Audio	Tags"
         ];
         const exportLanguageSelect2 = document.getElementById(
           "export-language-select"
@@ -41733,10 +41728,11 @@ CREATE UNIQUE INDEX idx_decks_name ON decks (name);
         }
         const settings = await new Promise((resolve) => {
           chrome.storage.sync.get(
-            { googleTranslateTargetLanguage: DEFAULT_SETTINGS.googleTranslateTargetLanguage },
+            { savedWordExportTranslationTarget: DEFAULT_SETTINGS.savedWordExportTranslationTarget },
             (items) => resolve(items)
           );
         });
+        const targetLangSetting = exportTargetLanguageSelect?.value || settings.savedWordExportTranslationTarget || "en";
         const langCodeToName = {
           en: "ENGLISH",
           sv: "SWEDISH",
@@ -41749,30 +41745,36 @@ CREATE UNIQUE INDEX idx_decks_name ON decks (name);
         const dateTimeStr = `${dateStr}_${timeStr}`;
         for (const [langCategory, langRecords] of recordsByLang.entries()) {
           const fromLang = langCategory.toUpperCase();
-          let toLang = (langCodeToName[settings.googleTranslateTargetLanguage] || settings.googleTranslateTargetLanguage || "ENGLISH").toUpperCase();
+          const langCode = LANGUAGE_CODES[langCategory] || "en";
+          let targetLangCode = targetLangSetting;
+          let toLang = (langCodeToName[targetLangCode] || targetLangCode).toUpperCase();
           if (fromLang === toLang) {
             toLang = fromLang === "ENGLISH" ? "SWEDISH" : "ENGLISH";
+            targetLangCode = fromLang === "ENGLISH" ? "sv" : "en";
           }
           const rowPromises = langRecords.map(async (r) => {
             const cleanWord = r.word.trim();
-            const langCode = LANGUAGE_CODES[langCategory] || "en";
             const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(cleanWord)}&tl=${langCode}&client=tw-ob`;
             const audioTag = `[audio:${audioUrl}]`;
-            const tag = `LLT_Vocabulary LLT_${langCategory}`;
+            const safeTagLang = `LLT_${langCategory}`.replace(/\s+/g, "_");
+            const tag = `LLT_Vocabulary ${safeTagLang}`;
             let definition = (r.definition || "").replace(/\t/g, " ").replace(/\n/g, "<br>");
-            if (!definition || definition === "Saved from context menu" || definition === "Not found") {
-              try {
-                definition = await translatorModel.Translate(cleanWord, langCode);
-              } catch {
+            let targetTranslation = "";
+            try {
+              targetTranslation = await translatorModel.Translate(cleanWord, langCode, targetLangCode);
+            } catch {
+            }
+            const googleRegex = /(?:Google Translation|\[Google Translate\]|Translation\s*(?:\([^)]*\))?)\s*:[^<]*/i;
+            if (targetTranslation) {
+              if (googleRegex.test(definition)) {
+                definition = definition.replace(googleRegex, `Google Translation: ${targetTranslation}`);
+              } else if (!definition || definition === "Saved from context menu" || definition === "Not found") {
+                definition = `Google Translation: ${targetTranslation}`;
+              } else {
+                definition = `${definition}<br>Google Translation: ${targetTranslation}`;
               }
-            } else if (!definition.includes("Google Translation")) {
-              try {
-                const translation = await translatorModel.Translate(cleanWord, langCode);
-                if (translation && !definition.includes(translation)) {
-                  definition = `${definition}<br>Google Translation: ${translation}`;
-                }
-              } catch {
-              }
+            } else if (!definition || definition === "Saved from context menu" || definition === "Not found") {
+              definition = "";
             }
             const pageUrl = r.pageUrl || "";
             return `${cleanWord}	${definition}	${audioTag}	${pageUrl}	${tag}`;
@@ -41845,16 +41847,18 @@ CREATE UNIQUE INDEX idx_decks_name ON decks (name);
           }
           const settings = await new Promise((resolve) => {
             chrome.storage.sync.get(
-              { googleTranslateTargetLanguage: DEFAULT_SETTINGS.googleTranslateTargetLanguage },
+              { savedWordExportTranslationTarget: DEFAULT_SETTINGS.savedWordExportTranslationTarget },
               (items) => resolve(items)
             );
           });
+          const targetLangSetting = exportTargetLanguageSelect?.value || settings.savedWordExportTranslationTarget || "en";
           const langCodeToName = {
             en: "ENGLISH",
             sv: "SWEDISH",
             ru: "RUSSIAN"
           };
           const pkg = new Package();
+          const addedMediaFiles = /* @__PURE__ */ new Set();
           const translatorModel = new GoogleTranslatorModel();
           let langIndex = 0;
           const now = /* @__PURE__ */ new Date();
@@ -41863,9 +41867,12 @@ CREATE UNIQUE INDEX idx_decks_name ON decks (name);
           const dateTimeStr = `${dateStr}_${timeStr}`;
           for (const [langCategory, langRecords] of recordsByLang.entries()) {
             const fromLang = langCategory.toUpperCase();
-            let toLang = (langCodeToName[settings.googleTranslateTargetLanguage] || settings.googleTranslateTargetLanguage || "ENGLISH").toUpperCase();
+            const langCode = LANGUAGE_CODES[langCategory] || "en";
+            let targetLangCode = targetLangSetting;
+            let toLang = (langCodeToName[targetLangCode] || targetLangCode).toUpperCase();
             if (fromLang === toLang) {
               toLang = fromLang === "ENGLISH" ? "SWEDISH" : "ENGLISH";
+              targetLangCode = fromLang === "ENGLISH" ? "sv" : "en";
             }
             const deckName = `LLT_${fromLang}_${toLang}_${dateTimeStr}`;
             const deck = new Deck({
@@ -41876,21 +41883,23 @@ CREATE UNIQUE INDEX idx_decks_name ON decks (name);
             langIndex++;
             for (const r of langRecords) {
               const cleanWord = r.word.trim();
-              const langCode = LANGUAGE_CODES[langCategory] || "en";
               let definition = (r.definition || "").replace(/\n/g, "<br>");
-              if (!definition || definition === "Saved from context menu" || definition === "Not found") {
-                try {
-                  definition = await translatorModel.Translate(cleanWord, langCode);
-                } catch {
+              let targetTranslation = "";
+              try {
+                targetTranslation = await translatorModel.Translate(cleanWord, langCode, targetLangCode);
+              } catch {
+              }
+              const googleRegex = /(?:Google Translation|\[Google Translate\]|Translation\s*(?:\([^)]*\))?)\s*:[^<]*/i;
+              if (targetTranslation) {
+                if (googleRegex.test(definition)) {
+                  definition = definition.replace(googleRegex, `Google Translation: ${targetTranslation}`);
+                } else if (!definition || definition === "Saved from context menu" || definition === "Not found") {
+                  definition = `Google Translation: ${targetTranslation}`;
+                } else {
+                  definition = `${definition}<br>Google Translation: ${targetTranslation}`;
                 }
-              } else if (!definition.includes("Google Translation")) {
-                try {
-                  const translation = await translatorModel.Translate(cleanWord, langCode);
-                  if (translation && !definition.includes(translation)) {
-                    definition = `${definition}<br>Google Translation: ${translation}`;
-                  }
-                } catch {
-                }
+              } else if (!definition || definition === "Saved from context menu" || definition === "Not found") {
+                definition = "";
               }
               const pageUrl = r.pageUrl || "";
               let soundTag = "";
@@ -41900,8 +41909,12 @@ CREATE UNIQUE INDEX idx_decks_name ON decks (name);
                 if (audioRes.ok) {
                   const audioBuffer = await audioRes.arrayBuffer();
                   const audioBytes = new Uint8Array(audioBuffer);
-                  const safeAudioName = `llt_${langCode}_${encodeURIComponent(cleanWord.toLowerCase()).replace(/%/g, "_")}.mp3`;
-                  pkg.addMedia(safeAudioName, audioBytes);
+                  const wordSlug = encodeURIComponent(cleanWord.toLowerCase()).replace(/%/g, "_").slice(0, 40);
+                  const safeAudioName = `llt_${langCode}_${wordSlug}.mp3`;
+                  if (!addedMediaFiles.has(safeAudioName)) {
+                    pkg.addMedia(safeAudioName, audioBytes);
+                    addedMediaFiles.add(safeAudioName);
+                  }
                   soundTag = `[sound:${safeAudioName}]`;
                 }
               } catch (audioErr) {
@@ -41911,15 +41924,15 @@ CREATE UNIQUE INDEX idx_decks_name ON decks (name);
               const backHtml = `
               <div class="back-word">${definition}</div>
               ${soundTag ? `<div class="anki-sound">${soundTag}</div>` : ""}
-              ${pageUrl ? `<div class="wiktionary-link"><a href="${pageUrl}">View Wiktionary</a></div>` : ""}
             `;
-              const safeGuid = `llt_${encodeURIComponent(cleanWord.toLowerCase()).replace(/%/g, "_")}_${langCategory}`.slice(0, 255);
+              const safeGuid = `llt_${encodeURIComponent(cleanWord.toLowerCase()).replace(/%/g, "_").slice(0, 50)}_${langCategory}`.slice(0, 255);
+              const safeTagLang = `LLT_${langCategory}`.replace(/\s+/g, "_");
               deck.addNote(
                 new Note({
                   guid: safeGuid,
                   notetype,
                   fields: [frontHtml, backHtml],
-                  tags: ["LLT", `LLT_${langCategory}`]
+                  tags: ["LLT", safeTagLang]
                 })
               );
             }
@@ -41930,7 +41943,7 @@ CREATE UNIQUE INDEX idx_decks_name ON decks (name);
           const url = URL.createObjectURL(blob);
           const a = document.createElement("a");
           a.href = url;
-          a.download = `LLT_Vocabulary_${(/* @__PURE__ */ new Date()).toISOString().split("T")[0]}.apkg`;
+          a.download = `LLT_Vocabulary_${dateStr}_${timeStr}.apkg`;
           a.click();
           URL.revokeObjectURL(url);
           if (toastStatus) {
