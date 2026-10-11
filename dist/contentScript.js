@@ -485,7 +485,9 @@
     googleLanguage: "ru-RU",
     googleRate: 1,
     lookupMethod: "manual",
-    googleTranslateTargetLanguage: "en"
+    googleTranslateTargetLanguage: "en",
+    savedWordSetting: "russian",
+    savedWordExportTranslationTarget: "en"
   };
 
   // src/model/TTSModel.ts

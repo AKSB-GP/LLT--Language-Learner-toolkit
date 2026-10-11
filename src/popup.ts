@@ -1,7 +1,7 @@
 import { VOICES_MAP, DEFAULT_SETTINGS, LANGUAGE_CODES } from "./const";
 import { DatabaseModel } from "./model/DatabaseModel";
 import { GoogleTranslatorModel } from "./model/GoogleTranslatorModel";
-import { SendChromeMessage, CreateChromeTabMessage } from "./utils/chrome";
+import { SendChromeMessage } from "./utils/chrome";
 import initSqlJs from "sql.js";
 import { Package, Deck, Notetype, Note } from "ankipack";
 import ankiCss from "../Anki.css";
@@ -29,10 +29,18 @@ document.addEventListener("DOMContentLoaded", () => {
     "google-translate-target-language",
   ) as HTMLSelectElement | null;
   const googleRate = document.getElementById("google-rate") as HTMLInputElement;
-  const lookupMethod = document.getElementById(
-    "lookup-method",
+  /*   const lookupMethod = document.getElementById(
+      "lookup-method",
+    ) as HTMLSelectElement;
+   */
+  const exportLanguageSelect = document.getElementById(
+    "export-language-select",
   ) as HTMLSelectElement;
 
+  //export language target
+  const exportTargetLanguageSelect = document.getElementById(
+    "export-language-target-select",
+  ) as HTMLSelectElement;
   const toastStatus = document.getElementById("status") as HTMLDivElement;
 
   // Value label displays
@@ -86,6 +94,44 @@ document.addEventListener("DOMContentLoaded", () => {
       piperVoice.value = selectedVoiceId;
     }
   };
+  // Save active voice and corresponding filename prefix
+  const saveExportSelectionSetting = () => {
+    const exportLanguageSelectionSetting = exportLanguageSelect.value;
+
+    chrome.storage.sync.set(
+      {
+        exportLanguageSelectionSetting: exportLanguageSelectionSetting,
+      },
+      () => {
+        triggerSaveToast();
+        notifyContentScript();
+      },
+    );
+  }
+
+  const saveExportTargetLanguageSetting = () => {
+    const exportTargetLanguageSetting = exportTargetLanguageSelect.value;
+    chrome.storage.sync.set(
+      {
+        exportTargetLanguageSetting: exportTargetLanguageSetting,
+      },
+      () => {
+        triggerSaveToast();
+        notifyContentScript();
+      },
+    );
+  }
+
+
+  exportLanguageSelect.addEventListener("change", () => {
+    saveExportSelectionSetting();
+  });
+
+  exportTargetLanguageSelect.addEventListener("change", () => {
+    saveExportTargetLanguageSetting();
+  });
+
+
 
   // Save active voice and corresponding filename prefix
   const saveVoicePreference = () => {
@@ -120,12 +166,14 @@ document.addEventListener("DOMContentLoaded", () => {
       googleLanguage: DEFAULT_SETTINGS.googleLanguage,
       googleTranslateTargetLanguage: DEFAULT_SETTINGS.googleTranslateTargetLanguage,
       googleRate: DEFAULT_SETTINGS.googleRate,
-      lookupMethod: DEFAULT_SETTINGS.lookupMethod,
+      exportLanguageSetSetting: DEFAULT_SETTINGS.savedWordSetting,
+      exportTargetLanguage: DEFAULT_SETTINGS.savedWordExportTranslationTarget,
+      //      lookupMethod: DEFAULT_SETTINGS.lookupMethod,
     },
     (items) => {
       languageCategory.value = items.piperLanguageCategory;
       populateVoices(items.piperLanguageCategory, items.piperVoice);
-      lookupMethod.value = items.lookupMethod || DEFAULT_SETTINGS.lookupMethod;
+      // lookupMethod.value = items.lookupMethod || DEFAULT_SETTINGS.lookupMethod;
       //set speed settings
       piperSpeed.value = items.piperSpeed.toString();
       piperNoiseScale.value = items.piperNoiseScale.toString();
@@ -135,7 +183,13 @@ document.addEventListener("DOMContentLoaded", () => {
         googleTranslateTargetLanguage.value = items.googleTranslateTargetLanguage || DEFAULT_SETTINGS.googleTranslateTargetLanguage;
       }
       googleRate.value = items.googleRate.toString();
-
+      //set exportlanguagesettings
+      if (exportLanguageSelect) {
+        exportLanguageSelect.value = items.exportLanguageSelectionSetting || DEFAULT_SETTINGS.savedWordSetting;
+      }
+      if (exportTargetLanguageSelect) {
+        exportTargetLanguageSelect.value = items.exportTargetLanguageSetting || DEFAULT_SETTINGS.savedWordExportTranslationTarget;
+      }
       // Set label text
       piperSpeedVal.textContent = `${parseFloat(items.piperSpeed).toFixed(1)}x`;
       piperNoiseScaleVal.textContent = parseFloat(
@@ -155,6 +209,11 @@ document.addEventListener("DOMContentLoaded", () => {
   piperVoice.addEventListener("change", () => {
     saveVoicePreference();
   });
+
+  exportLanguageSelect.addEventListener("change", () => {
+    saveExportTargetLanguageSetting();
+  });
+
 
   piperSpeed.addEventListener("input", (e) => {
     const target = e.target as HTMLInputElement;
@@ -200,12 +259,12 @@ document.addEventListener("DOMContentLoaded", () => {
     chrome.storage.sync.set({ googleRate: val }, triggerSaveToast);
   });
 
-  lookupMethod.addEventListener("change", () => {
-    chrome.storage.sync.set({ lookupMethod: lookupMethod.value }, () => {
-      triggerSaveToast();
-      notifyContentScript();
-    });
-  });
+  /*   lookupMethod.addEventListener("change", () => {
+      chrome.storage.sync.set({ lookupMethod: lookupMethod.value }, () => {
+        triggerSaveToast();
+        notifyContentScript();
+      });
+    }); */
 
   const exportCsvBtn = document.getElementById(
     "export-csv-btn",

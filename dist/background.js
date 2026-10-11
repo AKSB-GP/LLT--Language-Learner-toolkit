@@ -32404,7 +32404,9 @@ Try the option "splitPunct" to split the text by punctuation.`);
     googleLanguage: "ru-RU",
     googleRate: 1,
     lookupMethod: "manual",
-    googleTranslateTargetLanguage: "en"
+    googleTranslateTargetLanguage: "en",
+    savedWordSetting: "russian",
+    savedWordExportTranslationTarget: "en"
   };
   var RUSSIAN_GENDER_LIST = ["masculine", "feminine", "neuter"];
   var RUSSIAN_ANIMACY_LIST = ["animate", "inanimate"];

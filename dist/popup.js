@@ -34544,7 +34544,9 @@ Try the option "splitPunct" to split the text by punctuation.`);
     googleLanguage: "ru-RU",
     googleRate: 1,
     lookupMethod: "manual",
-    googleTranslateTargetLanguage: "en"
+    googleTranslateTargetLanguage: "en",
+    savedWordSetting: "russian",
+    savedWordExportTranslationTarget: "en"
   };
 
   // src/model/DatabaseModel.ts
@@ -41496,8 +41498,11 @@ CREATE UNIQUE INDEX idx_decks_name ON decks (name);
       "google-translate-target-language"
     );
     const googleRate = document.getElementById("google-rate");
-    const lookupMethod = document.getElementById(
-      "lookup-method"
+    const exportLanguageSelect = document.getElementById(
+      "export-language-select"
+    );
+    const exportTargetLanguageSelect = document.getElementById(
+      "export-language-target-select"
     );
     const toastStatus = document.getElementById("status");
     const piperSpeedVal = document.getElementById(
@@ -41543,6 +41548,36 @@ CREATE UNIQUE INDEX idx_decks_name ON decks (name);
         piperVoice.value = selectedVoiceId;
       }
     };
+    const saveExportSelectionSetting = () => {
+      const exportLanguageSelectionSetting = exportLanguageSelect.value;
+      chrome.storage.sync.set(
+        {
+          exportLanguageSelectionSetting
+        },
+        () => {
+          triggerSaveToast();
+          notifyContentScript();
+        }
+      );
+    };
+    const saveExportTargetLanguageSetting = () => {
+      const exportTargetLanguageSetting = exportTargetLanguageSelect.value;
+      chrome.storage.sync.set(
+        {
+          exportTargetLanguageSetting
+        },
+        () => {
+          triggerSaveToast();
+          notifyContentScript();
+        }
+      );
+    };
+    exportLanguageSelect.addEventListener("change", () => {
+      saveExportSelectionSetting();
+    });
+    exportTargetLanguageSelect.addEventListener("change", () => {
+      saveExportTargetLanguageSetting();
+    });
     const saveVoicePreference = () => {
       const category = languageCategory.value;
       const voiceId = piperVoice.value;
@@ -41572,12 +41607,13 @@ CREATE UNIQUE INDEX idx_decks_name ON decks (name);
         googleLanguage: DEFAULT_SETTINGS.googleLanguage,
         googleTranslateTargetLanguage: DEFAULT_SETTINGS.googleTranslateTargetLanguage,
         googleRate: DEFAULT_SETTINGS.googleRate,
-        lookupMethod: DEFAULT_SETTINGS.lookupMethod
+        exportLanguageSetSetting: DEFAULT_SETTINGS.savedWordSetting,
+        exportTargetLanguage: DEFAULT_SETTINGS.savedWordExportTranslationTarget
+        //      lookupMethod: DEFAULT_SETTINGS.lookupMethod,
       },
       (items) => {
         languageCategory.value = items.piperLanguageCategory;
         populateVoices(items.piperLanguageCategory, items.piperVoice);
-        lookupMethod.value = items.lookupMethod || DEFAULT_SETTINGS.lookupMethod;
         piperSpeed.value = items.piperSpeed.toString();
         piperNoiseScale.value = items.piperNoiseScale.toString();
         piperNoiseW.value = items.piperNoiseW.toString();
@@ -41586,6 +41622,12 @@ CREATE UNIQUE INDEX idx_decks_name ON decks (name);
           googleTranslateTargetLanguage.value = items.googleTranslateTargetLanguage || DEFAULT_SETTINGS.googleTranslateTargetLanguage;
         }
         googleRate.value = items.googleRate.toString();
+        if (exportLanguageSelect) {
+          exportLanguageSelect.value = items.exportLanguageSelectionSetting || DEFAULT_SETTINGS.savedWordSetting;
+        }
+        if (exportTargetLanguageSelect) {
+          exportTargetLanguageSelect.value = items.exportTargetLanguageSetting || DEFAULT_SETTINGS.savedWordExportTranslationTarget;
+        }
         piperSpeedVal.textContent = `${parseFloat(items.piperSpeed).toFixed(1)}x`;
         piperNoiseScaleVal.textContent = parseFloat(
           items.piperNoiseScale
@@ -41600,6 +41642,9 @@ CREATE UNIQUE INDEX idx_decks_name ON decks (name);
     });
     piperVoice.addEventListener("change", () => {
       saveVoicePreference();
+    });
+    exportLanguageSelect.addEventListener("change", () => {
+      saveExportTargetLanguageSetting();
     });
     piperSpeed.addEventListener("input", (e) => {
       const target = e.target;
@@ -41639,12 +41684,6 @@ CREATE UNIQUE INDEX idx_decks_name ON decks (name);
       googleRateVal.textContent = `${val.toFixed(1)}x`;
       chrome.storage.sync.set({ googleRate: val }, triggerSaveToast);
     });
-    lookupMethod.addEventListener("change", () => {
-      chrome.storage.sync.set({ lookupMethod: lookupMethod.value }, () => {
-        triggerSaveToast();
-        notifyContentScript();
-      });
-    });
     const exportCsvBtn = document.getElementById(
       "export-csv-btn"
     );
@@ -41675,10 +41714,10 @@ CREATE UNIQUE INDEX idx_decks_name ON decks (name);
           "#tags column:5",
           "Word	Definition	Audio	Wiktionary URL	Tags"
         ];
-        const exportLanguageSelect = document.getElementById(
+        const exportLanguageSelect2 = document.getElementById(
           "export-language-select"
         );
-        const filterLang = exportLanguageSelect?.value?.toLowerCase() || "all";
+        const filterLang = exportLanguageSelect2?.value?.toLowerCase() || "all";
         const recordsToExport = filterLang === "all" ? uniqueRecords : uniqueRecords.filter((r) => (r.language || "english").toLowerCase() === filterLang);
         if (recordsToExport.length === 0) {
           alert(`No vocabulary words saved for language: ${filterLang.toUpperCase()}`);
@@ -41774,10 +41813,10 @@ CREATE UNIQUE INDEX idx_decks_name ON decks (name);
           alert("No vocabulary words saved yet.");
           return;
         }
-        const exportLanguageSelect = document.getElementById(
+        const exportLanguageSelect2 = document.getElementById(
           "export-language-select"
         );
-        const filterLang = exportLanguageSelect?.value?.toLowerCase() || "all";
+        const filterLang = exportLanguageSelect2?.value?.toLowerCase() || "all";
         const recordsToExport = filterLang === "all" ? uniqueRecords : uniqueRecords.filter((r) => (r.language || "english").toLowerCase() === filterLang);
         if (recordsToExport.length === 0) {
           alert(`No vocabulary words saved for language: ${filterLang.toUpperCase()}`);
