@@ -1,6 +1,10 @@
-import { VOICES_MAP, DEFAULT_SETTINGS } from "./const";
+import { VOICES_MAP, DEFAULT_SETTINGS, LANGUAGE_CODES } from "./const";
 import { DatabaseModel } from "./model/DatabaseModel";
-import { SendChromeMessage, CreateChromeTabMessage } from "./utils/chrome";
+import { GoogleTranslatorModel } from "./model/GoogleTranslatorModel";
+import { SendChromeMessage } from "./utils/chrome";
+import initSqlJs from "sql.js";
+import { Package, Deck, Notetype, Note } from "ankipack";
+import ankiCss from "../Anki.css";
 /*add listeners for extension panel */
 document.addEventListener("DOMContentLoaded", () => {
   // Elements
@@ -25,10 +29,18 @@ document.addEventListener("DOMContentLoaded", () => {
     "google-translate-target-language",
   ) as HTMLSelectElement | null;
   const googleRate = document.getElementById("google-rate") as HTMLInputElement;
-  const lookupMethod = document.getElementById(
-    "lookup-method",
+  /*   const lookupMethod = document.getElementById(
+      "lookup-method",
+    ) as HTMLSelectElement;
+   */
+  const exportLanguageSelect = document.getElementById(
+    "export-language-select",
   ) as HTMLSelectElement;
 
+  //export language target
+  const exportTargetLanguageSelect = document.getElementById(
+    "export-language-target-select",
+  ) as HTMLSelectElement;
   const toastStatus = document.getElementById("status") as HTMLDivElement;
 
   // Value label displays
@@ -82,6 +94,40 @@ document.addEventListener("DOMContentLoaded", () => {
       piperVoice.value = selectedVoiceId;
     }
   };
+  // Save export language filter preference
+  const saveExportSelectionSetting = () => {
+    chrome.storage.sync.set(
+      {
+        savedWordSetting: exportLanguageSelect.value,
+      },
+      () => {
+        triggerSaveToast();
+        notifyContentScript();
+      },
+    );
+  };
+
+  const saveExportTargetLanguageSetting = () => {
+    chrome.storage.sync.set(
+      {
+        savedWordExportTranslationTarget: exportTargetLanguageSelect.value,
+      },
+      () => {
+        triggerSaveToast();
+        notifyContentScript();
+      },
+    );
+  };
+
+  exportLanguageSelect.addEventListener("change", () => {
+    saveExportSelectionSetting();
+  });
+
+  exportTargetLanguageSelect.addEventListener("change", () => {
+    saveExportTargetLanguageSetting();
+  });
+
+
 
   // Save active voice and corresponding filename prefix
   const saveVoicePreference = () => {
@@ -116,12 +162,14 @@ document.addEventListener("DOMContentLoaded", () => {
       googleLanguage: DEFAULT_SETTINGS.googleLanguage,
       googleTranslateTargetLanguage: DEFAULT_SETTINGS.googleTranslateTargetLanguage,
       googleRate: DEFAULT_SETTINGS.googleRate,
-      lookupMethod: DEFAULT_SETTINGS.lookupMethod,
+      savedWordSetting: DEFAULT_SETTINGS.savedWordSetting,
+      savedWordExportTranslationTarget: DEFAULT_SETTINGS.savedWordExportTranslationTarget,
+      //      lookupMethod: DEFAULT_SETTINGS.lookupMethod,
     },
     (items) => {
       languageCategory.value = items.piperLanguageCategory;
       populateVoices(items.piperLanguageCategory, items.piperVoice);
-      lookupMethod.value = items.lookupMethod || DEFAULT_SETTINGS.lookupMethod;
+      // lookupMethod.value = items.lookupMethod || DEFAULT_SETTINGS.lookupMethod;
       //set speed settings
       piperSpeed.value = items.piperSpeed.toString();
       piperNoiseScale.value = items.piperNoiseScale.toString();
@@ -131,7 +179,13 @@ document.addEventListener("DOMContentLoaded", () => {
         googleTranslateTargetLanguage.value = items.googleTranslateTargetLanguage || DEFAULT_SETTINGS.googleTranslateTargetLanguage;
       }
       googleRate.value = items.googleRate.toString();
-
+      //set exportlanguagesettings
+      if (exportLanguageSelect) {
+        exportLanguageSelect.value = items.savedWordSetting || DEFAULT_SETTINGS.savedWordSetting;
+      }
+      if (exportTargetLanguageSelect) {
+        exportTargetLanguageSelect.value = items.savedWordExportTranslationTarget || DEFAULT_SETTINGS.savedWordExportTranslationTarget;
+      }
       // Set label text
       piperSpeedVal.textContent = `${parseFloat(items.piperSpeed).toFixed(1)}x`;
       piperNoiseScaleVal.textContent = parseFloat(
@@ -151,6 +205,7 @@ document.addEventListener("DOMContentLoaded", () => {
   piperVoice.addEventListener("change", () => {
     saveVoicePreference();
   });
+
 
   piperSpeed.addEventListener("input", (e) => {
     const target = e.target as HTMLInputElement;
@@ -196,12 +251,12 @@ document.addEventListener("DOMContentLoaded", () => {
     chrome.storage.sync.set({ googleRate: val }, triggerSaveToast);
   });
 
-  lookupMethod.addEventListener("change", () => {
-    chrome.storage.sync.set({ lookupMethod: lookupMethod.value }, () => {
-      triggerSaveToast();
-      notifyContentScript();
-    });
-  });
+  /*   lookupMethod.addEventListener("change", () => {
+      chrome.storage.sync.set({ lookupMethod: lookupMethod.value }, () => {
+        triggerSaveToast();
+        notifyContentScript();
+      });
+    }); */
 
   const exportCsvBtn = document.getElementById(
     "export-csv-btn",
@@ -216,7 +271,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       // Deduplicate records by normalized word + language key
-      //check so that duplicates arent stord in csv file
       const seen = new Set<string>();
       const uniqueRecords: typeof records = [];
 
@@ -233,32 +287,314 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      const headers = [
-        "Word",
-        "Language",
-        "Definition",
-        "Wiktionary URL",
-        "Date Saved",
+      // Anki import metadata directives & column headers
+      const ankiHeaderDirectives = [
+        "#separator:tab",
+        "#html:true",
+        "#tags column:5",
+        "Word\tDefinition\tAudio\tTags",
       ];
-      const rows = uniqueRecords.map((r) => [
-        `"${r.word.replace(/"/g, '""')}"`,
-        `"${r.language}"`,
-        `"${r.definition.replace(/"/g, '""')}"`,
-        `"${r.pageUrl || ""}"`,
-        `"${new Date(r.createdAt).toISOString().split("T")[0]}"`,
-      ]);
 
-      const csvContent = [
-        headers.join(","),
-        ...rows.map((row) => row.join(",")),
-      ].join("\n");
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `LLT_Vocabulary_${new Date().toISOString().split("T")[0]}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
+      const exportLanguageSelect = document.getElementById(
+        "export-language-select",
+      ) as HTMLSelectElement | null;
+
+      const filterLang = exportLanguageSelect?.value?.toLowerCase() || "all";
+      const recordsToExport = filterLang === "all"
+        ? uniqueRecords
+        : uniqueRecords.filter((r) => (r.language || "english").toLowerCase() === filterLang);
+
+      if (recordsToExport.length === 0) {
+        alert(`No vocabulary words saved for language: ${filterLang.toUpperCase()}`);
+        return;
+      }
+
+      // Group records by language category
+      const recordsByLang = new Map<string, typeof uniqueRecords>();
+      for (const r of recordsToExport) {
+        const lang = (r.language || "english").toLowerCase();
+        if (!recordsByLang.has(lang)) {
+          recordsByLang.set(lang, []);
+        }
+        recordsByLang.get(lang)!.push(r);
+      }
+
+      const settings = await new Promise<{ savedWordExportTranslationTarget: string }>((resolve) => {
+        chrome.storage.sync.get(
+          { savedWordExportTranslationTarget: DEFAULT_SETTINGS.savedWordExportTranslationTarget },
+          (items) => resolve(items as { savedWordExportTranslationTarget: string }),
+        );
+      });
+
+      const targetLangSetting = exportTargetLanguageSelect?.value || settings.savedWordExportTranslationTarget || "en";
+
+      const langCodeToName: Record<string, string> = {
+        en: "ENGLISH",
+        sv: "SWEDISH",
+        ru: "RUSSIAN",
+      };
+
+      const translatorModel = new GoogleTranslatorModel();
+      const now = new Date();
+      const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+      const timeStr = `${String(now.getHours()).padStart(2, "0")}-${String(now.getMinutes()).padStart(2, "0")}-${String(now.getSeconds()).padStart(2, "0")}`;
+      const dateTimeStr = `${dateStr}_${timeStr}`;
+
+      for (const [langCategory, langRecords] of recordsByLang.entries()) {
+        const fromLang = langCategory.toUpperCase();
+        const langCode = (LANGUAGE_CODES as Record<string, string>)[langCategory] || "en";
+
+        let targetLangCode = targetLangSetting;
+        let toLang = (langCodeToName[targetLangCode] || targetLangCode).toUpperCase();
+        if (fromLang === toLang) {
+          toLang = fromLang === "ENGLISH" ? "SWEDISH" : "ENGLISH";
+          targetLangCode = fromLang === "ENGLISH" ? "sv" : "en";
+        }
+
+        const rowPromises = langRecords.map(async (r) => {
+          const cleanWord = r.word.trim();
+          const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(cleanWord)}&tl=${langCode}&client=tw-ob`;
+          const audioTag = `[audio:${audioUrl}]`;
+          const safeTagLang = `LLT_${langCategory}`.replace(/\s+/g, "_");
+          const tag = `LLT_Vocabulary ${safeTagLang}`;
+          let definition = (r.definition || "").replace(/\t/g, " ").replace(/\n/g, "<br>");
+
+          let targetTranslation = "";
+          try {
+            targetTranslation = await translatorModel.Translate(cleanWord, langCode, targetLangCode);
+          } catch { }
+
+          const googleRegex = /(?:Google Translation|\[Google Translate\]|Translation\s*(?:\([^)]*\))?)\s*:[^<]*/i;
+          if (targetTranslation) {
+            if (googleRegex.test(definition)) {
+              definition = definition.replace(googleRegex, `Google Translation: ${targetTranslation}`);
+            } else if (!definition || definition === "Saved from context menu" || definition === "Not found") {
+              definition = `Google Translation: ${targetTranslation}`;
+            } else {
+              definition = `${definition}<br>Google Translation: ${targetTranslation}`;
+            }
+          } else if (!definition || definition === "Saved from context menu" || definition === "Not found") {
+            definition = "";
+          }
+          const pageUrl = r.pageUrl || "";
+
+          return `${cleanWord}\t${definition}\t${audioTag}\t${pageUrl}\t${tag}`;
+        });
+
+        const rows = await Promise.all(rowPromises);
+        const csvContent = [...ankiHeaderDirectives, ...rows].join("\n");
+        const blob = new Blob([csvContent], { type: "text/tab-separated-values;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `LLT_${fromLang}_${toLang}_${dateTimeStr}.txt`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    });
+  }
+
+  const exportApkgBtn = document.getElementById(
+    "export-apkg-btn",
+  ) as HTMLButtonElement | null;
+  if (exportApkgBtn) {
+    exportApkgBtn.addEventListener("click", async () => {
+      const dbModel = new DatabaseModel();
+      const records = await dbModel.getAllVocabulary();
+      if (!records || records.length === 0) {
+        alert("No vocabulary words saved yet.");
+        return;
+      }
+
+      // Deduplicate records by normalized word + language key
+      const seen = new Set<string>();
+      const uniqueRecords: typeof records = [];
+
+      for (const r of records) {
+        const key = `${r.word.trim().toLowerCase()}_${r.language.trim().toLowerCase()}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          uniqueRecords.push(r);
+        }
+      }
+
+      if (uniqueRecords.length === 0) {
+        alert("No vocabulary words saved yet.");
+        return;
+      }
+
+      const exportLanguageSelect = document.getElementById(
+        "export-language-select",
+      ) as HTMLSelectElement | null;
+      //set which one to export to anki
+      const filterLang = exportLanguageSelect?.value?.toLowerCase() || "all";
+      const recordsToExport = filterLang === "all"
+        ? uniqueRecords
+        : uniqueRecords.filter((r) => (r.language || "english").toLowerCase() === filterLang);
+
+      if (recordsToExport.length === 0) {
+        alert(`No vocabulary words saved for language: ${filterLang.toUpperCase()}`);
+        return;
+      }
+
+      try {
+        if (toastStatus) {
+          toastStatus.textContent = "GENERATING DECK...";
+          toastStatus.classList.add("show");
+        }
+
+        // Initialize sql.js with local WASM binary from extension dist
+        const wasmUrl = chrome.runtime.getURL("dist/sql-wasm.wasm");
+        const SQL = await initSqlJs({
+          locateFile: () => wasmUrl,
+        });
+
+        const notetype = Notetype.basic({
+          name: "LLT Vocabulary Note",
+          css: ankiCss,
+        });
+
+        // Partition unique records by language category to create separate decks
+        const recordsByLang = new Map<string, typeof uniqueRecords>();
+        for (const r of recordsToExport) {
+          const lang = (r.language || "english").toLowerCase();
+          if (!recordsByLang.has(lang)) {
+            recordsByLang.set(lang, []);
+          }
+          recordsByLang.get(lang)!.push(r);
+        }
+
+        const settings = await new Promise<{ savedWordExportTranslationTarget: string }>((resolve) => {
+          chrome.storage.sync.get(
+            { savedWordExportTranslationTarget: DEFAULT_SETTINGS.savedWordExportTranslationTarget },
+            (items) => resolve(items as { savedWordExportTranslationTarget: string }),
+          );
+        });
+
+        const targetLangSetting = exportTargetLanguageSelect?.value || settings.savedWordExportTranslationTarget || "en";
+
+        const langCodeToName: Record<string, string> = {
+          en: "ENGLISH",
+          sv: "SWEDISH",
+          ru: "RUSSIAN",
+        };
+
+        const pkg = new Package();
+        const addedMediaFiles = new Set<string>();
+        const translatorModel = new GoogleTranslatorModel();
+        let langIndex = 0;
+
+        const now = new Date();
+        const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+        const timeStr = `${String(now.getHours()).padStart(2, "0")}-${String(now.getMinutes()).padStart(2, "0")}-${String(now.getSeconds()).padStart(2, "0")}`;
+        const dateTimeStr = `${dateStr}_${timeStr}`;
+
+        for (const [langCategory, langRecords] of recordsByLang.entries()) {
+          const fromLang = langCategory.toUpperCase();
+          const langCode = (LANGUAGE_CODES as Record<string, string>)[langCategory] || "en";
+
+          let targetLangCode = targetLangSetting;
+          let toLang = (langCodeToName[targetLangCode] || targetLangCode).toUpperCase();
+          if (fromLang === toLang) {
+            toLang = fromLang === "ENGLISH" ? "SWEDISH" : "ENGLISH";
+            targetLangCode = fromLang === "ENGLISH" ? "sv" : "en";
+          }
+
+          const deckName = `LLT_${fromLang}_${toLang}_${dateTimeStr}`;
+
+          const deck = new Deck({
+            name: deckName,
+            id: Date.now() + langIndex,
+            description: `${fromLang} to ${toLang} vocabulary deck exported from LLT extension`,
+          });
+          langIndex++;
+
+          for (const r of langRecords) {
+            const cleanWord = r.word.trim();
+
+            let definition = (r.definition || "").replace(/\n/g, "<br>");
+            let targetTranslation = "";
+            try {
+              targetTranslation = await translatorModel.Translate(cleanWord, langCode, targetLangCode);
+            } catch { }
+
+            const googleRegex = /(?:Google Translation|\[Google Translate\]|Translation\s*(?:\([^)]*\))?)\s*:[^<]*/i;
+            if (targetTranslation) {
+              if (googleRegex.test(definition)) {
+                definition = definition.replace(googleRegex, `Google Translation: ${targetTranslation}`);
+              } else if (!definition || definition === "Saved from context menu" || definition === "Not found") {
+                definition = `Google Translation: ${targetTranslation}`;
+              } else {
+                definition = `${definition}<br>Google Translation: ${targetTranslation}`;
+              }
+            } else if (!definition || definition === "Saved from context menu" || definition === "Not found") {
+              definition = "";
+            }
+
+            const pageUrl = r.pageUrl || "";
+            let soundTag = "";
+
+            try {
+              const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(cleanWord)}&tl=${langCode}&client=tw-ob`;
+              const audioRes = await fetch(audioUrl);
+              if (audioRes.ok) {
+                const audioBuffer = await audioRes.arrayBuffer();
+                const audioBytes = new Uint8Array(audioBuffer);
+                const wordSlug = encodeURIComponent(cleanWord.toLowerCase()).replace(/%/g, "_").slice(0, 40);
+                const safeAudioName = `llt_${langCode}_${wordSlug}.mp3`;
+                if (!addedMediaFiles.has(safeAudioName)) {
+                  pkg.addMedia(safeAudioName, audioBytes);
+                  addedMediaFiles.add(safeAudioName);
+                }
+                soundTag = `[sound:${safeAudioName}]`;
+              }
+            } catch (audioErr) {
+              console.warn(`Could not fetch Anki audio for ${cleanWord}:`, audioErr);
+            }
+
+            const frontHtml = `<div class="front-word">${cleanWord}</div>`;
+            const backHtml = `
+              <div class="back-word">${definition}</div>
+              ${soundTag ? `<div class="anki-sound">${soundTag}</div>` : ""}
+            `;
+
+            // Generate stable deterministic GUID per word + language (URL-encoded to prevent non-ASCII collision)
+            const safeGuid = `llt_${encodeURIComponent(cleanWord.toLowerCase()).replace(/%/g, "_").slice(0, 50)}_${langCategory}`.slice(0, 255);
+            const safeTagLang = `LLT_${langCategory}`.replace(/\s+/g, "_");
+
+            deck.addNote(
+              new Note({
+                guid: safeGuid,
+                notetype,
+                fields: [frontHtml, backHtml],
+                tags: ["LLT", safeTagLang],
+              })
+            );
+          }
+
+          pkg.addDeck(deck);
+        }
+
+        const bytes = await pkg.toUint8Array(SQL);
+        const blob = new Blob([bytes.buffer as ArrayBuffer], { type: "application/apkg" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `LLT_Vocabulary_${dateStr}_${timeStr}.apkg`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        if (toastStatus) {
+          toastStatus.textContent = "SAVED";
+          triggerSaveToast();
+        }
+      } catch (err: any) {
+        console.error("Failed to generate Anki .apkg deck:", err);
+        alert(`Could not generate .apkg deck: ${err?.message || err}`);
+        if (toastStatus) {
+          toastStatus.classList.remove("show");
+        }
+      }
     });
   }
 
@@ -267,7 +603,7 @@ document.addEventListener("DOMContentLoaded", () => {
   ) as HTMLButtonElement | null;
   if (clearAudioCacheBtn) {
     clearAudioCacheBtn.addEventListener("click", async () => {
-      if (confirm("Are you sure you want to clear the cached audio recordings?")) {
+      if (confirm("Are you sure you want to clear the cached audio recordings? This cannot be undone.")) {
         const dbModel = new DatabaseModel();
         await dbModel.clearAudioCache();
         triggerSaveToast();

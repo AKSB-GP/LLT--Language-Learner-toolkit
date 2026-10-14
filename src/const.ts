@@ -97,6 +97,8 @@ export const DEFAULT_SETTINGS: ExtensionSettings = {
   googleRate: 1.0,
   lookupMethod: "manual",
   googleTranslateTargetLanguage: "en",
+  savedWordSetting: "russian",
+  savedWordExportTranslationTarget: "en",
 };
 /* lists used to help with grammer identify of russian words */
 export const RUSSIAN_GENDER_LIST = ["masculine", "feminine", "neuter"] as const;

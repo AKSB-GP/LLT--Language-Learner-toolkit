@@ -25,6 +25,14 @@ export class TTSController {
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       if (message.action === "speakSelection" && message.text) {
         this.speak(message.text);
+      } else if (message.action === "speakWebSpeech" && message.text) {
+        if (typeof window !== "undefined" && "speechSynthesis" in window) {
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(message.text);
+          if (message.lang) utterance.lang = message.lang;
+          if (typeof message.rate === "number") utterance.rate = message.rate;
+          window.speechSynthesis.speak(utterance);
+        }
       } else if (message.action === "promptLanguageSelection" && message.word) {
         this.notificationView.promptLanguage(message.word).then((choice) => {
           sendResponse({ language: choice });

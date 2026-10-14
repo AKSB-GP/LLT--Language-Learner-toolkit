@@ -2,8 +2,13 @@
 (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropNames = Object.getOwnPropertyNames;
-  var __esm = (fn, res) => function __init() {
-    return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+  var __esm = (fn, res, err) => function __init() {
+    if (err) throw err[0];
+    try {
+      return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+    } catch (e) {
+      throw err = [e], e;
+    }
   };
   var __export = (target, all) => {
     for (var name in all)
@@ -27,8 +32,7 @@
          * Opens connection to IndexedDB database with schema versioning and lifecycle handlers.
          */
         async open() {
-          if (this.db)
-            return this.db;
+          if (this.db) return this.db;
           return new Promise((resolve, reject) => {
             const request = indexedDB.open(this.dbName, this.version);
             request.onupgradeneeded = (event) => {
@@ -481,7 +485,9 @@
     googleLanguage: "ru-RU",
     googleRate: 1,
     lookupMethod: "manual",
-    googleTranslateTargetLanguage: "en"
+    googleTranslateTargetLanguage: "en",
+    savedWordSetting: "russian",
+    savedWordExportTranslationTarget: "en"
   };
 
   // src/model/TTSModel.ts
@@ -556,8 +562,7 @@
         while (this.engineLoading) {
           await new Promise((r) => setTimeout(r, 100));
         }
-        if (this.session && this.loadedVoiceFile === voiceFile)
-          return;
+        if (this.session && this.loadedVoiceFile === voiceFile) return;
       }
       this.engineLoading = true;
       try {
@@ -571,9 +576,17 @@
         ort.env.wasm.simd = false;
         ort.env.wasm.numThreads = 1;
         ort.env.wasm.wasmPaths = chrome.runtime.getURL("lib/");
-        this.session = await ort.InferenceSession.create(modelBuffer, {
-          executionProviders: ["wasm"]
-        });
+        const modelBytes = new Uint8Array(modelBuffer);
+        try {
+          this.session = await ort.InferenceSession.create(modelBytes, {
+            executionProviders: ["wasm"]
+          });
+        } catch (bufErr) {
+          console.warn("Failed to create ONNX session with Uint8Array, trying modelUrl string:", bufErr);
+          this.session = await ort.InferenceSession.create(modelUrl, {
+            executionProviders: ["wasm"]
+          });
+        }
         this.loadedVoiceFile = voiceFile;
       } catch (error) {
         console.error("Failed to load Piper TTS engine from local path:", error);
@@ -777,8 +790,7 @@
       }
       toastLeft = Math.max(window.scrollX + 8, toastLeft);
       const maxLeft = window.scrollX + window.innerWidth - toastWidth - 8;
-      if (toastLeft > maxLeft)
-        toastLeft = maxLeft;
+      if (toastLeft > maxLeft) toastLeft = maxLeft;
       toast.style.top = `${toastTop}px`;
       toast.style.left = `${toastLeft}px`;
     }
@@ -788,8 +800,7 @@
         this.activeToast.className = `tts-toast tts-toast-${type} tts-toast-visible`;
         this.activeToastType = type;
         const textElem = this.activeToast.querySelector(".tts-toast-text");
-        if (textElem)
-          textElem.textContent = message;
+        if (textElem) textElem.textContent = message;
         if (duration) {
           setTimeout(() => this.dismiss(this.activeToast), duration);
         }
@@ -1004,7 +1015,20 @@
       content.appendChild(divider);
       const defElem = document.createElement("div");
       defElem.style.cssText = "font-size:12px;line-height:1.45;color:#111111;max-height:140px;overflow-y:auto;white-space:pre-wrap;width:100%";
-      defElem.textContent = Array.isArray(definition) ? definition.join("\n") : definition;
+      const rawLines = Array.isArray(definition) ? definition : (definition || "").split("\n");
+      const formattedLines = rawLines.map((line) => {
+        const safeLine = line.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        let formatted = safeLine.replace(
+          /^(\[[^\]]+\])/g,
+          '<strong style="font-weight:700;color:#111111">$1</strong>'
+        );
+        formatted = formatted.replace(
+          /(Google Translation:)/g,
+          '<strong style="font-weight:700;color:#111111">$1</strong>'
+        );
+        return formatted;
+      });
+      defElem.innerHTML = formattedLines.join("<br>");
       content.appendChild(defElem);
       const actionRow = document.createElement("div");
       actionRow.style.cssText = "display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:6px;gap:8px";
@@ -1095,8 +1119,7 @@
       titleElem.style.cssText = "font-size:13px;font-weight:700;letter-spacing:-0.02em;color:#111111";
       titleContainer.appendChild(titleElem);
       const formatLangCode = (lang) => {
-        if (!lang || lang === "auto")
-          return "AUTO";
+        if (!lang || lang === "auto") return "AUTO";
         const map = {
           russian: "RU",
           english: "EN",
@@ -1206,6 +1229,14 @@
       chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (message.action === "speakSelection" && message.text) {
           this.speak(message.text);
+        } else if (message.action === "speakWebSpeech" && message.text) {
+          if (typeof window !== "undefined" && "speechSynthesis" in window) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(message.text);
+            if (message.lang) utterance.lang = message.lang;
+            if (typeof message.rate === "number") utterance.rate = message.rate;
+            window.speechSynthesis.speak(utterance);
+          }
         } else if (message.action === "promptLanguageSelection" && message.word) {
           this.notificationView.promptLanguage(message.word).then((choice) => {
             sendResponse({ language: choice });

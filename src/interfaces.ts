@@ -50,6 +50,8 @@ export interface GoogleSettings {
 export interface GeneralSettings {
   lookupMethod: "manual" | "classifier";
   googleTranslateTargetLanguage: string;
+  savedWordSetting: string;
+  savedWordExportTranslationTarget: string;
 }
 //types for settings, must have all three settings
 export type ExtensionSettings = PiperSettings &

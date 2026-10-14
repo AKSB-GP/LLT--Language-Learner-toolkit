@@ -60,7 +60,7 @@ export async function handleAction(
             PiperTTS(cleanText, tab);
             break;
         case "pronounce-with-google-tts":
-            GoogleTTS(cleanText);
+            GoogleTTS(cleanText, tab);
             break;
         case "open-wikitionary-of-word":
             OpenWordWikiByWord(cleanText, tab);
@@ -88,8 +88,9 @@ export async function handleAction(
 
 /**
  * Triggers Google TTS speech synthesis for the selected text.
+ * Uses chrome.tts if available, otherwise falls back to Web SpeechSynthesis API.
  */
-export function GoogleTTS(selectionText: string): void {
+export function GoogleTTS(selectionText: string, tab?: chrome.tabs.Tab): void {
     if (selectionText) {
         chrome.storage.sync.get(
             {
@@ -97,7 +98,7 @@ export function GoogleTTS(selectionText: string): void {
                 googleRate: DEFAULT_SETTINGS.googleRate,
             },
             (settings) => {
-                GoogleTTSChrome(selectionText, settings);
+                GoogleTTSChrome(selectionText, settings, tab?.id);
             },
         );
     }
@@ -231,8 +232,13 @@ export async function getWordFromFreeDictAPI(
             const pageUrl =
                 responseData.source?.url ||
                 getWordOnWiktionary(langCode, wordLowerCase);
-            const definition = entry?.senses?.[0]?.definition || "Definition not found";
+            const rawDefinition = entry?.senses?.[0]?.definition;
             const wordcategory = entry?.partOfSpeech || "not found";
+            //use googletranslate if definition is not found 
+            let definition = rawDefinition;
+            if (!definition || definition === "Definition not found" || definition === "Not found") {
+                definition = await translateTextSilently(cleanWord, langCode);
+            }
 
             const data: WordAPIResponse = {
                 url: pageUrl,
@@ -242,7 +248,7 @@ export async function getWordFromFreeDictAPI(
             return data;
         } else {
             // Use google translate if word not found on freedict
-            const translatedText = await TranslateWithGoogle(cleanWord, tab);
+            const translatedText = await translateTextSilently(cleanWord, langCode);
             return {
                 url: "Not found, google translate used for meaning",
                 definition: translatedText,
@@ -251,7 +257,7 @@ export async function getWordFromFreeDictAPI(
         }
     } catch (err: any) {
         try {
-            const translatedText = await TranslateWithGoogle(cleanWord, tab);
+            const translatedText = await translateTextSilently(cleanWord, langCode);
             return {
                 url: "Not found, google translate used for meaning",
                 definition: translatedText,
@@ -292,8 +298,13 @@ export async function getRussianWordFromFreeDictAPI(
             const entry = responseData.entries?.[0];
             const pageUrl =
                 responseData.source?.url || getWordOnWiktionary(langCode, cleanWord);
-            const definition = entry?.senses?.[0]?.definition || "Not found";
+            const rawDefinition = entry?.senses?.[0]?.definition;
             const wordcategory = entry?.partOfSpeech || "not found";
+
+            let definition = rawDefinition;
+            if (!definition || definition === "Not found" || definition === "Definition not found") {
+                definition = await translateTextSilently(cleanWord, langCode);
+            }
             //set stating values for gender, animacy and case
             let gender = "not found";
             let animacy = "not found";
@@ -368,7 +379,7 @@ export async function getRussianWordFromFreeDictAPI(
         }
         // use google translate if word not found on freedict
         else {
-            const wordTranslated = await TranslateWithGoogle(cleanWord, tab);
+            const wordTranslated = await translateTextSilently(cleanWord, langCode);
             return {
                 url: "No URL found, definition received from google translate",
                 definition: wordTranslated,
@@ -380,7 +391,7 @@ export async function getRussianWordFromFreeDictAPI(
         }
     } catch (err: any) {
         try {
-            const wordTranslated = await TranslateWithGoogle(cleanWord, tab);
+            const wordTranslated = await translateTextSilently(cleanWord, langCode);
             return {
                 url: "No URL found, definition received from google translate",
                 definition: wordTranslated,
@@ -534,6 +545,41 @@ export async function OpenWordYouglishByWord(
 
 
 /**
+ * Silently translates input text using GoogleTranslatorModel without triggering tab toasts or language selection dialogs.
+ */
+export async function translateTextSilently(text: string, sourceLangCode?: string): Promise<string> {
+    if (!text) return "";
+    const rawText = text.trim();
+    if (!rawText) return "";
+
+    let srcLang = sourceLangCode;
+    if (!srcLang) {
+        const isCyrillic = /[а-яёА-ЯЁ]/.test(rawText);
+        const isSwedish = /[åäöÅÄÖ]/.test(rawText);
+        srcLang = isCyrillic ? "ru" : (isSwedish ? "sv" : "en");
+    }
+
+    const settings = await new Promise<{ googleTranslateTargetLanguage: string }>((resolve) => {
+        chrome.storage.sync.get(
+            { googleTranslateTargetLanguage: DEFAULT_SETTINGS.googleTranslateTargetLanguage },
+            (items) => resolve(items as { googleTranslateTargetLanguage: string }),
+        );
+    });
+
+    let targetLang = settings.googleTranslateTargetLanguage || "en";
+    if (srcLang === targetLang) {
+        targetLang = srcLang === "en" ? "sv" : "en";
+    }
+
+    try {
+        return await googleTranslatorModel.Translate(rawText, srcLang, targetLang);
+    } catch (err) {
+        console.warn("Silent Google Translation failed:", err);
+        return "";
+    }
+}
+
+/**
  * Handles explicit context menu click for "translate with google".
  * Detects word language, invokes GoogleTranslatorModel, and sends translation payload to tab content script.
  * if fromlanguage to target language is the same, the user is prompted to selecte target langauge.
@@ -667,23 +713,36 @@ async function SaveWordToVocabulary(
         const langCode = LANGUAGE_CODES[langCategory] || "en";
         const word = encodeURIComponent(rawWord.toLowerCase());
 
-        let definition = "Saved from context menu";
+        let dictDefinition = "";
         let pageUrl = `https://${langCode}.wiktionary.org/wiki/${word}`;
 
         if (langCategory === "russian") {
             const data = await getRussianWordFromFreeDictAPI(langCode, word, tab);
             if (data && data.definition) {
-                definition = data.definition;
+                dictDefinition = data.definition;
                 if (data.url) pageUrl = data.url;
             }
         }
         else if (langCategory !== "unknown") {
             const data = await getWordFromFreeDictAPI(langCode, word, tab);
-
             if (data && data.definition) {
-                definition = data.definition;
+                dictDefinition = data.definition;
                 if (data.url) pageUrl = data.url;
             }
+        }
+
+        let googleTranslation = "";
+        try {
+            googleTranslation = await translateTextSilently(rawWord, langCode);
+        } catch { }
+
+        let definition = "Saved from context menu";
+        if (dictDefinition && googleTranslation && !dictDefinition.includes(googleTranslation)) {
+            definition = `${dictDefinition}<br>Google Translation: ${googleTranslation}`;
+        } else if (dictDefinition) {
+            definition = dictDefinition;
+        } else if (googleTranslation) {
+            definition = googleTranslation;
         }
 
         await dbModel.saveVocabulary({
@@ -694,13 +753,12 @@ async function SaveWordToVocabulary(
         });
 
         if (tab?.id) {
-            chrome.tabs
-                .sendMessage(tab.id, {
-                    action: "showNotification",
-                    toastType: "PLAYING",
-                    text: `SAVED "${rawWord.toUpperCase()}" TO VOCABULARY`,
-                    duration: 3000,
-                })
+            SendChromeMessage(tab.id, {
+                action: "showNotification",
+                toastType: "PLAYING",
+                text: `SAVED "${rawWord.toUpperCase()}" TO VOCABULARY`,
+                duration: 3000,
+            })
                 .catch(() => { });
         }
     }
