@@ -118,9 +118,20 @@ export class TTSModel {
       ort.env.wasm.wasmPaths = chrome.runtime.getURL("lib/");
 
       // Load ONNX Session
-      this.session = await ort.InferenceSession.create(modelBuffer, {
-        executionProviders: ["wasm"],
-      });
+      //changes to make if firefox compatiable
+      // Wrap in Uint8Array to satisfy 't instanceof Uint8Array' in Firefox content script sandbox,
+      // and fall back to modelUrl string path if needed.
+      const modelBytes = new Uint8Array(modelBuffer);
+      try {
+        this.session = await ort.InferenceSession.create(modelBytes, {
+          executionProviders: ["wasm"],
+        });
+      } catch (bufErr) {
+        console.warn("Failed to create ONNX session with Uint8Array, trying modelUrl string:", bufErr);
+        this.session = await ort.InferenceSession.create(modelUrl, {
+          executionProviders: ["wasm"],
+        });
+      }
       this.loadedVoiceFile = voiceFile;
     } catch (error) {
       console.error("Failed to load Piper TTS engine from local path:", error);

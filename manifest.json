@@ -9,14 +9,13 @@
     "tts",
     "storage",
     "notifications",
-    "commands",
     "scripting"
   ],
   "commands": {
     "pronounce-with-piper-tts": {
       "suggested_key": {
-        "default": "Alt+Shift+S",
-        "mac": "Alt+Shift+S"
+        "default": "Alt+Shift+A",
+        "mac": "Alt+Shift+A"
       },
       "description": "Pronounce highlighted word with Natural AI TTS"
     },
@@ -35,10 +34,6 @@
       "description": "Get definition of highlighted word"
     },
     "open-youglish-of-word": {
-      "suggested_key": {
-        "default": "Alt+Shift+A",
-        "mac": "Alt+Shift+A"
-      },
       "description": "Open Youglish of highlighted word"
     },
     "pronounce-with-google-tts": {
@@ -48,7 +43,11 @@
       "description": "Open Wikitionary of highlighted word"
     },
     "save-word-to-vocabulary": {
-      "description": "Save highlighted word to vocabulary"
+      "description": "Save highlighted word to vocabulary",
+      "suggested_key": {
+        "default": "Alt+Shift+S",
+        "mac": "Alt+Shift+S"
+      }
     }
   },
   "icons": {

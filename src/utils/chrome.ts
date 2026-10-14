@@ -30,11 +30,31 @@ export function QueryChromeTab(queryInfo: chrome.tabs.QueryInfo): Promise<chrome
   googleLanguage: "ru-RU",
   googleRate: 1.0,
 */
-export function GoogleTTS(text: string, settings?: { googleLanguage?: string; googleRate?: number }) {
-    chrome.tts.speak(text, {
-        lang: settings?.googleLanguage || DEFAULT_SETTINGS.googleLanguage,
-        rate: settings?.googleRate ?? DEFAULT_SETTINGS.googleRate,
-    });
+//Flytta speecksynth till annan funktion 
+export function GoogleTTS(
+    text: string,
+    settings?: { googleLanguage?: string; googleRate?: number },
+    tabId?: number,
+) {
+    if (typeof chrome !== "undefined" && chrome.tts && typeof chrome.tts.speak === "function") {
+        chrome.tts.speak(text, {
+            lang: settings?.googleLanguage || DEFAULT_SETTINGS.googleLanguage,
+            rate: settings?.googleRate ?? DEFAULT_SETTINGS.googleRate,
+        });
+    } else if (typeof speechSynthesis !== "undefined" && typeof SpeechSynthesisUtterance !== "undefined") {
+        speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = settings?.googleLanguage || DEFAULT_SETTINGS.googleLanguage;
+        utterance.rate = settings?.googleRate ?? DEFAULT_SETTINGS.googleRate;
+        speechSynthesis.speak(utterance);
+    } else if (tabId) {
+        SendChromeMessage(tabId, {
+            action: "speakWebSpeech",
+            text: text,
+            lang: settings?.googleLanguage || DEFAULT_SETTINGS.googleLanguage,
+            rate: settings?.googleRate ?? DEFAULT_SETTINGS.googleRate,
+        }, true);
+    }
 }
 
 export function ChromeONClickedContextMenu(callback: (info: chrome.contextMenus.OnClickData, tab?: chrome.tabs.Tab) => void) {

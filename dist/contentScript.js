@@ -576,9 +576,17 @@
         ort.env.wasm.simd = false;
         ort.env.wasm.numThreads = 1;
         ort.env.wasm.wasmPaths = chrome.runtime.getURL("lib/");
-        this.session = await ort.InferenceSession.create(modelBuffer, {
-          executionProviders: ["wasm"]
-        });
+        const modelBytes = new Uint8Array(modelBuffer);
+        try {
+          this.session = await ort.InferenceSession.create(modelBytes, {
+            executionProviders: ["wasm"]
+          });
+        } catch (bufErr) {
+          console.warn("Failed to create ONNX session with Uint8Array, trying modelUrl string:", bufErr);
+          this.session = await ort.InferenceSession.create(modelUrl, {
+            executionProviders: ["wasm"]
+          });
+        }
         this.loadedVoiceFile = voiceFile;
       } catch (error) {
         console.error("Failed to load Piper TTS engine from local path:", error);
@@ -1221,6 +1229,14 @@
       chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (message.action === "speakSelection" && message.text) {
           this.speak(message.text);
+        } else if (message.action === "speakWebSpeech" && message.text) {
+          if (typeof window !== "undefined" && "speechSynthesis" in window) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(message.text);
+            if (message.lang) utterance.lang = message.lang;
+            if (typeof message.rate === "number") utterance.rate = message.rate;
+            window.speechSynthesis.speak(utterance);
+          }
         } else if (message.action === "promptLanguageSelection" && message.word) {
           this.notificationView.promptLanguage(message.word).then((choice) => {
             sendResponse({ language: choice });

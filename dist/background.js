@@ -33107,11 +33107,26 @@ Try the option "splitPunct" to split the text by punctuation.`);
   function CreateChromeTabMessage(Message) {
     return chrome.tabs.create(Message);
   }
-  function GoogleTTS(text, settings) {
-    chrome.tts.speak(text, {
-      lang: settings?.googleLanguage || DEFAULT_SETTINGS.googleLanguage,
-      rate: settings?.googleRate ?? DEFAULT_SETTINGS.googleRate
-    });
+  function GoogleTTS(text, settings, tabId) {
+    if (typeof chrome !== "undefined" && chrome.tts && typeof chrome.tts.speak === "function") {
+      chrome.tts.speak(text, {
+        lang: settings?.googleLanguage || DEFAULT_SETTINGS.googleLanguage,
+        rate: settings?.googleRate ?? DEFAULT_SETTINGS.googleRate
+      });
+    } else if (typeof speechSynthesis !== "undefined" && typeof SpeechSynthesisUtterance !== "undefined") {
+      speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = settings?.googleLanguage || DEFAULT_SETTINGS.googleLanguage;
+      utterance.rate = settings?.googleRate ?? DEFAULT_SETTINGS.googleRate;
+      speechSynthesis.speak(utterance);
+    } else if (tabId) {
+      SendChromeMessage(tabId, {
+        action: "speakWebSpeech",
+        text,
+        lang: settings?.googleLanguage || DEFAULT_SETTINGS.googleLanguage,
+        rate: settings?.googleRate ?? DEFAULT_SETTINGS.googleRate
+      }, true);
+    }
   }
   function ChromeONClickedContextMenu(callback) {
     return chrome.contextMenus.onClicked.addListener(callback);
@@ -33619,7 +33634,7 @@ Try the option "splitPunct" to split the text by punctuation.`);
         PiperTTS(cleanText, tab);
         break;
       case "pronounce-with-google-tts":
-        GoogleTTS2(cleanText);
+        GoogleTTS2(cleanText, tab);
         break;
       case "open-wikitionary-of-word":
         OpenWordWikiByWord(cleanText, tab);
@@ -33641,7 +33656,7 @@ Try the option "splitPunct" to split the text by punctuation.`);
         break;
     }
   }
-  function GoogleTTS2(selectionText) {
+  function GoogleTTS2(selectionText, tab) {
     if (selectionText) {
       chrome.storage.sync.get(
         {
@@ -33649,7 +33664,7 @@ Try the option "splitPunct" to split the text by punctuation.`);
           googleRate: DEFAULT_SETTINGS.googleRate
         },
         (settings) => {
-          GoogleTTS(selectionText, settings);
+          GoogleTTS(selectionText, settings, tab?.id);
         }
       );
     }

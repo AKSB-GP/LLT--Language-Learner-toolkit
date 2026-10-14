@@ -60,7 +60,7 @@ export async function handleAction(
             PiperTTS(cleanText, tab);
             break;
         case "pronounce-with-google-tts":
-            GoogleTTS(cleanText);
+            GoogleTTS(cleanText, tab);
             break;
         case "open-wikitionary-of-word":
             OpenWordWikiByWord(cleanText, tab);
@@ -88,8 +88,9 @@ export async function handleAction(
 
 /**
  * Triggers Google TTS speech synthesis for the selected text.
+ * Uses chrome.tts if available, otherwise falls back to Web SpeechSynthesis API.
  */
-export function GoogleTTS(selectionText: string): void {
+export function GoogleTTS(selectionText: string, tab?: chrome.tabs.Tab): void {
     if (selectionText) {
         chrome.storage.sync.get(
             {
@@ -97,7 +98,7 @@ export function GoogleTTS(selectionText: string): void {
                 googleRate: DEFAULT_SETTINGS.googleRate,
             },
             (settings) => {
-                GoogleTTSChrome(selectionText, settings);
+                GoogleTTSChrome(selectionText, settings, tab?.id);
             },
         );
     }
